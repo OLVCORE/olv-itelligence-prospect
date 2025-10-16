@@ -24,10 +24,10 @@ export async function POST(request: NextRequest) {
         ? 'Revalidação de dados da empresa agendada' 
         : 'Revalidação de dados do projeto agendada',
       priority: 'medium',
-      metadata: {
+      metadata: JSON.stringify({
         companyId,
-        scheduledBy: (session.user as any).id
-      },
+        scheduledBy: 'demo-user' // Mock auth
+      }),
       dueAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
     }
   })
