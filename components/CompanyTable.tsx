@@ -201,3 +201,4 @@ export function CompanyTable({ data, onRowClick }: CompanyTableProps) {
   )
 }
 
+

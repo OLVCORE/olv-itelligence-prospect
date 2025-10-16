@@ -256,3 +256,4 @@ O motor é otimizado para:
 ---
 
 **Desenvolvido com 🧠 pela equipe OLV Intelligence**
+

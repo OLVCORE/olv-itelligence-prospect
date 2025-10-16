@@ -113,3 +113,4 @@ export default function CanvasBoard({ roomId, mode }: CanvasBoardProps) {
   )
 }
 
+

@@ -275,3 +275,4 @@ Formato de resposta: JSON com array de insights estratégicos.
 }
 
 export const aiReportGenerator = new AIReportGenerator()
+

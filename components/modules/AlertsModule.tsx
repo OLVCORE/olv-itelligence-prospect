@@ -342,3 +342,4 @@ export function AlertsModule({ data }: AlertsModuleProps) {
     </div>
   )
 }
+

@@ -293,3 +293,4 @@ export function calculatePriority(company: any): number {
   return Math.round(priority)
 }
 
+

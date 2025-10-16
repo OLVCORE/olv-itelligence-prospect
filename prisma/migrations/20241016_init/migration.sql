@@ -91,3 +91,4 @@ CREATE UNIQUE INDEX "Company_cnpj_key" ON "Company"("cnpj");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Session_sessionToken_key" ON "Session"("sessionToken");
+

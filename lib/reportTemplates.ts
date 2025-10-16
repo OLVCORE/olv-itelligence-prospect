@@ -493,3 +493,4 @@ export function generateSnapshot(data: ReportData): string {
   `
 }
 
+

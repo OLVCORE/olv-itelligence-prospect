@@ -217,3 +217,4 @@ export async function generateDecisionMakerInsights(decisionMaker: any): Promise
   
   return 'Decisor identificado com potencial de influência no processo de compra.'
 }
+

@@ -335,3 +335,4 @@ function generateCSV(company: any): string {
 
   return rows.map(row => row.join(';')).join('\n')
 }
+

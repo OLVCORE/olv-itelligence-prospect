@@ -466,3 +466,4 @@ Agora é só adicionar as APIs externas quando estiver pronto, e o sistema estar
 
 **Desenvolvido com 🧠 e ❤️ pela equipe OLV Intelligence**
 **Data**: 16 de Outubro de 2025
+

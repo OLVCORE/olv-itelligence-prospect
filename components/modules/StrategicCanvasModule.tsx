@@ -499,3 +499,4 @@ export function StrategicCanvasModule({ data = [] }: StrategicCanvasModuleProps)
     </div>
   )
 }
+

@@ -333,3 +333,4 @@ export function BenchmarkModule({ data }: BenchmarkModuleProps) {
     </div>
   )
 }
+

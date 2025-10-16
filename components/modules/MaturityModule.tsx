@@ -353,3 +353,4 @@ export function MaturityModule({ data }: MaturityModuleProps) {
     </div>
   )
 }
+

@@ -241,3 +241,4 @@ export class HunterService {
 }
 
 export const hunter = new HunterService()
+

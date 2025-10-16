@@ -277,3 +277,4 @@ n8n workflows para:
 - **Snapshot**: Resumo executivo de 1 página
 - **Pipeline**: Funil de prospecção (7 camadas)
 
+

@@ -96,3 +96,4 @@ export function notify(type: Notification['type'], title: string, message: strin
   })
   window.dispatchEvent(event)
 }
+

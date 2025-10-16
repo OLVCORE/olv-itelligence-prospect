@@ -89,3 +89,4 @@ Após o servidor rodar com sucesso:
 4. Verificar análise com dados reais
 5. Reportar qualquer erro via commit SHA + log
 
+

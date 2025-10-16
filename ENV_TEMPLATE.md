@@ -66,3 +66,4 @@ SERASA_API_URL=https://api.serasaexperian.com.br
 # LinkedIn via RapidAPI (PAGO - variável)
 RAPIDAPI_LINKEDIN_KEY=
 RAPIDAPI_HOST=linkedin-data-api.p.rapidapi.com
+

@@ -236,3 +236,4 @@ function consolidateTechStack(items: TechStackItem[]): TechStackItem[] {
   
   return Array.from(consolidated.values())
 }
+

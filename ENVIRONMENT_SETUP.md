@@ -66,3 +66,4 @@ O sistema foi projetado para funcionar completamente sem APIs externas usando da
 1. **Desenvolvimento Local**: Use apenas `DATABASE_URL` e `NEXTAUTH_SECRET`
 2. **Testes com IA**: Adicione `OPENAI_API_KEY` para relatórios com IA real
 3. **Produção**: Configure todas as APIs para dados reais
+
