@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import {
   calculateMaturityScore,
@@ -9,10 +7,7 @@ import {
 } from "@/lib/enrichment"
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
+  // Demo: sem autenticação por enquanto
 
   const body = await request.json()
   const { companyId } = body
