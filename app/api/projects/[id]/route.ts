@@ -3,9 +3,10 @@ import { prisma } from "@/lib/db"
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   // Mock auth para demo
+  const params = await context.params
 
   const project = await prisma.project.findUnique({
     where: { id: params.id },

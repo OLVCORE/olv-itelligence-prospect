@@ -3,9 +3,10 @@ import { prisma } from "@/lib/db"
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   // Mock auth para demo
+  const params = await context.params
 
   const company = await prisma.company.findUnique({
     where: { id: params.id },
@@ -31,8 +32,9 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const params = await context.params
   const body = await request.json()
   const { name, cnpj, domain, cnae, industry, size, location, financial } = body
 
