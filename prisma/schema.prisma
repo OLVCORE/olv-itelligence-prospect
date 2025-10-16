@@ -1,0 +1,196 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id             String               @id @default(cuid())
+  email          String               @unique
+  name           String?
+  password       String
+  role           String               @default("VIEWER")
+  organizations  OrganizationMember[]
+  sessions       Session[]
+  auditLogs      AuditLog[]
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+}
+
+model Organization {
+  id        String               @id @default(cuid())
+  name      String
+  members   OrganizationMember[]
+  projects  Project[]
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+}
+
+model OrganizationMember {
+  id             String       @id @default(cuid())
+  userId         String
+  organizationId String
+  role           String       @default("MEMBER")
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+
+  @@unique([userId, organizationId])
+}
+
+model Project {
+  id             String       @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  companies      Company[]
+  canvases       Canvas[]
+  reports        Report[]
+  alerts         Alert[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model Company {
+  id         String      @id @default(cuid())
+  projectId  String
+  name       String
+  cnpj       String?     @unique
+  domain     String?
+  cnae       String?
+  financial  String?     // receita, porte, risco, faturamento (JSON as string)
+  industry   String?
+  size       String?     // pequeno, médio, grande
+  location   String?     // cidade, estado, país (JSON as string)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  project    Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  stacks     TechStack[]
+  contacts   Contact[]
+  benchmarks Benchmark[]
+  reports    Report[]
+}
+
+model TechStack {
+  id          String    @id @default(cuid())
+  companyId   String
+  category    String    // ERP/CRM/Cloud/BI/Fiscal/E-commerce/etc
+  product     String
+  vendor      String?
+  status      String    @default("Indeterminado") // Confirmado/Indeterminado/Em Avaliação
+  confidence  Int       @default(0) // 0-100
+  evidence    String    // { links: [], prints: [], headers: {}, jobs: [] } (JSON as string)
+  source      String?   // Apollo/ZoomInfo/Manual/etc
+  validatedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+model Contact {
+  id         String    @id @default(cuid())
+  companyId  String
+  name       String
+  title      String
+  department String?
+  email      String?
+  phone      String?
+  linkedin   String?
+  source     String    @default("Manual") // Apollo/Lusha/Manual/etc
+  score      Int       @default(3) // 1-5 influência (1=baixo, 5=decisor C-level)
+  notes      String?
+  verifiedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  company    Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+model Benchmark {
+  id         String   @id @default(cuid())
+  companyId  String
+  metric     String   // NPS/CSAT/Market Share/Growth Rate/etc
+  value      Float
+  unit       String?  // %, $, pontos
+  period     String?  // Q1 2024, 2023, etc
+  source     String?
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+model Canvas {
+  id        String   @id @default(cuid())
+  projectId String
+  name      String
+  structure String   // Estrutura do canvas (nodes/edges) ou Yjs snapshot (JSON as string)
+  mode      String   @default("canva") // "canva" | "powerbi"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Report {
+  id         String   @id @default(cuid())
+  projectId  String
+  companyId  String?
+  type       String   // executive | snapshot | post_meeting | benchmark
+  title      String
+  html       String
+  pdfUrl     String?
+  metadata   String?  // dados adicionais como período, autor, etc (JSON as string)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  company    Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+}
+
+model Alert {
+  id          String    @id @default(cuid())
+  projectId   String
+  type        String    // revalidation/new_evidence/contact_change/benchmark_update
+  title       String
+  description String
+  priority    String    @default("medium") // low/medium/high/critical
+  status      String    @default("pending") // pending/acknowledged/resolved
+  metadata    String?  // JSON as string
+  dueAt       DateTime?
+  resolvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expires   DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String
+  action     String   // CREATE/UPDATE/DELETE/VIEW
+  resource   String   // Company/Contact/TechStack/etc
+  resourceId String
+  changes    String?  // before/after values (JSON as string)
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// SQLite não suporta enums, usando strings
+// Role: VIEWER | EDITOR | ADMIN
+// OrgRole: MEMBER | ADMIN | OWNER
+

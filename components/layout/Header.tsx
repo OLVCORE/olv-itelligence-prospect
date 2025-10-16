@@ -1,0 +1,191 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { 
+  User, 
+  Settings, 
+  LogOut, 
+  Shield, 
+  Bell,
+  Menu,
+  X
+} from "lucide-react"
+import { getRoleDisplayName, getRoleColor } from "@/lib/auth"
+
+interface HeaderProps {
+  onToggleSidebar?: () => void
+  sidebarOpen?: boolean
+}
+
+export function Header({ onToggleSidebar, sidebarOpen = true }: HeaderProps) {
+  const router = useRouter()
+  const [user, setUser] = useState<any>(null)
+  const [showNotifications, setShowNotifications] = useState(false)
+
+  useEffect(() => {
+    const userData = localStorage.getItem("user")
+    if (userData) {
+      setUser(JSON.parse(userData))
+    }
+  }, [])
+
+  const handleLogout = () => {
+    localStorage.removeItem("user")
+    router.push("/login")
+  }
+
+  if (!user) {
+    return null
+  }
+
+  const userInitials = user.name
+    ?.split(" ")
+    .map((n: string) => n[0])
+    .join("")
+    .toUpperCase() || "U"
+
+  return (
+    <header className="bg-slate-800/80 backdrop-blur-xl border-b border-slate-700/50 px-6 py-4">
+      <div className="flex items-center justify-between">
+        {/* Left Side - Menu Toggle */}
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onToggleSidebar}
+            className="text-slate-300 hover:text-white hover:bg-slate-700/50"
+          >
+            {sidebarOpen ? (
+              <X className="h-5 w-5" />
+            ) : (
+              <Menu className="h-5 w-5" />
+            )}
+          </Button>
+          
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-slate-600 rounded-lg flex items-center justify-center">
+              <Shield className="h-4 w-4 text-white" />
+            </div>
+            <div>
+              <h1 className="text-lg font-semibold text-white">OLV Intelligence</h1>
+              <p className="text-xs text-slate-400">Sistema de Prospecção</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side - User Info */}
+        <div className="flex items-center gap-4">
+          {/* Notifications */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowNotifications(!showNotifications)}
+            className="text-slate-300 hover:text-white hover:bg-slate-700/50 relative"
+          >
+            <Bell className="h-5 w-5" />
+            <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-xs"></span>
+          </Button>
+
+          {/* User Role Badge */}
+          <Badge className={getRoleColor(user.role)}>
+            {getRoleDisplayName(user.role)}
+          </Badge>
+
+          {/* User Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src="" alt={user.name || ""} />
+                  <AvatarFallback className="bg-slate-600 text-white">
+                    {userInitials}
+                  </AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56 bg-slate-800 border-slate-700" align="end" forceMount>
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none text-white">
+                    {user.name}
+                  </p>
+                  <p className="text-xs leading-none text-slate-400">
+                    {user.email}
+                  </p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-slate-700" />
+              <DropdownMenuItem className="text-slate-300 hover:text-white hover:bg-slate-700">
+                <User className="mr-2 h-4 w-4" />
+                <span>Perfil</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="text-slate-300 hover:text-white hover:bg-slate-700">
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Configurações</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-slate-700" />
+              <DropdownMenuItem 
+                className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                onClick={handleLogout}
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Sair</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+
+      {/* Notifications Panel */}
+      {showNotifications && (
+        <div className="absolute right-4 top-16 w-80 bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 rounded-lg shadow-xl z-50">
+          <div className="p-4 border-b border-slate-700/50">
+            <h3 className="text-lg font-semibold text-white">Notificações</h3>
+          </div>
+          <div className="p-4">
+            <div className="space-y-3">
+              <div className="flex items-start gap-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                <div className="w-2 h-2 bg-blue-400 rounded-full mt-2"></div>
+                <div>
+                  <p className="text-sm text-white font-medium">Nova análise concluída</p>
+                  <p className="text-xs text-slate-400">TechCorp - Análise de maturidade disponível</p>
+                  <p className="text-xs text-slate-500">há 5 minutos</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                <div className="w-2 h-2 bg-green-400 rounded-full mt-2"></div>
+                <div>
+                  <p className="text-sm text-white font-medium">Relatório gerado</p>
+                  <p className="text-xs text-slate-400">Relatório executivo InovDigital pronto</p>
+                  <p className="text-xs text-slate-500">há 1 hora</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3 p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+                <div className="w-2 h-2 bg-orange-400 rounded-full mt-2"></div>
+                <div>
+                  <p className="text-sm text-white font-medium">Revalidação necessária</p>
+                  <p className="text-xs text-slate-400">ConsultEmp - Dados desatualizados</p>
+                  <p className="text-xs text-slate-500">há 2 horas</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </header>
+  )
+}

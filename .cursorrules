@@ -1,0 +1,112 @@
+# OLV Intelligent Prospecting System - Cursor Rules
+
+## Arquitetura e Stack
+
+- Next.js 15 (App Router)
+- TypeScript (strict mode)
+- Prisma ORM + PostgreSQL
+- shadcn/ui + Tailwind CSS
+- React Flow + Yjs para canvas colaborativo
+- NextAuth.js para autenticação
+- Puppeteer para geração de PDFs
+
+## Convenções de Código
+
+### Arquivos e Pastas
+- Use kebab-case para arquivos: `tech-stack-page.tsx`
+- Use PascalCase para componentes: `TechStackCard.tsx`
+- Organize por feature: `/dashboard/[feature]/page.tsx`
+
+### TypeScript
+- Sempre use tipos explícitos
+- Evite `any`, prefira `unknown` quando necessário
+- Use interfaces para props de componentes
+- Use types para unions e intersections
+
+### React
+- Componentes Server por padrão
+- Use "use client" apenas quando necessário
+- Prefira Server Components para data fetching
+- Use React Hooks de forma idiomática
+
+### Prisma
+- Sempre use transactions para operações relacionadas
+- Inclua apenas o necessário (evite over-fetching)
+- Use soft deletes quando aplicável
+
+### API Routes
+- Sempre valide session antes de processar
+- Use NextResponse para responses
+- Retorne status codes apropriados (200, 201, 400, 401, 404, 500)
+- Log erros com contexto adequado
+
+## Regras de Negócio
+
+### Seção 3 - Stack Tecnológico (OBRIGATÓRIA)
+- Todo relatório DEVE incluir Seção 3
+- Cada stack DEVE ter:
+  - Categoria (ERP, CRM, Cloud, etc.)
+  - Produto e Fornecedor
+  - Status (Confirmado/Indeterminado)
+  - Confiança (0-100%)
+  - Evidências (≥2 para "Confirmado")
+  - Data de validação
+
+### Sistema de Scoring
+- Confiança: Base 50, +25 recente, +25 múltiplas fontes, -20 antigo
+- Maturidade: 0-100, média ponderada de 6 pilares
+- Propensão: 0-100, baseado em maturidade + tamanho + decisores
+- Prioridade: 0.5×Propensão + 0.3×Ticket + 0.2×Urgência
+
+### LGPD e Segurança
+- Sempre registre fonte, data e confiança dos dados
+- Implemente auditoria em todas as operações críticas
+- Criptografe dados sensíveis at-rest
+- Use HTTPS/TLS para todas as comunicações
+- Respeite termos de uso de APIs externas
+
+## Qualidade e Testes
+
+- Precisão tecnológica alvo: ≥ 85%
+- Decisores com dupla fonte: ≥ 90%
+- Completude de dados: ≥ 95% dos campos críticos
+
+## Performance
+
+- Lazy load componentes pesados
+- Use React.memo para componentes que re-renderizam frequentemente
+- Implemente paginação em listas grandes (TanStack Table)
+- Cache queries do Prisma quando apropriado
+- Otimize imagens com Next/Image
+
+## Acessibilidade
+
+- Sempre inclua labels em inputs
+- Use semantic HTML
+- Implemente keyboard navigation
+- Teste com screen readers
+
+## Comentários
+
+- Comente lógica complexa de negócio
+- Documente funções de utilidade
+- Explique decisões não-óbvias
+- Use JSDoc para funções públicas
+
+## Evite
+
+- Nunca commite credenciais ou secrets
+- Não use console.log em produção (use logger apropriado)
+- Evite estado global desnecessário
+- Não bypasse validação de tipos
+- Nunca exponha dados sensíveis em APIs públicas
+
+## Padrões de Memoria do Usuário
+
+- Entregar features em mini-ciclos sem alterar código existente
+- Sem emojis nas respostas (exceto em UI quando apropriado)
+- Extração local first, fallback para APIs externas
+- Módulos completos, ativos, sem mocks
+- Respostas assertivas e precisas
+- Build progressivo, step-by-step
+
