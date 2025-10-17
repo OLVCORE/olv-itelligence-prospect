@@ -101,19 +101,31 @@ function DashboardContent() {
   const [companies, setCompanies] = useState<CompanyData[]>(mockCompanies)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [user, setUser] = useState<any>(null)
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true)
   const [previewCompany, setPreviewCompany] = useState<any>(null)
   const [showPreview, setShowPreview] = useState(false)
 
   useEffect(() => {
     // Verificar se usuário está logado
-    const userData = localStorage.getItem("user")
-    if (!userData) {
+    try {
+      const userData = localStorage.getItem("user")
+      if (!userData) {
+        console.log('[Dashboard] ❌ Nenhum usuário encontrado, redirecionando para login')
+        setIsCheckingAuth(false)
+        router.push("/login")
+        return
+      }
+      
+      const parsedUser = JSON.parse(userData)
+      setUser(parsedUser)
+      console.log('[Dashboard] ✅ Usuário carregado:', parsedUser.email)
+      loadCompanies()
+      setIsCheckingAuth(false)
+    } catch (error) {
+      console.error('[Dashboard] ❌ Erro ao carregar usuário:', error)
+      setIsCheckingAuth(false)
       router.push("/login")
-      return
     }
-    
-    setUser(JSON.parse(userData))
-    loadCompanies()
   }, [router])
 
   const loadCompanies = async () => {
@@ -216,15 +228,22 @@ function DashboardContent() {
     }
   }
 
-  if (!user) {
+  // Mostrar loading apenas se ainda estiver verificando autenticação
+  if (isCheckingAuth) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-800 via-slate-900 to-blue-900">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto mb-4"></div>
-          <p className="text-slate-300">Carregando...</p>
+          <p className="text-slate-300 text-lg">Carregando Dashboard...</p>
+          <p className="text-slate-400 text-sm mt-2">Verificando autenticação...</p>
         </div>
       </div>
     )
+  }
+
+  // Se não tem usuário após verificação, será redirecionado pelo useEffect
+  if (!user) {
+    return null
   }
 
   return (
