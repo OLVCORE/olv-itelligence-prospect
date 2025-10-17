@@ -10,6 +10,8 @@ import { prisma } from '@/lib/db'
  */
 export async function POST(req: Request) {
   try {
+    console.log('[API /companies/add] Iniciando processo de adição...')
+    
     const { query } = await req.json()
 
     if (!query) {
@@ -28,8 +30,10 @@ export async function POST(req: Request) {
     // Buscar dados da empresa
     let companyData = null
     if (isCNPJ) {
+      console.log('[API /companies/add] Buscando por CNPJ...')
       companyData = await CompanySearchEngine.searchByCNPJ(query)
     } else {
+      console.log('[API /companies/add] Buscando por website...')
       companyData = await CompanySearchEngine.searchByWebsite(query)
     }
 
@@ -40,19 +44,27 @@ export async function POST(req: Request) {
       )
     }
 
-    console.log(`[API /companies/add] Empresa encontrada: ${companyData.razao}`)
+    console.log(`[API /companies/add] ✅ Empresa encontrada: ${companyData.razao}`)
+
+    // Testar conexão com banco
+    await prisma.$connect()
+    console.log('[API /companies/add] ✅ Conexão com banco estabelecida')
 
     // Buscar projeto demo
     const project = await prisma.project.findFirst()
     
     if (!project) {
+      console.log('[API /companies/add] ❌ Projeto não encontrado')
       return NextResponse.json(
         { error: "Projeto não encontrado. Execute o seed do banco." },
         { status: 500 }
       )
     }
 
+    console.log(`[API /companies/add] ✅ Projeto encontrado: ${project.name}`)
+
     // Salvar empresa no banco
+    console.log('[API /companies/add] Salvando empresa no banco...')
     const company = await prisma.company.create({
       data: {
         projectId: project.id,
@@ -76,14 +88,14 @@ export async function POST(req: Request) {
       }
     })
 
-    console.log(`[API /companies/add] Empresa salva: ${company.name} (${company.id})`)
+    console.log(`[API /companies/add] ✅ Empresa salva: ${company.name} (${company.id})`)
 
     // Executar análise automática
     console.log(`[API /companies/add] Iniciando análise automática...`)
     const engine = new IntelligenceEngine()
     const analysis = await engine.analyzeCompany(company)
 
-    console.log(`[API /companies/add] Análise concluída!`)
+    console.log(`[API /companies/add] ✅ Análise concluída!`)
 
     return NextResponse.json({
       success: true,
@@ -101,15 +113,19 @@ export async function POST(req: Request) {
     })
 
   } catch (error: any) {
-    console.error("[API /companies/add] Erro:", error)
+    console.error("[API /companies/add] ❌ Erro:", error)
+    console.error("[API /companies/add] Stack:", error.stack)
     
     return NextResponse.json(
       { 
         error: "Erro ao adicionar empresa",
-        details: error.message 
+        details: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       },
       { status: 500 }
     )
+  } finally {
+    await prisma.$disconnect()
   }
 }
 
