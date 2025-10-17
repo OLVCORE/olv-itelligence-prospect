@@ -295,7 +295,7 @@ function DashboardContent() {
 
         {/* Main Content - Responsivo */}
         <main className="flex-1 p-3 sm:p-4 lg:p-6 overflow-x-hidden">
-          <div className="space-y-4 lg:space-y-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 lg:space-y-6">
             {/* TabsList - Scrollable em mobile */}
             <div className="overflow-x-auto -mx-3 sm:-mx-4 lg:-mx-6 px-3 sm:px-4 lg:px-6 pb-2">
               <TabsList className="inline-flex w-max lg:grid lg:w-full lg:grid-cols-9 bg-slate-800/50 border-slate-700/50 gap-1 p-1">
@@ -364,9 +364,6 @@ function DashboardContent() {
                 </TabsTrigger>
               </TabsList>
             </div>
-
-            {/* Content Area */}
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 lg:space-y-6">
 
             {/* Dashboard Tab */}
             <TabsContent value="dashboard" className="space-y-4 lg:space-y-6">
@@ -717,8 +714,7 @@ function DashboardContent() {
                 </CardContent>
               </Card>
             </TabsContent>
-            </Tabs>
-          </div>
+          </Tabs>
         </main>
       </div>
 
