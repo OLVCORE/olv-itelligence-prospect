@@ -96,7 +96,8 @@ function DashboardContent() {
   // Debug: Log tab changes
   useEffect(() => {
     console.log('[Dashboard] ✅ Active tab changed to:', activeTab)
-  }, [activeTab])
+    console.log('[Dashboard] Selected company:', selectedCompany?.fantasia || 'Nenhuma empresa selecionada')
+  }, [activeTab, selectedCompany])
   const [companies, setCompanies] = useState<CompanyData[]>(mockCompanies)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [user, setUser] = useState<any>(null)
@@ -294,7 +295,7 @@ function DashboardContent() {
 
         {/* Main Content - Responsivo */}
         <main className="flex-1 p-3 sm:p-4 lg:p-6 overflow-x-hidden">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 lg:space-y-6">
+          <div className="space-y-4 lg:space-y-6">
             {/* TabsList - Scrollable em mobile */}
             <div className="overflow-x-auto -mx-3 sm:-mx-4 lg:-mx-6 px-3 sm:px-4 lg:px-6 pb-2">
               <TabsList className="inline-flex w-max lg:grid lg:w-full lg:grid-cols-9 bg-slate-800/50 border-slate-700/50 gap-1 p-1">
@@ -363,6 +364,9 @@ function DashboardContent() {
                 </TabsTrigger>
               </TabsList>
             </div>
+
+            {/* Content Area */}
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 lg:space-y-6">
 
             {/* Dashboard Tab */}
             <TabsContent value="dashboard" className="space-y-4 lg:space-y-6">
@@ -539,6 +543,10 @@ function DashboardContent() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
+                  <div className="mb-4 p-3 bg-green-900/20 rounded-lg border border-green-500/30">
+                    <p className="text-green-300 text-sm">✅ Tech Stack Module - Navegação Funcionando!</p>
+                    <p className="text-green-200 text-xs">Empresa: {selectedCompany?.fantasia || selectedCompany?.razao || "Nenhuma selecionada"}</p>
+                  </div>
                   <TechStackModule 
                     data={analysisData?.techStack || mockTechStack} 
                     companyName={selectedCompany?.fantasia || selectedCompany?.razao || "Empresa"}
@@ -560,6 +568,10 @@ function DashboardContent() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
+                  <div className="mb-4 p-3 bg-blue-900/20 rounded-lg border border-blue-500/30">
+                    <p className="text-blue-300 text-sm">✅ Decisores Module - Navegação Funcionando!</p>
+                    <p className="text-blue-200 text-xs">Empresa: {selectedCompany?.fantasia || selectedCompany?.razao || "Nenhuma selecionada"}</p>
+                  </div>
                   <DecisionMakersModule 
                     data={analysisData?.decisionMakers || mockDecisionMakers} 
                     companyName={selectedCompany?.fantasia || selectedCompany?.razao || "Empresa"}
@@ -581,6 +593,10 @@ function DashboardContent() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
+                  <div className="mb-4 p-3 bg-purple-900/20 rounded-lg border border-purple-500/30">
+                    <p className="text-purple-300 text-sm">✅ Finance Module - Navegação Funcionando!</p>
+                    <p className="text-purple-200 text-xs">Empresa: {selectedCompany?.fantasia || selectedCompany?.razao || "Nenhuma selecionada"}</p>
+                  </div>
                   <FinancialModule 
                     data={analysisData?.companyData ? {
                       porte: analysisData.companyData.porte,
@@ -701,7 +717,8 @@ function DashboardContent() {
                 </CardContent>
               </Card>
             </TabsContent>
-          </Tabs>
+            </Tabs>
+          </div>
         </main>
       </div>
 
