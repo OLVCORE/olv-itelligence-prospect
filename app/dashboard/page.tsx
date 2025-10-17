@@ -92,6 +92,11 @@ function DashboardContent() {
   const router = useRouter()
   const { selectedCompany, analysisData, isLoading, selectCompany, triggerAnalysis, refreshData } = useModuleContext()
   const [activeTab, setActiveTab] = useState("dashboard")
+
+  // Debug: Log tab changes
+  useEffect(() => {
+    console.log('[Dashboard] Active tab changed to:', activeTab)
+  }, [activeTab])
   const [companies, setCompanies] = useState<CompanyData[]>(mockCompanies)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [user, setUser] = useState<any>(null)
@@ -293,39 +298,75 @@ function DashboardContent() {
             {/* TabsList - Scrollable em mobile */}
             <div className="overflow-x-auto -mx-3 sm:-mx-4 lg:-mx-6 px-3 sm:px-4 lg:px-6 pb-2">
               <TabsList className="inline-flex w-max lg:grid lg:w-full lg:grid-cols-9 bg-slate-800/50 border-slate-700/50 gap-1 p-1">
-                <TabsTrigger value="dashboard" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white whitespace-nowrap">
+                <TabsTrigger 
+                  value="dashboard" 
+                  className="data-[state=active]:bg-blue-600 data-[state=active]:text-white whitespace-nowrap hover:bg-slate-700/50 transition-colors"
+                  onClick={() => console.log('[Dashboard] Clicked Dashboard tab')}
+                >
                   <BarChart3 className="h-4 w-4 mr-1 lg:mr-2" />
                   <span className="hidden sm:inline">Dashboard</span>
                 </TabsTrigger>
-                <TabsTrigger value="companies" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white whitespace-nowrap">
+                <TabsTrigger 
+                  value="companies" 
+                  className="data-[state=active]:bg-blue-600 data-[state=active]:text-white whitespace-nowrap hover:bg-slate-700/50 transition-colors"
+                  onClick={() => console.log('[Dashboard] Clicked Companies tab')}
+                >
                   <Building2 className="h-4 w-4 mr-1 lg:mr-2" />
                   <span className="hidden sm:inline">Empresas</span>
                 </TabsTrigger>
-                <TabsTrigger value="tech-stack" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white whitespace-nowrap">
+                <TabsTrigger 
+                  value="tech-stack" 
+                  className="data-[state=active]:bg-blue-600 data-[state=active]:text-white whitespace-nowrap hover:bg-slate-700/50 transition-colors"
+                  onClick={() => console.log('[Dashboard] Clicked Tech Stack tab')}
+                >
                   <Layers className="h-4 w-4 mr-1 lg:mr-2" />
                   <span className="hidden sm:inline">Tech</span>
                 </TabsTrigger>
-                <TabsTrigger value="decision-makers" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white whitespace-nowrap">
+                <TabsTrigger 
+                  value="decision-makers" 
+                  className="data-[state=active]:bg-blue-600 data-[state=active]:text-white whitespace-nowrap hover:bg-slate-700/50 transition-colors"
+                  onClick={() => console.log('[Dashboard] Clicked Decision Makers tab')}
+                >
                   <Users className="h-4 w-4 mr-1 lg:mr-2" />
                   <span className="hidden sm:inline">Decisores</span>
                 </TabsTrigger>
-                <TabsTrigger value="financial" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white whitespace-nowrap">
+                <TabsTrigger 
+                  value="financial" 
+                  className="data-[state=active]:bg-blue-600 data-[state=active]:text-white whitespace-nowrap hover:bg-slate-700/50 transition-colors"
+                  onClick={() => console.log('[Dashboard] Clicked Financial tab')}
+                >
                   <DollarSign className="h-4 w-4 mr-1 lg:mr-2" />
                   <span className="hidden sm:inline">Finance</span>
                 </TabsTrigger>
-                <TabsTrigger value="maturity" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white whitespace-nowrap">
+                <TabsTrigger 
+                  value="maturity" 
+                  className="data-[state=active]:bg-blue-600 data-[state=active]:text-white whitespace-nowrap hover:bg-slate-700/50 transition-colors"
+                  onClick={() => console.log('[Dashboard] Clicked Maturity tab')}
+                >
                   <Gauge className="h-4 w-4 mr-1 lg:mr-2" />
                   <span className="hidden sm:inline">Maturidade</span>
                 </TabsTrigger>
-                <TabsTrigger value="benchmark" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white whitespace-nowrap">
+                <TabsTrigger 
+                  value="benchmark" 
+                  className="data-[state=active]:bg-blue-600 data-[state=active]:text-white whitespace-nowrap hover:bg-slate-700/50 transition-colors"
+                  onClick={() => console.log('[Dashboard] Clicked Benchmark tab')}
+                >
                   <TrendingUp className="h-4 w-4 mr-1 lg:mr-2" />
                   <span className="hidden sm:inline">Benchmark</span>
                 </TabsTrigger>
-                <TabsTrigger value="fit-totvs" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white whitespace-nowrap">
+                <TabsTrigger 
+                  value="fit-totvs" 
+                  className="data-[state=active]:bg-blue-600 data-[state=active]:text-white whitespace-nowrap hover:bg-slate-700/50 transition-colors"
+                  onClick={() => console.log('[Dashboard] Clicked Fit TOTVS tab')}
+                >
                   <Target className="h-4 w-4 mr-1 lg:mr-2" />
                   <span className="hidden sm:inline">Fit</span>
                 </TabsTrigger>
-                <TabsTrigger value="canvas" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white whitespace-nowrap">
+                <TabsTrigger 
+                  value="canvas" 
+                  className="data-[state=active]:bg-blue-600 data-[state=active]:text-white whitespace-nowrap hover:bg-slate-700/50 transition-colors"
+                  onClick={() => console.log('[Dashboard] Clicked Canvas tab')}
+                >
                   <Network className="h-4 w-4 mr-1 lg:mr-2" />
                   <span className="hidden sm:inline">Canvas</span>
                 </TabsTrigger>
@@ -495,80 +536,158 @@ function DashboardContent() {
             </TabsContent>
 
             {/* Module Tabs */}
-            <TabsContent value="tech-stack" className="space-y-6">
-              <TechStackModule 
-                data={analysisData?.techStack || mockTechStack} 
-                companyName={selectedCompany?.fantasia || selectedCompany?.razao || "Empresa"}
-                isLoading={isLoading}
-              />
-            </TabsContent>
-
-            <TabsContent value="decision-makers" className="space-y-6">
-              <DecisionMakersModule 
-                data={analysisData?.decisionMakers || mockDecisionMakers} 
-                companyName={selectedCompany?.fantasia || selectedCompany?.razao || "Empresa"}
-                isLoading={isLoading}
-              />
-            </TabsContent>
-
-            <TabsContent value="financial" className="space-y-6">
-              <FinancialModule 
-                data={analysisData?.companyData ? {
-                  porte: analysisData.companyData.porte,
-                  capitalSocial: analysisData.companyData.capitalSocial,
-                  faturamentoEstimado: mockFinancialData.faturamentoEstimado,
-                  riscoCredito: mockFinancialData.riscoCredito,
-                  dataAbertura: analysisData.companyData.abertura,
-                  naturezaJuridica: analysisData.companyData.naturezaJuridica,
-                  statusFiscal: analysisData.companyData.situacao,
-                  ultimaAtualizacao: mockFinancialData.ultimaAtualizacao
-                } : mockFinancialData} 
-                companyName={selectedCompany?.fantasia || selectedCompany?.razao || "Empresa"}
-                isLoading={isLoading}
-              />
-            </TabsContent>
-
-            <TabsContent value="maturity" className="space-y-6">
-              <MaturityModule 
-                data={analysisData?.scores?.maturity ? {
-                  overallScore: analysisData.scores.maturity,
-                  dimensions: mockMaturityData.dimensions
-                } : mockMaturityData} 
-                companyName={selectedCompany?.fantasia || selectedCompany?.razao || "Empresa"}
-                isLoading={isLoading}
-              />
-            </TabsContent>
-
-            <TabsContent value="benchmark" className="space-y-6">
-              <BenchmarkModule 
-                data={analysisData?.benchmark || mockBenchmarkData} 
-                companyName={selectedCompany?.fantasia || selectedCompany?.razao || "Empresa"}
-                isLoading={isLoading}
-              />
-            </TabsContent>
-
-            <TabsContent value="fit-totvs" className="space-y-6">
-              <FitTOTVSModule 
-                data={analysisData?.scores?.priority ? {
-                  overall: analysisData.scores.priority,
-                  propensity: analysisData.scores.propensity,
-                  priority: analysisData.scores.priority,
-                  ticketEstimate: analysisData.ticketEstimate || mockFitTOTVS.ticketEstimate,
-                  roi: mockFitTOTVS.roi,
-                  paybackMonths: mockFitTOTVS.paybackMonths,
-                  factors: mockFitTOTVS.factors
-                } : mockFitTOTVS} 
-                companyName={selectedCompany?.fantasia || selectedCompany?.razao || "Empresa"}
-                isLoading={isLoading}
-              />
-            </TabsContent>
-
-            <TabsContent value="canvas" className="space-y-6">
+            <TabsContent value="tech-stack" className="space-y-4 lg:space-y-6">
               <Card className="bg-slate-800/80 backdrop-blur-xl border-slate-700/50">
                 <CardHeader>
                   <CardTitle className="text-white flex items-center gap-2">
-                    <Network className="h-6 w-6 text-blue-400" />
-                    Canvas Estratégico
+                    <Layers className="h-6 w-6 text-blue-400" />
+                    Tech Stack - {selectedCompany?.fantasia || selectedCompany?.razao || "Empresa"}
+                  </CardTitle>
+                  <CardDescription className="text-slate-400">
+                    Análise de tecnologias utilizadas pela empresa
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <TechStackModule 
+                    data={analysisData?.techStack || mockTechStack} 
+                    companyName={selectedCompany?.fantasia || selectedCompany?.razao || "Empresa"}
+                    isLoading={isLoading}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="decision-makers" className="space-y-4 lg:space-y-6">
+              <Card className="bg-slate-800/80 backdrop-blur-xl border-slate-700/50">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <Users className="h-6 w-6 text-green-400" />
+                    Decisores - {selectedCompany?.fantasia || selectedCompany?.razao || "Empresa"}
+                  </CardTitle>
+                  <CardDescription className="text-slate-400">
+                    Identificação de tomadores de decisão e influenciadores
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <DecisionMakersModule 
+                    data={analysisData?.decisionMakers || mockDecisionMakers} 
+                    companyName={selectedCompany?.fantasia || selectedCompany?.razao || "Empresa"}
+                    isLoading={isLoading}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="financial" className="space-y-4 lg:space-y-6">
+              <Card className="bg-slate-800/80 backdrop-blur-xl border-slate-700/50">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <DollarSign className="h-6 w-6 text-yellow-400" />
+                    Financeiro - {selectedCompany?.fantasia || selectedCompany?.razao || "Empresa"}
+                  </CardTitle>
+                  <CardDescription className="text-slate-400">
+                    Análise financeira e capacidade de investimento
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <FinancialModule 
+                    data={analysisData?.companyData ? {
+                      porte: analysisData.companyData.porte,
+                      capitalSocial: analysisData.companyData.capitalSocial,
+                      faturamentoEstimado: mockFinancialData.faturamentoEstimado,
+                      riscoCredito: mockFinancialData.riscoCredito,
+                      dataAbertura: analysisData.companyData.abertura,
+                      naturezaJuridica: analysisData.companyData.naturezaJuridica,
+                      statusFiscal: analysisData.companyData.situacao,
+                      ultimaAtualizacao: mockFinancialData.ultimaAtualizacao
+                    } : mockFinancialData} 
+                    companyName={selectedCompany?.fantasia || selectedCompany?.razao || "Empresa"}
+                    isLoading={isLoading}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="maturity" className="space-y-4 lg:space-y-6">
+              <Card className="bg-slate-800/80 backdrop-blur-xl border-slate-700/50">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <Gauge className="h-6 w-6 text-purple-400" />
+                    Maturidade Digital - {selectedCompany?.fantasia || selectedCompany?.razao || "Empresa"}
+                  </CardTitle>
+                  <CardDescription className="text-slate-400">
+                    Avaliação do nível de maturidade digital da empresa
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <MaturityModule 
+                    data={analysisData?.scores?.maturity ? {
+                      overallScore: analysisData.scores.maturity,
+                      dimensions: mockMaturityData.dimensions
+                    } : mockMaturityData} 
+                    companyName={selectedCompany?.fantasia || selectedCompany?.razao || "Empresa"}
+                    isLoading={isLoading}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="benchmark" className="space-y-4 lg:space-y-6">
+              <Card className="bg-slate-800/80 backdrop-blur-xl border-slate-700/50">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <TrendingUp className="h-6 w-6 text-orange-400" />
+                    Benchmark - {selectedCompany?.fantasia || selectedCompany?.razao || "Empresa"}
+                  </CardTitle>
+                  <CardDescription className="text-slate-400">
+                    Comparação com empresas similares do mercado
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <BenchmarkModule 
+                    data={analysisData?.benchmark || mockBenchmarkData} 
+                    companyName={selectedCompany?.fantasia || selectedCompany?.razao || "Empresa"}
+                    isLoading={isLoading}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="fit-totvs" className="space-y-4 lg:space-y-6">
+              <Card className="bg-slate-800/80 backdrop-blur-xl border-slate-700/50">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <Target className="h-6 w-6 text-red-400" />
+                    Fit TOTVS - {selectedCompany?.fantasia || selectedCompany?.razao || "Empresa"}
+                  </CardTitle>
+                  <CardDescription className="text-slate-400">
+                    Avaliação de compatibilidade com soluções TOTVS
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <FitTOTVSModule 
+                    data={analysisData?.scores?.priority ? {
+                      overall: analysisData.scores.priority,
+                      propensity: analysisData.scores.propensity,
+                      priority: analysisData.scores.priority,
+                      ticketEstimate: analysisData.ticketEstimate || mockFitTOTVS.ticketEstimate,
+                      roi: mockFitTOTVS.roi,
+                      paybackMonths: mockFitTOTVS.paybackMonths,
+                      factors: mockFitTOTVS.factors
+                    } : mockFitTOTVS} 
+                    companyName={selectedCompany?.fantasia || selectedCompany?.razao || "Empresa"}
+                    isLoading={isLoading}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="canvas" className="space-y-4 lg:space-y-6">
+              <Card className="bg-slate-800/80 backdrop-blur-xl border-slate-700/50">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <Network className="h-6 w-6 text-cyan-400" />
+                    Canvas Estratégico - {selectedCompany?.fantasia || selectedCompany?.razao || "Empresa"}
                   </CardTitle>
                   <CardDescription className="text-slate-400">
                     Visualização colaborativa e estratégica da análise
