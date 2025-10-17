@@ -39,27 +39,12 @@ try {
 
   // Passo 2: Sincronizar banco de dados
   console.log('\n🗄️  Passo 2/3: Sincronizando banco de dados...');
+  console.log('   Método: prisma db push (sincronização via pooler)');
+  console.log('   Conexão: DATABASE_URL (porta 6543 - PgBouncer)');
+  console.log('   ⚠️  Nota: Porta 5432 está bloqueada pelo Supabase para Vercel');
   
-  // Tentar migrate deploy se DIRECT_URL existe
-  if (hasDirectUrl) {
-    console.log('   Tentando: prisma migrate deploy (com histórico de migrações)');
-    console.log('   Conexão: DIRECT_URL (porta 5432 - direta)');
-    try {
-      execSync('npx prisma migrate deploy', { stdio: 'inherit' });
-      console.log('✅ Migrações aplicadas com sucesso');
-    } catch (error) {
-      console.log('⚠️  Migrate deploy falhou (porta 5432 pode estar bloqueada)');
-      console.log('   Usando fallback: prisma db push');
-      console.log('   Conexão: DATABASE_URL (porta 6543 - pooler)');
-      execSync('npx prisma db push --accept-data-loss --skip-generate', { stdio: 'inherit' });
-      console.log('✅ Banco sincronizado via db push');
-    }
-  } else {
-    console.log('   Usando: prisma db push (sincronização direta)');
-    console.log('   Conexão: DATABASE_URL (porta 6543 - pooler)');
-    execSync('npx prisma db push --accept-data-loss --skip-generate', { stdio: 'inherit' });
-    console.log('✅ Banco sincronizado via db push');
-  }
+  execSync('npx prisma db push --accept-data-loss --skip-generate', { stdio: 'inherit' });
+  console.log('✅ Banco de dados sincronizado com sucesso');
 
   // Passo 3: Build Next.js
   console.log('\n🏗️  Passo 3/3: Building Next.js...');
