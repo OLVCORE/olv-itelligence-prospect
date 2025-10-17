@@ -95,7 +95,7 @@ function DashboardContent() {
 
   // Debug: Log tab changes
   useEffect(() => {
-    console.log('[Dashboard] Active tab changed to:', activeTab)
+    console.log('[Dashboard] ✅ Active tab changed to:', activeTab)
   }, [activeTab])
   const [companies, setCompanies] = useState<CompanyData[]>(mockCompanies)
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -301,7 +301,6 @@ function DashboardContent() {
                 <TabsTrigger 
                   value="dashboard" 
                   className="data-[state=active]:bg-blue-600 data-[state=active]:text-white whitespace-nowrap hover:bg-slate-700/50 transition-colors"
-                  onClick={() => console.log('[Dashboard] Clicked Dashboard tab')}
                 >
                   <BarChart3 className="h-4 w-4 mr-1 lg:mr-2" />
                   <span className="hidden sm:inline">Dashboard</span>
@@ -309,7 +308,6 @@ function DashboardContent() {
                 <TabsTrigger 
                   value="companies" 
                   className="data-[state=active]:bg-blue-600 data-[state=active]:text-white whitespace-nowrap hover:bg-slate-700/50 transition-colors"
-                  onClick={() => console.log('[Dashboard] Clicked Companies tab')}
                 >
                   <Building2 className="h-4 w-4 mr-1 lg:mr-2" />
                   <span className="hidden sm:inline">Empresas</span>
@@ -317,7 +315,6 @@ function DashboardContent() {
                 <TabsTrigger 
                   value="tech-stack" 
                   className="data-[state=active]:bg-blue-600 data-[state=active]:text-white whitespace-nowrap hover:bg-slate-700/50 transition-colors"
-                  onClick={() => console.log('[Dashboard] Clicked Tech Stack tab')}
                 >
                   <Layers className="h-4 w-4 mr-1 lg:mr-2" />
                   <span className="hidden sm:inline">Tech</span>
@@ -325,7 +322,6 @@ function DashboardContent() {
                 <TabsTrigger 
                   value="decision-makers" 
                   className="data-[state=active]:bg-blue-600 data-[state=active]:text-white whitespace-nowrap hover:bg-slate-700/50 transition-colors"
-                  onClick={() => console.log('[Dashboard] Clicked Decision Makers tab')}
                 >
                   <Users className="h-4 w-4 mr-1 lg:mr-2" />
                   <span className="hidden sm:inline">Decisores</span>
@@ -333,7 +329,6 @@ function DashboardContent() {
                 <TabsTrigger 
                   value="financial" 
                   className="data-[state=active]:bg-blue-600 data-[state=active]:text-white whitespace-nowrap hover:bg-slate-700/50 transition-colors"
-                  onClick={() => console.log('[Dashboard] Clicked Financial tab')}
                 >
                   <DollarSign className="h-4 w-4 mr-1 lg:mr-2" />
                   <span className="hidden sm:inline">Finance</span>
@@ -341,7 +336,6 @@ function DashboardContent() {
                 <TabsTrigger 
                   value="maturity" 
                   className="data-[state=active]:bg-blue-600 data-[state=active]:text-white whitespace-nowrap hover:bg-slate-700/50 transition-colors"
-                  onClick={() => console.log('[Dashboard] Clicked Maturity tab')}
                 >
                   <Gauge className="h-4 w-4 mr-1 lg:mr-2" />
                   <span className="hidden sm:inline">Maturidade</span>
@@ -349,7 +343,6 @@ function DashboardContent() {
                 <TabsTrigger 
                   value="benchmark" 
                   className="data-[state=active]:bg-blue-600 data-[state=active]:text-white whitespace-nowrap hover:bg-slate-700/50 transition-colors"
-                  onClick={() => console.log('[Dashboard] Clicked Benchmark tab')}
                 >
                   <TrendingUp className="h-4 w-4 mr-1 lg:mr-2" />
                   <span className="hidden sm:inline">Benchmark</span>
@@ -357,7 +350,6 @@ function DashboardContent() {
                 <TabsTrigger 
                   value="fit-totvs" 
                   className="data-[state=active]:bg-blue-600 data-[state=active]:text-white whitespace-nowrap hover:bg-slate-700/50 transition-colors"
-                  onClick={() => console.log('[Dashboard] Clicked Fit TOTVS tab')}
                 >
                   <Target className="h-4 w-4 mr-1 lg:mr-2" />
                   <span className="hidden sm:inline">Fit</span>
@@ -365,7 +357,6 @@ function DashboardContent() {
                 <TabsTrigger 
                   value="canvas" 
                   className="data-[state=active]:bg-blue-600 data-[state=active]:text-white whitespace-nowrap hover:bg-slate-700/50 transition-colors"
-                  onClick={() => console.log('[Dashboard] Clicked Canvas tab')}
                 >
                   <Network className="h-4 w-4 mr-1 lg:mr-2" />
                   <span className="hidden sm:inline">Canvas</span>
