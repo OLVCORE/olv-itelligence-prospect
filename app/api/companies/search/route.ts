@@ -9,29 +9,31 @@ import { receitaWS } from "@/lib/services/receitaws"
  */
 export async function POST(req: Request) {
   try {
-    const { type, query } = await req.json()
+    const { query } = await req.json()
 
-    if (!type || !query) {
+    if (!query) {
       return NextResponse.json(
-        { error: "Tipo e query são obrigatórios" },
+        { error: "Query é obrigatória" },
         { status: 400 }
       )
     }
 
-    console.log(`[API /companies/search] Buscando ${type}: ${query}`)
+    console.log(`[API /companies/search] Buscando: ${query}`)
 
     let result = null
     let receitaData = null
 
-    if (type === "cnpj") {
+    // Detectar se é CNPJ ou website
+    const cleanQuery = query.replace(/[^\d]/g, '')
+    const isCNPJ = cleanQuery.length === 14
+
+    if (isCNPJ) {
       try {
         result = await CompanySearchEngine.searchByCNPJ(query)
         
         // Buscar dados completos da ReceitaWS para preview
-        const cleanCNPJ = query.replace(/[^\d]/g, '')
-        
         try {
-          const rawData = await receitaWS.buscarPorCNPJ(cleanCNPJ)
+          const rawData = await receitaWS.buscarPorCNPJ(cleanQuery)
           
           if (rawData) {
             // Gerar insights e scores
@@ -54,13 +56,8 @@ export async function POST(req: Request) {
         console.error('[API /companies/search] Erro ao buscar empresa:', error)
         throw error
       }
-    } else if (type === "website") {
-      result = await CompanySearchEngine.searchByWebsite(query)
     } else {
-      return NextResponse.json(
-        { error: "Tipo deve ser 'cnpj' ou 'website'" },
-        { status: 400 }
-      )
+      result = await CompanySearchEngine.searchByWebsite(query)
     }
 
     if (!result) {

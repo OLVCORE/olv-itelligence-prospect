@@ -69,7 +69,6 @@ export function CompanySearchModule() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          type: searchType,
           query: searchQuery
         })
       })
@@ -113,7 +112,6 @@ export function CompanySearchModule() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          type: 'cnpj',
           query: searchResult.cnpj
         })
       })

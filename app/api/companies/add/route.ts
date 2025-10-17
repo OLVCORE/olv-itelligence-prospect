@@ -10,22 +10,26 @@ import { prisma } from '@/lib/db'
  */
 export async function POST(req: Request) {
   try {
-    const { type, query } = await req.json()
+    const { query } = await req.json()
 
-    if (!type || !query) {
+    if (!query) {
       return NextResponse.json(
-        { error: "Tipo e query são obrigatórios" },
+        { error: "Query é obrigatória" },
         { status: 400 }
       )
     }
 
-    console.log(`[API /companies/add] Buscando empresa: ${type} = ${query}`)
+    console.log(`[API /companies/add] Buscando empresa: ${query}`)
+
+    // Detectar se é CNPJ ou website
+    const cleanQuery = query.replace(/[^\d]/g, '')
+    const isCNPJ = cleanQuery.length === 14
 
     // Buscar dados da empresa
     let companyData = null
-    if (type === "cnpj") {
+    if (isCNPJ) {
       companyData = await CompanySearchEngine.searchByCNPJ(query)
-    } else if (type === "website") {
+    } else {
       companyData = await CompanySearchEngine.searchByWebsite(query)
     }
 
