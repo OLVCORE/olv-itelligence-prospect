@@ -62,17 +62,17 @@ export default function LoginPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-800 via-slate-900 to-blue-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-800 via-slate-900 to-blue-900 flex items-center justify-center p-3 sm:p-4">
+      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
         {/* Left Side - Login Form */}
         <div className="flex items-center justify-center">
           <Card className="w-full max-w-md bg-slate-800/80 backdrop-blur-xl border-slate-700/50">
-            <CardHeader className="text-center">
-              <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-500 to-slate-600 rounded-xl flex items-center justify-center mb-4">
-                <Building2 className="h-8 w-8 text-white" />
+            <CardHeader className="text-center px-4 sm:px-6">
+              <div className="mx-auto w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-500 to-slate-600 rounded-xl flex items-center justify-center mb-3 sm:mb-4">
+                <Building2 className="h-7 w-7 sm:h-8 sm:w-8 text-white" />
               </div>
-              <CardTitle className="text-2xl font-bold text-white">OLV Intelligence</CardTitle>
-              <CardDescription className="text-slate-400">
+              <CardTitle className="text-xl sm:text-2xl font-bold text-white">OLV Intelligence</CardTitle>
+              <CardDescription className="text-slate-400 text-sm sm:text-base">
                 Sistema de Prospecção Inteligente
               </CardDescription>
             </CardHeader>
@@ -177,19 +177,19 @@ export default function LoginPage() {
         </div>
 
         {/* Right Side - Features */}
-        <div className="flex items-center justify-center">
-          <div className="space-y-8">
+        <div className="flex items-center justify-center px-4">
+          <div className="space-y-6 sm:space-y-8">
             <div className="text-center">
-              <h1 className="text-4xl font-bold text-white mb-4">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-3 sm:mb-4">
                 Inteligência Empresarial
                 <span className="block text-blue-400">de Nova Geração</span>
               </h1>
-              <p className="text-xl text-slate-300 max-w-md mx-auto">
+              <p className="text-base sm:text-lg lg:text-xl text-slate-300 max-w-md mx-auto">
                 Plataforma completa para prospecção, análise e relatórios executivos com IA
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div className="flex items-start space-x-4">
                 <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
                   <Shield className="h-6 w-6 text-blue-400" />

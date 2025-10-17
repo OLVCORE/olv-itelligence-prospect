@@ -159,17 +159,17 @@ export function CompanySearchModule() {
 
   return (
     <Card className="bg-slate-800/80 backdrop-blur-xl border-slate-700/50">
-      <CardHeader>
-        <CardTitle className="text-white flex items-center gap-2">
-          <Plus className="h-6 w-6 text-blue-400" />
+      <CardHeader className="px-4 sm:px-6">
+        <CardTitle className="text-white flex items-center gap-2 text-base sm:text-lg">
+          <Plus className="h-5 w-5 sm:h-6 sm:w-6 text-blue-400" />
           Adicionar Nova Empresa
         </CardTitle>
-        <CardDescription className="text-slate-400">
+        <CardDescription className="text-slate-400 text-sm sm:text-base">
           Busque empresas por CNPJ ou website e adicione ao sistema para análise completa
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
+      <CardContent className="px-4 sm:px-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Busca */}
           <div className="space-y-4">
             <Tabs value={searchType} onValueChange={(value) => setSearchType(value as "cnpj" | "website")}>
@@ -183,9 +183,9 @@ export function CompanySearchModule() {
               </TabsList>
             </Tabs>
 
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <div className="flex-1">
-                <Label htmlFor="search" className="text-slate-300">
+                <Label htmlFor="search" className="text-slate-300 text-sm">
                   {searchType === "cnpj" ? "CNPJ" : "Website"}
                 </Label>
                 <Input
@@ -193,14 +193,14 @@ export function CompanySearchModule() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={searchType === "cnpj" ? "00.000.000/0000-00" : "exemplo.com.br"}
-                  className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400"
+                  className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 h-10 sm:h-auto"
                 />
               </div>
-              <div className="flex items-end">
+              <div className="flex items-end sm:pt-6">
                 <Button
                   onClick={handleSearch}
                   disabled={isSearching}
-                  className="bg-gradient-to-r from-blue-600 to-slate-600 text-white font-medium hover:from-blue-700 hover:to-slate-700"
+                  className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-slate-600 text-white font-medium hover:from-blue-700 hover:to-slate-700 h-10 sm:h-auto"
                 >
                   {isSearching ? (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -231,17 +231,17 @@ export function CompanySearchModule() {
           {/* Resultado da Busca */}
           {searchResult && (
             <Card className="bg-slate-700/30 border-slate-600/50">
-              <CardHeader>
-                <div className="flex justify-between items-start">
+              <CardHeader className="px-4 sm:px-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start gap-3 sm:gap-0">
                   <div>
-                    <CardTitle className="text-white text-lg">
+                    <CardTitle className="text-white text-base sm:text-lg">
                       {searchResult.fantasia || searchResult.razao}
                     </CardTitle>
-                    <CardDescription className="text-slate-400">
+                    <CardDescription className="text-slate-400 text-sm">
                       {searchResult.razao}
                     </CardDescription>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     <Badge className={getStatusColor(searchResult.situacao)}>
                       {searchResult.situacao}
                     </Badge>
@@ -251,8 +251,8 @@ export function CompanySearchModule() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <CardContent className="px-4 sm:px-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 text-slate-300">
                       <Building2 className="h-4 w-4" />

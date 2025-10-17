@@ -60,23 +60,23 @@ export function CompanyCard({
             `}
             onClick={onViewPreview}
           >
-            <CardHeader className="pb-3">
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle className="text-white text-lg">
+            <CardHeader className="pb-2 sm:pb-3 px-4 sm:px-6">
+              <div className="flex justify-between items-start gap-2">
+                <div className="min-w-0 flex-1">
+                  <CardTitle className="text-white text-base sm:text-lg truncate">
                     {company.fantasia || company.razao}
                   </CardTitle>
-                  <CardDescription className="text-slate-400 font-mono text-xs">
+                  <CardDescription className="text-slate-400 font-mono text-[10px] sm:text-xs truncate">
                     {company.cnpj}
                   </CardDescription>
                 </div>
-                <Badge className={getStatusColor(company.status)}>
+                <Badge className={`${getStatusColor(company.status)} text-[10px] sm:text-xs whitespace-nowrap`}>
                   {company.status}
                 </Badge>
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-2 text-sm">
+            <CardContent className="px-4 sm:px-6">
+              <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
                 <div className="flex items-center gap-2 text-slate-300">
                   <MapPin className="h-4 w-4 text-blue-400" />
                   {company.cidade}/{company.uf}
@@ -90,30 +90,31 @@ export function CompanyCard({
                   {new Date(company.lastAnalyzed).toLocaleDateString('pt-BR')}
                 </div>
               </div>
-              <div className="flex gap-2 mt-4">
+              <div className="flex gap-2 mt-3 sm:mt-4">
                 <Button 
                   size="sm" 
                   variant="outline" 
-                  className="flex-1 border-blue-500 text-blue-400 hover:bg-blue-500/20 hover:text-blue-300 font-medium"
+                  className="flex-1 border-blue-500 text-blue-400 hover:bg-blue-500/20 hover:text-blue-300 font-medium text-xs sm:text-sm h-8 sm:h-9"
                   onClick={(e) => {
                     e.stopPropagation()
                     onViewPreview()
                   }}
                 >
-                  <Eye className="h-4 w-4 mr-1" />
-                  Preview
+                  <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                  <span className="hidden sm:inline">Preview</span>
+                  <span className="sm:hidden">Ver</span>
                 </Button>
                 <Button 
                   size="sm" 
                   variant="outline" 
-                  className="flex-1 border-green-500 text-green-400 hover:bg-green-500/20 hover:text-green-300 font-medium"
+                  className="flex-1 border-green-500 text-green-400 hover:bg-green-500/20 hover:text-green-300 font-medium text-xs sm:text-sm h-8 sm:h-9"
                   onClick={(e) => {
                     e.stopPropagation()
                     onAnalyze()
                   }}
                   disabled={isLoading}
                 >
-                  <Play className="h-4 w-4 mr-1" />
+                  <Play className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                   Analisar
                 </Button>
               </div>

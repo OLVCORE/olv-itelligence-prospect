@@ -57,15 +57,15 @@ export function Header({ onToggleSidebar, sidebarOpen = true }: HeaderProps) {
     .toUpperCase() || "U"
 
   return (
-    <header className="bg-slate-800/80 backdrop-blur-xl border-b border-slate-700/50 px-6 py-4">
+    <header className="bg-slate-800/80 backdrop-blur-xl border-b border-slate-700/50 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 fixed top-0 left-0 right-0 z-50">
       <div className="flex items-center justify-between">
         {/* Left Side - Menu Toggle */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           <Button
             variant="ghost"
             size="sm"
             onClick={onToggleSidebar}
-            className="text-slate-300 hover:text-white hover:bg-slate-700/50"
+            className="text-slate-300 hover:text-white hover:bg-slate-700/50 p-2"
           >
             {sidebarOpen ? (
               <X className="h-5 w-5" />
@@ -74,42 +74,42 @@ export function Header({ onToggleSidebar, sidebarOpen = true }: HeaderProps) {
             )}
           </Button>
           
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-slate-600 rounded-lg flex items-center justify-center">
-              <Shield className="h-4 w-4 text-white" />
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-blue-500 to-slate-600 rounded-lg flex items-center justify-center">
+              <Shield className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
             </div>
-            <div>
-              <h1 className="text-lg font-semibold text-white">OLV Intelligence</h1>
-              <p className="text-xs text-slate-400">Sistema de Prospecção</p>
+            <div className="hidden sm:block">
+              <h1 className="text-sm sm:text-lg font-semibold text-white">OLV Intelligence</h1>
+              <p className="text-[10px] sm:text-xs text-slate-400">Sistema de Prospecção</p>
             </div>
           </div>
         </div>
 
         {/* Right Side - User Info */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           {/* Notifications */}
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setShowNotifications(!showNotifications)}
-            className="text-slate-300 hover:text-white hover:bg-slate-700/50 relative"
+            className="text-slate-300 hover:text-white hover:bg-slate-700/50 relative p-2"
           >
-            <Bell className="h-5 w-5" />
-            <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-xs"></span>
+            <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
+            <span className="absolute -top-1 -right-1 w-2 h-2 sm:w-3 sm:h-3 bg-red-500 rounded-full text-xs"></span>
           </Button>
 
           {/* User Role Badge */}
-          <Badge className={getRoleColor(user.role)}>
+          <Badge className={`${getRoleColor(user.role)} text-[10px] sm:text-xs px-1.5 sm:px-2 hidden sm:inline-flex`}>
             {getRoleDisplayName(user.role)}
           </Badge>
 
           {/* User Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                <Avatar className="h-10 w-10">
+              <Button variant="ghost" className="relative h-8 w-8 sm:h-10 sm:w-10 rounded-full p-0">
+                <Avatar className="h-8 w-8 sm:h-10 sm:w-10">
                   <AvatarImage src="" alt={user.name || ""} />
-                  <AvatarFallback className="bg-slate-600 text-white">
+                  <AvatarFallback className="bg-slate-600 text-white text-xs sm:text-sm">
                     {userInitials}
                   </AvatarFallback>
                 </Avatar>

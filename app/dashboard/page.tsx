@@ -222,18 +222,27 @@ function DashboardContent() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pt-14 sm:pt-16">
       <Header onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} sidebarOpen={sidebarOpen} />
       
-      <div className="flex">
-        {/* Sidebar */}
-        <div className={`${sidebarOpen ? 'w-80' : 'w-0'} transition-all duration-300 bg-slate-800/50 backdrop-blur-xl border-r border-slate-700/50 overflow-hidden`}>
-          <div className="p-6">
+      <div className="flex flex-col lg:flex-row min-h-[calc(100vh-3.5rem)] sm:min-h-[calc(100vh-4rem)]">
+        {/* Sidebar - Responsivo */}
+        <div className={`
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} 
+          ${sidebarOpen ? 'w-full lg:w-80' : 'w-0 lg:w-0'} 
+          fixed lg:relative inset-y-0 left-0 z-40
+          transition-all duration-300 
+          bg-slate-800/95 lg:bg-slate-800/50 backdrop-blur-xl 
+          border-r border-slate-700/50 
+          overflow-y-auto overflow-x-hidden
+          pt-20 lg:pt-0
+        `}>
+          <div className="p-4 lg:p-6">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-slate-600 rounded-lg flex items-center justify-center">
                 <Building2 className="h-4 w-4 text-white" />
               </div>
-              <h2 className="text-lg font-semibold text-white">Empresas</h2>
+              <h2 className="text-base lg:text-lg font-semibold text-white">Empresas</h2>
             </div>
             
             <div className="space-y-3">
@@ -278,51 +287,54 @@ function DashboardContent() {
           </div>
         </div>
 
-        {/* Main Content */}
-        <main className="flex-1 p-6">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-9 bg-slate-800/50 border-slate-700/50">
-              <TabsTrigger value="dashboard" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
-                <BarChart3 className="h-4 w-4 mr-2" />
-                Dashboard
-              </TabsTrigger>
-              <TabsTrigger value="companies" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
-                <Building2 className="h-4 w-4 mr-2" />
-                Empresas
-              </TabsTrigger>
-              <TabsTrigger value="tech-stack" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
-                <Layers className="h-4 w-4 mr-2" />
-                Tech Stack
-              </TabsTrigger>
-              <TabsTrigger value="decision-makers" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
-                <Users className="h-4 w-4 mr-2" />
-                Decisores
-              </TabsTrigger>
-              <TabsTrigger value="financial" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
-                <DollarSign className="h-4 w-4 mr-2" />
-                Financeiro
-              </TabsTrigger>
-              <TabsTrigger value="maturity" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
-                <Gauge className="h-4 w-4 mr-2" />
-                Maturidade
-              </TabsTrigger>
-              <TabsTrigger value="benchmark" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
-                <TrendingUp className="h-4 w-4 mr-2" />
-                Benchmark
-              </TabsTrigger>
-              <TabsTrigger value="fit-totvs" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
-                <Target className="h-4 w-4 mr-2" />
-                Fit TOTVS
-              </TabsTrigger>
-              <TabsTrigger value="canvas" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
-                <Network className="h-4 w-4 mr-2" />
-                Canvas
-              </TabsTrigger>
-            </TabsList>
+        {/* Main Content - Responsivo */}
+        <main className="flex-1 p-3 sm:p-4 lg:p-6 overflow-x-hidden">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 lg:space-y-6">
+            {/* TabsList - Scrollable em mobile */}
+            <div className="overflow-x-auto -mx-3 sm:-mx-4 lg:-mx-6 px-3 sm:px-4 lg:px-6 pb-2">
+              <TabsList className="inline-flex w-max lg:grid lg:w-full lg:grid-cols-9 bg-slate-800/50 border-slate-700/50 gap-1 p-1">
+                <TabsTrigger value="dashboard" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white whitespace-nowrap">
+                  <BarChart3 className="h-4 w-4 mr-1 lg:mr-2" />
+                  <span className="hidden sm:inline">Dashboard</span>
+                </TabsTrigger>
+                <TabsTrigger value="companies" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white whitespace-nowrap">
+                  <Building2 className="h-4 w-4 mr-1 lg:mr-2" />
+                  <span className="hidden sm:inline">Empresas</span>
+                </TabsTrigger>
+                <TabsTrigger value="tech-stack" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white whitespace-nowrap">
+                  <Layers className="h-4 w-4 mr-1 lg:mr-2" />
+                  <span className="hidden sm:inline">Tech</span>
+                </TabsTrigger>
+                <TabsTrigger value="decision-makers" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white whitespace-nowrap">
+                  <Users className="h-4 w-4 mr-1 lg:mr-2" />
+                  <span className="hidden sm:inline">Decisores</span>
+                </TabsTrigger>
+                <TabsTrigger value="financial" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white whitespace-nowrap">
+                  <DollarSign className="h-4 w-4 mr-1 lg:mr-2" />
+                  <span className="hidden sm:inline">Finance</span>
+                </TabsTrigger>
+                <TabsTrigger value="maturity" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white whitespace-nowrap">
+                  <Gauge className="h-4 w-4 mr-1 lg:mr-2" />
+                  <span className="hidden sm:inline">Maturidade</span>
+                </TabsTrigger>
+                <TabsTrigger value="benchmark" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white whitespace-nowrap">
+                  <TrendingUp className="h-4 w-4 mr-1 lg:mr-2" />
+                  <span className="hidden sm:inline">Benchmark</span>
+                </TabsTrigger>
+                <TabsTrigger value="fit-totvs" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white whitespace-nowrap">
+                  <Target className="h-4 w-4 mr-1 lg:mr-2" />
+                  <span className="hidden sm:inline">Fit</span>
+                </TabsTrigger>
+                <TabsTrigger value="canvas" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white whitespace-nowrap">
+                  <Network className="h-4 w-4 mr-1 lg:mr-2" />
+                  <span className="hidden sm:inline">Canvas</span>
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
             {/* Dashboard Tab */}
-            <TabsContent value="dashboard" className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <TabsContent value="dashboard" className="space-y-4 lg:space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
                 <Card className="bg-slate-800/80 backdrop-blur-xl border-slate-700/50">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium text-slate-300">Empresas Analisadas</CardTitle>
@@ -380,7 +392,7 @@ function DashboardContent() {
                 </Card>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
                 <Card className="bg-slate-800/80 backdrop-blur-xl border-slate-700/50">
                   <CardHeader>
                     <CardTitle className="text-white">Empresas por Porte</CardTitle>
@@ -448,20 +460,20 @@ function DashboardContent() {
             </TabsContent>
 
             {/* Other Tabs */}
-            <TabsContent value="companies" className="space-y-6">
+            <TabsContent value="companies" className="space-y-4 lg:space-y-6">
               {/* Módulo de Busca */}
               <CompanySearchModule />
               
               {/* Lista de Empresas */}
               <Card className="bg-slate-800/80 backdrop-blur-xl border-slate-700/50">
                 <CardHeader>
-                  <CardTitle className="text-white">Empresas Cadastradas ({companies.length})</CardTitle>
-                  <CardDescription className="text-slate-400">
+                  <CardTitle className="text-white text-base sm:text-lg">Empresas Cadastradas ({companies.length})</CardTitle>
+                  <CardDescription className="text-slate-400 text-sm">
                     Clique em "Analisar" para executar análise completa com Motor de Inteligência
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
                     {companies.map((company) => (
                       <CompanyCard
                         key={company.id}
@@ -583,22 +595,22 @@ function DashboardContent() {
         </main>
       </div>
 
-      {/* Modal de Preview da Empresa */}
+      {/* Modal de Preview da Empresa - Responsivo */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-800 border-slate-700">
+        <DialogContent className="max-w-[95vw] sm:max-w-3xl lg:max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-800 border-slate-700">
           <DialogHeader>
-            <DialogTitle className="text-white text-2xl">
+            <DialogTitle className="text-white text-lg sm:text-xl lg:text-2xl">
               {previewCompany?.fantasia || previewCompany?.razao}
             </DialogTitle>
-            <DialogDescription className="text-slate-400">
+            <DialogDescription className="text-slate-400 text-xs sm:text-sm">
               Dados REAIS da Receita Federal - CNPJ: {previewCompany?.cnpj}
             </DialogDescription>
           </DialogHeader>
           
           {previewCompany && (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {/* Dados Básicos */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                 <div>
                   <h3 className="text-xs font-medium text-slate-400 mb-1">Situação</h3>
                   <Badge className={getStatusColor(previewCompany.preview?.situacao || previewCompany.status)}>
@@ -625,9 +637,9 @@ function DashboardContent() {
               </div>
 
               {/* Informações Cadastrais */}
-              <div className="bg-slate-700/30 border border-slate-600/50 rounded-lg p-4">
-                <h3 className="text-sm font-semibold text-white mb-3">Informações Cadastrais</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+              <div className="bg-slate-700/30 border border-slate-600/50 rounded-lg p-3 sm:p-4">
+                <h3 className="text-xs sm:text-sm font-semibold text-white mb-3">Informações Cadastrais</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-xs sm:text-sm">
                   <TooltipProvider>
                     <div>
                       <Tooltip>
@@ -953,9 +965,9 @@ function DashboardContent() {
               )}
 
               {/* Botões de Exportação */}
-              <div className="bg-slate-700/30 border border-slate-600/50 rounded-lg p-4">
-                <h3 className="text-sm font-semibold text-white mb-3">Exportar Relatório</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              <div className="bg-slate-700/30 border border-slate-600/50 rounded-lg p-3 sm:p-4">
+                <h3 className="text-xs sm:text-sm font-semibold text-white mb-3">Exportar Relatório</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <Button
                     size="sm"
                     variant="outline"
@@ -996,7 +1008,7 @@ function DashboardContent() {
               </div>
 
               {/* Ações */}
-              <div className="flex gap-3 pt-4 border-t border-slate-700">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-4 border-t border-slate-700">
                 <Button
                   variant="outline"
                   className="flex-1 border-slate-600 text-slate-300 hover:bg-slate-700"
@@ -1015,11 +1027,11 @@ function DashboardContent() {
                   disabled={isLoading}
                 >
                   {isLoading ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2 animate-spin" />
                   ) : (
-                    <Play className="h-4 w-4 mr-2" />
+                    <Play className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
                   )}
-                  {isLoading ? "Analisando..." : "Análise Completa"}
+                  <span className="text-sm sm:text-base">{isLoading ? "Analisando..." : "Análise Completa"}</span>
                 </Button>
               </div>
             </div>
