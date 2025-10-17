@@ -41,9 +41,11 @@ try {
   console.log('\n🗄️  Passo 2/3: Sincronizando banco de dados...');
   if (hasDirectUrl) {
     console.log('   Usando: prisma migrate deploy (com histórico de migrações)');
+    console.log('   Conexão: DIRECT_URL (porta 5432 - direta)');
     execSync('npx prisma migrate deploy', { stdio: 'inherit' });
   } else {
     console.log('   Usando: prisma db push (sincronização direta)');
+    console.log('   Conexão: DATABASE_URL (porta 6543 - pooler)');
     execSync('npx prisma db push --accept-data-loss --skip-generate', { stdio: 'inherit' });
   }
   console.log('✅ Banco de dados sincronizado');
