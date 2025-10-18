@@ -77,6 +77,7 @@ export async function POST(req: Request) {
       .from('Company')
       .upsert({
         id: crypto.randomUUID(), // Gerar ID explícito
+        projectId: 'default-project', // ID padrão para projeto
         cnpj: resolvedCnpj,
         name: receitaData.nome || 'Empresa sem razão social',
         tradeName: receitaData.fantasia || null,
