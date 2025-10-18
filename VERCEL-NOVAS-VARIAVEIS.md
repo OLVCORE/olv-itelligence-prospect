@@ -1,6 +1,6 @@
 # 🔐 NOVAS VARIÁVEIS PARA O VERCEL - SENHA ATUALIZADA
 
-## ✅ SENHA NOVA: `Bliss2711OLV` (sem caracteres especiais)
+## ✅ SENHA NOVA: `Hp3wvkaevss9oxhk` (gerada pelo Supabase)
 
 ---
 
@@ -8,12 +8,12 @@
 
 ### **1. DATABASE_URL (ATUALIZAR)**
 ```
-postgresql://postgres.qtcwetabhhkhvomcrqgm:Bliss2711OLV@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1
+postgresql://postgres.qtcwetabhhkhvomcrqgm:Hp3wvkaevss9oxhk@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1
 ```
 
 ### **2. DIRECT_URL (ATUALIZAR)**
 ```
-postgresql://postgres:Bliss2711OLV@db.qtcwetabhhkhvomcrqgm.supabase.co:5432/postgres?sslmode=require
+postgresql://postgres:Hp3wvkaevss9oxhk@db.qtcwetabhhkhvomcrqgm.supabase.co:5432/postgres?sslmode=require
 ```
 
 ### **3. NEXT_PUBLIC_SUPABASE_URL (MANTER)**
@@ -74,13 +74,13 @@ SUA_CHAVE_RECEITAWS_AQUI
 1. Vercel → Settings → Environment Variables
 2. Localize `DATABASE_URL`
 3. Clique em **⋯** → **Edit**
-4. Cole: `postgresql://postgres.qtcwetabhhkhvomcrqgm:Bliss2711OLV@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1`
+4. Cole: `postgresql://postgres.qtcwetabhhkhvomcrqgm:Hp3wvkaevss9oxhk@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1`
 5. Save
 
 ### **PASSO 2: Atualizar DIRECT_URL**
 1. Localize `DIRECT_URL`
 2. Clique em **⋯** → **Edit**
-3. Cole: `postgresql://postgres:Bliss2711OLV@db.qtcwetabhhkhvomcrqgm.supabase.co:5432/postgres?sslmode=require`
+3. Cole: `postgresql://postgres:Hp3wvkaevss9oxhk@db.qtcwetabhhkhvomcrqgm.supabase.co:5432/postgres?sslmode=require`
 4. Save
 
 ### **PASSO 3: Redeploy**
@@ -124,14 +124,14 @@ postgresql://postgres.qtcwetabhhkhvomcrqgm:%23Bliss2711%40@aws-0-sa-east-1.poole
 
 ### ✅ AGORA (SENHA CORRETA):
 ```
-postgresql://postgres.qtcwetabhhkhvomcrqgm:Bliss2711OLV@aws-0-sa-east-1.pooler.supabase.com:6543/postgres
+postgresql://postgres.qtcwetabhhkhvomcrqgm:Hp3wvkaevss9oxhk@aws-0-sa-east-1.pooler.supabase.com:6543/postgres
 ```
 
 ---
 
 ## 🎯 RESUMO:
 
-1. ✅ **Senha alterada** no Supabase: `Bliss2711OLV`
+1. ✅ **Senha alterada** no Supabase: `Hp3wvkaevss9oxhk`
 2. ✅ **Arquivos locais** atualizados
 3. ✅ **URLs corretas** prontas para o Vercel
 4. ⏳ **Aguardando** você atualizar no Vercel
