@@ -101,6 +101,7 @@ export default function LoginPage() {
                       onChange={(e) => setPassword(e.target.value)}
                       className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 pr-10"
                       placeholder="••••••••"
+                      autoComplete="current-password"
                       required
                     />
                     <Button

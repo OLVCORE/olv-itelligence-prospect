@@ -15,7 +15,7 @@ export function getSupabaseBrowser() {
 
   browserClient = createClient(url, anon, {
     auth: { persistSession: true, autoRefreshToken: true },
-    global: { headers: { 'x-olv-client': 'web' } }
+    global: { headers: { 'x-olv-client': 'web' } },
   })
   return browserClient
 }
