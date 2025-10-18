@@ -45,7 +45,8 @@ try {
   if (error.message.includes('Tenant or user not found')) {
     console.error('\n🔴 ERRO DE AUTENTICAÇÃO:');
     console.error('   - Senha incorreta ou mal encodada');
-    console.error('   - Usuário deve ser postgres.qtcwetabhhkhvomcrqgm\n');
+    console.error('   - Usuário deve ser app_user');
+    console.error('   - Senha deve ter / encodado como %2F\n');
   }
   
   process.exit(1);
