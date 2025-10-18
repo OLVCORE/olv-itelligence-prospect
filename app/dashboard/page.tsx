@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
+import { getSupabaseBrowser } from "@/lib/supabase/client"
 import { EnvCheck } from "@/components/dev/EnvCheck"
 import { Header } from "@/components/layout/Header"
 import { useModuleContext } from "@/lib/contexts/ModuleContext"
