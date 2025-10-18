@@ -72,6 +72,16 @@ export async function POST(req: Request) {
     // 4. Gravação no Supabase
     console.log('[API] 💾 Gravando no Supabase...')
 
+    // Parse capital (string → number) com fallback 0
+    const capitalNum = Number(
+      (receitaData.capital_social || '0')
+        .toString()
+        .replace(/[^\d,.-]/g, '')
+        .replace('.', '')
+        .replace(',', '.')
+    )
+    const nowIso = new Date().toISOString()
+
     // Upsert Company
     const { data: company, error: companyError } = await supabaseAdmin
       .from('Company')
@@ -80,10 +90,13 @@ export async function POST(req: Request) {
         projectId: 'default-project', // ID padrão para projeto
         cnpj: resolvedCnpj,
         name: receitaData.nome || 'Empresa sem razão social',
-        tradeName: receitaData.fantasia || null,
-        status: receitaData.situacao || null,
+        tradeName: receitaData.fantasia ?? null,
+        status: receitaData.situacao ?? null,
         openingDate: receitaData.abertura ? new Date(receitaData.abertura.split('/').reverse().join('-')).toISOString() : null,
-        capital: receitaData.capital_social ? parseFloat(receitaData.capital_social.replace(/\D/g, '')) / 100 : null,
+        capital: Number.isFinite(capitalNum) ? capitalNum : 0,
+        // PATCH: garantir que o banco receba valores e não quebre com NOT NULL
+        createdAt: nowIso,
+        updatedAt: nowIso,
       }, {
         onConflict: 'cnpj'
       })

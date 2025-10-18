@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { supabase } from "@/lib/supabase/client"
+import { getSupabaseBrowser } from "@/lib/supabase/client"
 import { Header } from "@/components/layout/Header"
 import { useModuleContext } from "@/lib/contexts/ModuleContext"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -166,8 +166,10 @@ function DashboardContent() {
       setError(null)
       setLoading(true)
 
-      console.log('[Dashboard] 🔄 Carregando empresas do Supabase...')
+      const supabase = getSupabaseBrowser()
 
+      // TODO: Recolocar "analyses:Analysis(*)" após padronizar DDL no banco.
+      // Alternativa: criar view v_company_with_last_analysis e consumir direto.
       const { data, error: supabaseError } = await supabase
         .from('Company')
         .select(`
@@ -180,14 +182,7 @@ function DashboardContent() {
           capital,
           userId,
           createdAt,
-          updatedAt,
-          analyses:Analysis(
-            id,
-            score,
-            insights,
-            redFlags,
-            createdAt
-          )
+          updatedAt
         `)
         .order('createdAt', { ascending: false })
         .limit(50)

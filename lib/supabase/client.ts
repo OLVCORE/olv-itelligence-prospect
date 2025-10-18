@@ -1,33 +1,31 @@
-import { createClient } from '@supabase/supabase-js'
+'use client'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
-if (!supabaseUrl) {
-  throw new Error('Missing env.NEXT_PUBLIC_SUPABASE_URL')
+let browserClient: SupabaseClient | null = null
+
+export function getSupabaseBrowser() {
+  if (browserClient) return browserClient
+
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!url) throw new Error('NEXT_PUBLIC_SUPABASE_URL is required')
+  if (!anon) throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY is required')
+
+  browserClient = createClient(url, anon, {
+    auth: { persistSession: true, autoRefreshToken: true },
+    global: { headers: { 'x-olv-client': 'web' } }
+  })
+  return browserClient
 }
 
-if (!supabaseAnonKey) {
-  throw new Error('Missing env.NEXT_PUBLIC_SUPABASE_ANON_KEY')
-}
-
-// Client para uso no browser (public)
-export const supabase = createClient(
-  supabaseUrl,
-  supabaseAnonKey,
-  {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-    },
-  }
-)
+// Client para uso no browser (public) - DEPRECATED, use getSupabaseBrowser()
+export const supabase = getSupabaseBrowser()
 
 // Client para uso server-side (admin)
 export const supabaseAdmin = createClient(
-  supabaseUrl,
-  supabaseServiceKey || supabaseAnonKey, // Fallback para anon key se service key não existir
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
   {
     auth: {
       persistSession: false,
@@ -35,4 +33,3 @@ export const supabaseAdmin = createClient(
     },
   }
 )
-
