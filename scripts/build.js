@@ -18,10 +18,30 @@ try {
   // Passo 2: Sincronizar schema
   if (hasDatabase) {
     console.log('🗄️  Passo 2/3: Sincronizando schema com banco...');
-    console.log('   Usando: DATABASE_URL (pooler porta 6543)\n');
     
-    execSync('npx prisma db push --accept-data-loss --skip-generate', { stdio: 'inherit' });
-    console.log('✅ Schema sincronizado com sucesso\n');
+    // Tentar usar DIRECT_URL primeiro (porta 5432 - mais confiável no Vercel)
+    const directUrl = process.env.DIRECT_URL;
+    
+    if (directUrl) {
+      console.log('   🔄 Usando: DIRECT_URL (porta 5432 - conexão direta)');
+      console.log('   ⚠️  Pooler (porta 6543) apresenta problemas no Vercel\n');
+      
+      // Temporariamente usar DIRECT_URL para db push
+      const originalUrl = process.env.DATABASE_URL;
+      process.env.DATABASE_URL = directUrl;
+      
+      try {
+        execSync('npx prisma db push --accept-data-loss --skip-generate', { stdio: 'inherit' });
+        console.log('✅ Schema sincronizado com sucesso via conexão direta\n');
+      } finally {
+        // Restaurar DATABASE_URL original
+        process.env.DATABASE_URL = originalUrl;
+      }
+    } else {
+      console.log('   Usando: DATABASE_URL (pooler porta 6543)\n');
+      execSync('npx prisma db push --accept-data-loss --skip-generate', { stdio: 'inherit' });
+      console.log('✅ Schema sincronizado com sucesso\n');
+    }
   } else {
     console.log('⏭️  Passo 2/3: Pulando sincronização (DATABASE_URL não configurada)\n');
   }
