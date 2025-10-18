@@ -7,9 +7,8 @@ let browserClient: SupabaseClient | null = null
 export function getSupabaseBrowser() {
   if (browserClient) return browserClient
 
-  // Valores hardcoded temporários até configurar no Vercel
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://qtcwetabhhkhvomcrqgm.supabase.co'
-  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_LuIL5CnnUcWqoce2qHtwDw_FHiFQ3fC'
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   
   if (!url) throw new Error('NEXT_PUBLIC_SUPABASE_URL is required')
   if (!anon) throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY is required')
@@ -26,8 +25,8 @@ export const supabase = getSupabaseBrowser()
 
 // Client para uso server-side (admin)
 export const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://qtcwetabhhkhvomcrqgm.supabase.co',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || 'sb_secret_WlgrhchXiP4jYqMoETm9hw_RGxNJKH0',
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
   {
     auth: {
       persistSession: false,
