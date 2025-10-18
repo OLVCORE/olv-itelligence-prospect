@@ -32,6 +32,7 @@ import { PlaybooksModule } from "@/components/modules/PlaybooksModule"
 import { AlertsModule } from "@/components/modules/AlertsModule"
 import { CompanySearchModule } from "@/components/modules/CompanySearchModule"
 import { CompanyCard } from "@/components/CompanyCard"
+import { SearchBar } from "@/components/SearchBar"
 import {
   mockTechStack,
   mockDecisionMakers,
@@ -394,6 +395,9 @@ function DashboardContent() {
                     </Button>
                   </div>
                 </div>
+
+                {/* Barra de busca inteligente */}
+                <SearchBar onSuccess={loadCompanies} />
 
                 {/* Conteúdo condicional baseado no estado */}
                 {loading ? (
