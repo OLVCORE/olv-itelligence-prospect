@@ -59,23 +59,29 @@ model Project {
 }
 
 model Company {
-  id         String      @id @default(cuid())
-  projectId  String
-  name       String
-  cnpj       String?     @unique
-  domain     String?
-  cnae       String?
-  financial  String?     // receita, porte, risco, faturamento (JSON as string)
-  industry   String?
-  size       String?     // pequeno, médio, grande
-  location   String?     // cidade, estado, país (JSON as string)
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-  project    Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  stacks     TechStack[]
-  contacts   Contact[]
-  benchmarks Benchmark[]
-  reports    Report[]
+  id           String      @id @default(cuid())
+  projectId     String?
+  name         String
+  tradeName    String?
+  cnpj         String?     @unique
+  domain       String?
+  cnae         String?
+  status       String?
+  openingDate  DateTime?
+  capital      Float?
+  financial    String?     // receita, porte, risco, faturamento (JSON as string)
+  industry     String?
+  size         String?     // pequeno, médio, grande
+  location     String?     // cidade, estado, país (JSON as string)
+  userId       String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  project      Project?    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  stacks       TechStack[]
+  contacts     Contact[]
+  benchmarks   Benchmark[]
+  reports      Report[]
+  analyses     Analysis[]
 }
 
 model TechStack {
@@ -175,6 +181,17 @@ model Session {
   expires   DateTime
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Analysis {
+  id        String   @id @default(cuid())
+  companyId String
+  score     Int      // 0-100
+  insights  String   // JSON as string
+  redFlags  String?  // JSON as string
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
 }
 
 model AuditLog {
