@@ -76,6 +76,7 @@ export async function POST(req: Request) {
     const { data: company, error: companyError } = await supabaseAdmin
       .from('Company')
       .upsert({
+        id: crypto.randomUUID(), // Gerar ID explícito
         cnpj: resolvedCnpj,
         name: receitaData.nome || 'Empresa sem razão social',
         tradeName: receitaData.fantasia || null,
