@@ -192,17 +192,28 @@ export async function POST(req: Request) {
     console.log(`[API /preview] ⏱️ Budget restante após FASE 3: ${budgetAfterPhase3}ms`)
 
     // ==========================================
-    // FASE 4: Deep Scan (ADIADO para background)
+    // FASE 4: Deep Scan (ADIADO para background se budget insuficiente)
     // ==========================================
-    // TODO: Se budget < 2s, retornar preview PARCIAL com jobId
-    // e disparar deep-scan assíncrono para redes sociais, marketplaces, jusbrasil
-
     const needsDeepScan = budgetAfterPhase3 < 2000
     const jobId = needsDeepScan ? `job-${Date.now()}-${Math.random().toString(36).substring(7)}` : null
 
     if (needsDeepScan) {
       console.log(`[API /preview] ⏭️ FASE 4 adiada - JobId: ${jobId}`)
-      // TODO: disparar /api/preview/deep-scan com jobId (implementar no Micro-sprint 2)
+      
+      // DISPARAR deep-scan assíncrono (sem await)
+      fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/preview/deep-scan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cnpj: resolvedCnpj,
+          jobId,
+          companyName: receitaData.nome,
+          fantasia: receitaData.fantasia,
+          website: websiteData?.url,
+        }),
+      }).catch((err) => {
+        console.error('[API /preview] ⚠️ Erro ao disparar deep-scan:', err)
+      })
     }
 
     // ==========================================
