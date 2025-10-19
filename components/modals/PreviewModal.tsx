@@ -749,18 +749,54 @@ export function PreviewModal({
                   {/* Score Principal */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <SmartTooltip 
-                        score={mergedData.propensityScore.overall} 
-                        type="propensao"
-                        customLabel="Score de Propensão"
-                        customDescription="Média ponderada de 6 critérios: Receita/Porte (25%), Presença Digital (20%), Notícias (15%), Stack/TOTVS (20%), Regulatórios (10%), Setor (10%)"
-                      >
-                        <GaugePointer 
-                          value={mergedData.propensityScore.overall} 
-                          label="Score Geral"
-                          size="lg"
-                        />
-                      </SmartTooltip>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="cursor-help">
+                              <GaugePointer 
+                                value={mergedData.propensityScore.overall} 
+                                label="Score Geral"
+                                size="lg"
+                              />
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-md p-4">
+                            <p className="font-semibold mb-3">📊 Metodologia de Cálculo do Score</p>
+                            <div className="space-y-2 text-xs">
+                              <p className="font-semibold mb-2">6 Critérios Ponderados:</p>
+                              <div className="space-y-1.5">
+                                <div className="flex justify-between border-b pb-1">
+                                  <span>1. Receita/Porte</span>
+                                  <span className="font-bold">25%</span>
+                                </div>
+                                <div className="flex justify-between border-b pb-1">
+                                  <span>2. Presença Digital</span>
+                                  <span className="font-bold">20%</span>
+                                </div>
+                                <div className="flex justify-between border-b pb-1">
+                                  <span>3. Stack/TOTVS</span>
+                                  <span className="font-bold">20%</span>
+                                </div>
+                                <div className="flex justify-between border-b pb-1">
+                                  <span>4. Notícias Recentes</span>
+                                  <span className="font-bold">15%</span>
+                                </div>
+                                <div className="flex justify-between border-b pb-1">
+                                  <span>5. Regulatórios</span>
+                                  <span className="font-bold">10%</span>
+                                </div>
+                                <div className="flex justify-between border-b pb-1">
+                                  <span>6. Setor/Benchmark</span>
+                                  <span className="font-bold">10%</span>
+                                </div>
+                              </div>
+                              <p className="mt-3 pt-2 border-t text-muted-foreground">
+                                Score Final = Σ (peso × valor de cada critério)
+                              </p>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
                     <div className="flex flex-col justify-center">
                       <div className="text-center mb-4">
@@ -1105,6 +1141,79 @@ export function PreviewModal({
                       </ul>
                     </div>
                   )}
+                </div>
+              </section>
+            )}
+
+            {/* Metodologia de Cálculo - Rodapé do Relatório (aparece no print) */}
+            {mergedData.propensityScore && (
+              <section className="break-inside-avoid mt-8 pt-6 border-t-2 hidden print:block">
+                <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
+                  <Target className="h-4 w-4" />
+                  Metodologia de Cálculo do Score de Propensão
+                </h3>
+                <div className="text-xs space-y-3 bg-slate-50 rounded-lg p-4 border">
+                  <div>
+                    <p className="font-semibold mb-2">Critérios Ponderados:</p>
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left py-1">Critério</th>
+                          <th className="text-center py-1">Peso</th>
+                          <th className="text-center py-1">Valor</th>
+                          <th className="text-right py-1">Contribuição</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="border-b">
+                          <td className="py-1">1. Receita/Porte (capital social, porte)</td>
+                          <td className="text-center">{formatPercent(mergedData.propensityScore.breakdown.receita_porte.peso * 100, true)}</td>
+                          <td className="text-center">{mergedData.propensityScore.breakdown.receita_porte.valor}/100</td>
+                          <td className="text-right font-semibold">{mergedData.propensityScore.breakdown.receita_porte.contribuicao.toFixed(1)}</td>
+                        </tr>
+                        <tr className="border-b">
+                          <td className="py-1">2. Presença Digital (website, redes, marketplaces)</td>
+                          <td className="text-center">{formatPercent(mergedData.propensityScore.breakdown.presenca_digital.peso * 100, true)}</td>
+                          <td className="text-center">{mergedData.propensityScore.breakdown.presenca_digital.valor}/100</td>
+                          <td className="text-right font-semibold">{mergedData.propensityScore.breakdown.presenca_digital.contribuicao.toFixed(1)}</td>
+                        </tr>
+                        <tr className="border-b">
+                          <td className="py-1">3. Stack/TOTVS (tecnografia, produtos detectados)</td>
+                          <td className="text-center">{formatPercent(mergedData.propensityScore.breakdown.stack_totvs.peso * 100, true)}</td>
+                          <td className="text-center">{mergedData.propensityScore.breakdown.stack_totvs.valor}/100</td>
+                          <td className="text-right font-semibold">{mergedData.propensityScore.breakdown.stack_totvs.contribuicao.toFixed(1)}</td>
+                        </tr>
+                        <tr className="border-b">
+                          <td className="py-1">4. Notícias Recentes (quantidade, recência, sentimento)</td>
+                          <td className="text-center">{formatPercent(mergedData.propensityScore.breakdown.noticias.peso * 100, true)}</td>
+                          <td className="text-center">{mergedData.propensityScore.breakdown.noticias.valor}/100</td>
+                          <td className="text-right font-semibold">{mergedData.propensityScore.breakdown.noticias.contribuicao.toFixed(1)}</td>
+                        </tr>
+                        <tr className="border-b">
+                          <td className="py-1">5. Regulatórios (situação cadastral, processos)</td>
+                          <td className="text-center">{formatPercent(mergedData.propensityScore.breakdown.regulatorios.peso * 100, true)}</td>
+                          <td className="text-center">{mergedData.propensityScore.breakdown.regulatorios.valor}/100</td>
+                          <td className="text-right font-semibold">{mergedData.propensityScore.breakdown.regulatorios.contribuicao.toFixed(1)}</td>
+                        </tr>
+                        <tr className="border-b font-semibold">
+                          <td className="py-1">6. Setor/Benchmark (comparação setorial)</td>
+                          <td className="text-center">{formatPercent(mergedData.propensityScore.breakdown.setor_benchmark.peso * 100, true)}</td>
+                          <td className="text-center">{mergedData.propensityScore.breakdown.setor_benchmark.valor}/100</td>
+                          <td className="text-right">{mergedData.propensityScore.breakdown.setor_benchmark.contribuicao.toFixed(1)}</td>
+                        </tr>
+                        <tr className="bg-purple-100 dark:bg-purple-900">
+                          <td colSpan={3} className="py-2 font-bold">SCORE FINAL</td>
+                          <td className="text-right text-lg font-bold text-purple-600">{mergedData.propensityScore.overall}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <p className="text-xs text-muted-foreground italic">
+                    💡 Score calculado automaticamente com base em dados coletados de ReceitaWS, Google CSE, validação de presença digital e scan de tecnografia.
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    📅 Data de cálculo: {new Date().toLocaleString('pt-BR')}
+                  </p>
                 </div>
               </section>
             )}
