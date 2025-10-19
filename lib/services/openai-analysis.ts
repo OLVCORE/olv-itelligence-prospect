@@ -15,6 +15,8 @@ interface AnalysisInput {
     capital_social?: string
     porte?: string
     atividade_principal?: Array<{ text: string }>
+    atividades_secundarias?: Array<{ text: string }>
+    qsa?: Array<{ nome: string; qual: string }>
     simples?: { optante?: boolean }
   }
   website: string | null
@@ -23,6 +25,8 @@ interface AnalysisInput {
     snippet: string
     date?: string | null
   }>
+  digitalPresence?: any // Presença digital completa
+  vendorMatch?: any // Dados de vendor match para enriquecer análise
 }
 
 interface AnalysisOutput {
