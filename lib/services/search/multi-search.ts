@@ -1,15 +1,19 @@
 /**
- * Sistema Multi-API de Busca com Fallback Automático
+ * Sistema Multi-API de Busca com Busca SIMULTÂNEA
  * 
- * Prioridade:
- * 1. Google CSE (100 queries/dia grátis) - Já configurado
- * 2. Bing Search API (10.000 queries/mês grátis) - Fallback
- * 3. Serper.dev (2.500 queries/mês grátis) - Fallback secundário
+ * MODO: BUSCA PARALELA em 3 APIs
+ * 1. Google CSE (100 queries/dia grátis)
+ * 2. Bing Search API (10.000 queries/mês grátis)
+ * 3. Serper.dev (2.500 queries/mês grátis)
+ * 
+ * Combina TODOS os resultados das 3 APIs para máxima cobertura!
  * 
  * Benefícios:
- * - Maximiza quotas gratuitas (13.100 queries/mês total)
- * - Resiliente: se uma API cair, usa outra
- * - Sem alteração no código existente
+ * - Maximiza resultados (cada API tem índices diferentes)
+ * - Encontra mais redes sociais/marketplaces
+ * - Mais notícias e fontes
+ * - Validação cruzada de dados
+ * - Deduplicação inteligente por domínio
  */
 
 interface SearchResult {
@@ -17,6 +21,7 @@ interface SearchResult {
   title: string
   snippet: string
   date?: string
+  source?: 'google' | 'bing' | 'serper' // Rastrear de qual API veio
 }
 
 interface MultiSearchOptions {
@@ -27,8 +32,15 @@ interface MultiSearchOptions {
 
 interface MultiSearchResponse {
   results: SearchResult[]
-  provider: 'google' | 'bing' | 'serper' | 'cache'
+  provider: string // APIs usadas (ex: "google+bing+serper")
   cached: boolean
+  stats?: {
+    google: number
+    bing: number
+    serper: number
+    total: number
+    deduplicated: number
+  }
 }
 
 /**
@@ -47,7 +59,7 @@ async function searchGoogle(
 
   const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cseId}&q=${encodeURIComponent(query)}&num=${maxResults}`
   
-  console.log('[MultiSearch] 🔵 Tentando Google CSE...')
+  console.log('[MultiSearch] 🔵 Buscando no Google CSE...')
   const response = await fetch(url, { 
     next: { revalidate: 3600 },
     signal: AbortSignal.timeout(10000) // 10s timeout
@@ -73,6 +85,7 @@ async function searchGoogle(
     date: item.pagemap?.metatags?.[0]?.['article:published_time'] || 
           item.pagemap?.metatags?.[0]?.['og:updated_time'] || 
           undefined,
+    source: 'google',
   }))
 }
 
@@ -97,7 +110,7 @@ async function searchBing(
 
   const url = `https://api.bing.microsoft.com/v7.0/search?q=${encodeURIComponent(query)}&count=${maxResults}`
   
-  console.log('[MultiSearch] 🟦 Tentando Bing Search API...')
+  console.log('[MultiSearch] 🟦 Buscando no Bing Search...')
   const response = await fetch(url, {
     headers: {
       'Ocp-Apim-Subscription-Key': apiKey,
@@ -124,6 +137,7 @@ async function searchBing(
     title: item.name,
     snippet: item.snippet,
     date: item.dateLastCrawled || undefined,
+    source: 'bing',
   }))
 }
 
@@ -148,7 +162,7 @@ async function searchSerper(
 
   const url = 'https://google.serper.dev/search'
   
-  console.log('[MultiSearch] 🟪 Tentando Serper.dev...')
+  console.log('[MultiSearch] 🟪 Buscando no Serper.dev...')
   const response = await fetch(url, {
     method: 'POST',
     headers: {
@@ -180,89 +194,132 @@ async function searchSerper(
     title: item.title,
     snippet: item.snippet,
     date: item.date || undefined,
+    source: 'serper',
   }))
 }
 
 /**
- * Busca Multi-API com Fallback Automático
+ * Busca SIMULTÂNEA em Múltiplas APIs + Deduplicação Inteligente
  * 
- * Tenta na ordem:
- * 1. Google (100/dia grátis)
- * 2. Bing (10.000/mês grátis) 
- * 3. Serper (2.500/mês grátis)
+ * Busca PARALELAMENTE em todas as APIs disponíveis:
+ * 1. Google CSE
+ * 2. Bing Search
+ * 3. Serper.dev
+ * 
+ * Combina TODOS os resultados e deduplica por domínio!
  */
 export async function multiSearch(
   options: MultiSearchOptions
 ): Promise<MultiSearchResponse> {
   const { query, maxResults = 10 } = options
   
-  console.log('[MultiSearch] 🔍 Iniciando busca multi-API:', query)
+  console.log('[MultiSearch] 🔍 Iniciando busca SIMULTÂNEA em 3 APIs:', query)
+  const startTime = Date.now()
 
-  // Tentar Google primeiro (melhor para empresas BR)
-  try {
-    const results = await searchGoogle(query, maxResults)
-    console.log('[MultiSearch] ✅ Google CSE: sucesso!', results.length, 'resultados')
-    return {
-      results,
-      provider: 'google',
-      cached: false,
-    }
-  } catch (error: any) {
-    console.warn('[MultiSearch] ⚠️ Google CSE falhou:', error.message)
-    
-    // Se não é quota, retornar erro
-    if (!error.message.includes('QUOTA') && !error.message.includes('429')) {
-      console.error('[MultiSearch] ❌ Erro fatal no Google:', error.message)
-      // Continuar para fallback mesmo assim
+  // Buscar em PARALELO nas 3 APIs
+  const [googleResults, bingResults, serperResults] = await Promise.allSettled([
+    searchGoogle(query, maxResults),
+    searchBing(query, maxResults),
+    searchSerper(query, maxResults),
+  ])
+
+  // Coletar resultados de cada API
+  const allResults: SearchResult[] = []
+  const providers: string[] = []
+  const stats = { google: 0, bing: 0, serper: 0, total: 0, deduplicated: 0 }
+
+  // Google
+  if (googleResults.status === 'fulfilled') {
+    const count = googleResults.value.length
+    stats.google = count
+    console.log('[MultiSearch] ✅ Google CSE:', count, 'resultados')
+    allResults.push(...googleResults.value)
+    providers.push('google')
+  } else {
+    console.warn('[MultiSearch] ⚠️ Google CSE falhou:', googleResults.reason.message)
+    if (googleResults.reason.message?.includes('QUOTA')) {
+      console.warn('[MultiSearch] 🚫 Google quota excedida (esperado após 100/dia)')
     }
   }
 
-  // Tentar Bing (fallback primário - 10k/mês grátis!)
-  try {
-    const results = await searchBing(query, maxResults)
-    console.log('[MultiSearch] ✅ Bing Search: sucesso!', results.length, 'resultados')
-    return {
-      results,
-      provider: 'bing',
-      cached: false,
-    }
-  } catch (error: any) {
-    console.warn('[MultiSearch] ⚠️ Bing Search falhou:', error.message)
-    
-    // Se Bing não está configurado, é esperado
-    if (error.message.includes('não configurado')) {
-      console.log('[MultiSearch] 💡 Bing não configurado. Configure para 10k queries grátis/mês!')
+  // Bing
+  if (bingResults.status === 'fulfilled') {
+    const count = bingResults.value.length
+    stats.bing = count
+    console.log('[MultiSearch] ✅ Bing Search:', count, 'resultados')
+    allResults.push(...bingResults.value)
+    providers.push('bing')
+  } else {
+    console.warn('[MultiSearch] ⚠️ Bing Search falhou:', bingResults.reason.message)
+    if (bingResults.reason.message?.includes('não configurado')) {
+      console.log('[MultiSearch] 💡 Configure Bing para 1k queries grátis/mês!')
     }
   }
 
-  // Tentar Serper (fallback secundário - 2.5k/mês grátis)
-  try {
-    const results = await searchSerper(query, maxResults)
-    console.log('[MultiSearch] ✅ Serper: sucesso!', results.length, 'resultados')
-    return {
-      results,
-      provider: 'serper',
-      cached: false,
-    }
-  } catch (error: any) {
-    console.warn('[MultiSearch] ⚠️ Serper falhou:', error.message)
-    
-    if (error.message.includes('não configurado')) {
-      console.log('[MultiSearch] 💡 Serper não configurado. Configure para 2.5k queries grátis/mês!')
+  // Serper
+  if (serperResults.status === 'fulfilled') {
+    const count = serperResults.value.length
+    stats.serper = count
+    console.log('[MultiSearch] ✅ Serper.dev:', count, 'resultados')
+    allResults.push(...serperResults.value)
+    providers.push('serper')
+  } else {
+    console.warn('[MultiSearch] ⚠️ Serper.dev falhou:', serperResults.reason.message)
+    if (serperResults.reason.message?.includes('não configurado')) {
+      console.log('[MultiSearch] 💡 Configure Serper para 2.5k queries grátis/mês!')
     }
   }
 
-  // Todas as APIs falharam
-  console.error('[MultiSearch] ❌ TODAS AS APIs FALHARAM!')
-  console.error('[MultiSearch] 💡 Configurar APIs alternativas resolve isso:')
-  console.error('[MultiSearch] - Bing: https://portal.azure.com (10k grátis/mês)')
-  console.error('[MultiSearch] - Serper: https://serper.dev (2.5k grátis/mês)')
+  stats.total = allResults.length
 
-  // Retornar vazio ao invés de erro (dados parciais)
+  // DEDUPLICATE por domínio (manter primeiro de cada domínio)
+  const seen = new Set<string>()
+  const deduplicated: SearchResult[] = []
+  
+  for (const result of allResults) {
+    try {
+      const domain = new URL(result.url).hostname.replace('www.', '')
+      if (!seen.has(domain)) {
+        seen.add(domain)
+        deduplicated.push(result)
+      } else {
+        console.log('[MultiSearch] 🔄 Deduplicado:', domain, `(já tinha de ${result.source})`)
+      }
+    } catch (e) {
+      // URL inválida, manter mesmo assim
+      deduplicated.push(result)
+    }
+  }
+
+  stats.deduplicated = deduplicated.length
+
+  // Limitar ao máximo solicitado
+  const finalResults = deduplicated.slice(0, maxResults * 2) // Dobro do limite para melhor cobertura
+
+  const elapsed = Date.now() - startTime
+
+  console.log('[MultiSearch] 🎯 RESULTADO FINAL:')
+  console.log(`[MultiSearch] ⏱️ Tempo: ${elapsed}ms`)
+  console.log(`[MultiSearch] 📊 Google: ${stats.google} | Bing: ${stats.bing} | Serper: ${stats.serper}`)
+  console.log(`[MultiSearch] - Total bruto: ${stats.total} resultados`)
+  console.log(`[MultiSearch] - Após dedup: ${stats.deduplicated} únicos`)
+  console.log(`[MultiSearch] - Retornando: ${finalResults.length}`)
+  console.log(`[MultiSearch] - APIs usadas: ${providers.join('+') || 'nenhuma'}`)
+
+  // Se nenhuma API funcionou
+  if (providers.length === 0) {
+    console.error('[MultiSearch] ❌ TODAS AS APIs FALHARAM!')
+    console.error('[MultiSearch] 💡 Solução:')
+    console.error('[MultiSearch] 1. Aguarde reset da quota Google (00:00 UTC)')
+    console.error('[MultiSearch] 2. Configure Bing: https://portal.azure.com')
+    console.error('[MultiSearch] 3. Configure Serper: https://serper.dev')
+  }
+
   return {
-    results: [],
-    provider: 'google', // Mantém google como provider original
+    results: finalResults,
+    provider: providers.join('+') || 'none',
     cached: false,
+    stats,
   }
 }
 
@@ -277,7 +334,10 @@ export async function searchCompanyWebsite(
     ? `"${companyName}" CNPJ ${cnpj} (site oficial OR sobre OR empresa)`
     : `"${companyName}" (site oficial OR sobre OR empresa OR contato)`
 
-  const response = await multiSearch({ query, maxResults: 3 })
+  const response = await multiSearch({ query, maxResults: 5 })
+
+  console.log('[MultiSearch] 🌐 Buscando website:', companyName)
+  console.log('[MultiSearch] 📊 Stats:', response.stats)
 
   // Filtrar apenas resultados relevantes
   for (const result of response.results) {
@@ -286,7 +346,7 @@ export async function searchCompanyWebsite(
     
     const relevantMatches = companyWords.filter(word => text.includes(word))
     if (relevantMatches.length >= Math.min(2, companyWords.length)) {
-      console.log('[MultiSearch] 🌐 Website encontrado:', result.url, `(via ${response.provider})`)
+      console.log('[MultiSearch] ✅ Website encontrado:', result.url, `(via ${result.source})`)
       return { url: result.url, title: result.title }
     }
   }
@@ -307,7 +367,10 @@ export async function searchCompanyNews(
     ? `"${companyName}" CNPJ ${cnpj} (anuncia OR lança OR investimento OR expansão OR contrato)`
     : `"${companyName}" (anuncia OR lança OR investimento OR expansão OR contrato OR novidade)`
 
-  const response = await multiSearch({ query, maxResults, dateRestrict: 'y1' })
+  const response = await multiSearch({ query, maxResults: maxResults * 2, dateRestrict: 'y1' })
+
+  console.log('[MultiSearch] 📰 Buscando notícias:', companyName)
+  console.log('[MultiSearch] 📊 Stats:', response.stats)
 
   // Filtrar notícias relevantes
   const companyWords = companyName.toLowerCase().split(' ').filter(w => w.length > 3)
@@ -316,7 +379,7 @@ export async function searchCompanyNews(
     'aggregation report', 'mapa em tempo real', 'como agir'
   ]
 
-  return response.results
+  const filtered = response.results
     .filter(result => {
       const text = `${result.title} ${result.snippet}`.toLowerCase()
       const relevantMatches = companyWords.filter(word => text.includes(word))
@@ -332,5 +395,8 @@ export async function searchCompanyNews(
       link: result.url,
       date: result.date,
     }))
-}
 
+  console.log('[MultiSearch] ✅ Notícias filtradas:', filtered.length, `de ${response.results.length} total`)
+
+  return filtered
+}
