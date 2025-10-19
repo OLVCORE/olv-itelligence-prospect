@@ -4,7 +4,7 @@
  * MÓDULO 9: Com validação ASSERTIVA por CNPJ/sócios/domínio
  */
 
-import { SEARCH_ASSERTIVE } from '@/lib/config/feature-flags'
+import { SEARCH_ASSERTIVE, FAST_MODE } from '@/lib/config/feature-flags'
 import { validateLink, validateJusbrasil as validateJusbr, validateMarketplaceB2B } from '@/lib/search/validators/link-validation'
 
 interface DigitalPresence {
@@ -272,38 +272,26 @@ async function findOfficialWebsite(
   const apiKey = process.env.GOOGLE_API_KEY!
   const cseId = process.env.GOOGLE_CSE_ID!
 
-  // ESTRATÉGIAS COMPLETAS DE BUSCA PROFUNDA (10 estratégias)
-  const searchStrategies = [
-    // Estratégia 1: Nome exato + CNPJ (MAIS EFICAZ)
-    `"${companyName}" CNPJ ${cnpj}`,
-    
-    // Estratégia 2: Fantasia + CNPJ (SEGUNDA OPÇÃO)
-    fantasia ? `"${fantasia}" CNPJ ${cnpj}` : null,
-    
-    // Estratégia 3: Nome + site oficial
-    `"${companyName}" site oficial`,
-    
-    // Estratégia 4: Fantasia + site oficial
-    fantasia ? `"${fantasia}" site oficial` : null,
-    
-    // Estratégia 5: Nome + .com.br
-    `"${companyName}" .com.br`,
-    
-    // Estratégia 6: Fantasia + .com.br
-    fantasia ? `"${fantasia}" .com.br` : null,
-    
-    // Estratégia 7: Nome + website
-    `"${companyName}" website`,
-    
-    // Estratégia 8: Fantasia + website
-    fantasia ? `"${fantasia}" website` : null,
-    
-    // Estratégia 9: Nome + homepage
-    `"${companyName}" homepage`,
-    
-    // Estratégia 10: Busca ampla (fallback)
-    `${companyName} ${cnpj}`,
-  ].filter(Boolean)
+  // MODO RÁPIDO: reduz estratégias para evitar timeout
+  const searchStrategies = FAST_MODE 
+    ? [
+        // Apenas 2 estratégias mais eficazes
+        fantasia ? `"${fantasia}" CNPJ ${cnpj}` : `"${companyName}" CNPJ ${cnpj}`,
+        fantasia ? `"${fantasia}" site oficial` : `"${companyName}" site oficial`,
+      ].filter(Boolean)
+    : [
+        // BUSCA PROFUNDA (10 estratégias - usar apenas quando FAST_MODE=false)
+        `"${companyName}" CNPJ ${cnpj}`,
+        fantasia ? `"${fantasia}" CNPJ ${cnpj}` : null,
+        `"${companyName}" site oficial`,
+        fantasia ? `"${fantasia}" site oficial` : null,
+        `"${companyName}" .com.br`,
+        fantasia ? `"${fantasia}" .com.br` : null,
+        `"${companyName}" website`,
+        fantasia ? `"${fantasia}" website` : null,
+        `"${companyName}" homepage`,
+        `${companyName} ${cnpj}`,
+      ].filter(Boolean)
 
   console.log(`[DigitalPresence] 🔍 Executando ${searchStrategies.length} estratégias de busca para website`)
 

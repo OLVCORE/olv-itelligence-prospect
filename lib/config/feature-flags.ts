@@ -22,6 +22,16 @@ export const OPPORTUNITIES_VENDOR = process.env.OPPORTUNITIES_VENDOR === 'true' 
 export const BILLING_ENABLED = process.env.BILLING_ENABLED === 'true' || false
 
 /**
+ * MODO RÁPIDO: reduz drasticamente o número de buscas para evitar timeout
+ * - Website: 2 estratégias (antes: 10)
+ * - Redes sociais: 1 estratégia por plataforma (antes: 6)
+ * - Marketplaces: 5 plataformas (antes: 20)
+ * - Jusbrasil: 1 estratégia (antes: 6)
+ * - Outros links: 2 estratégias (antes: 6)
+ */
+export const FAST_MODE = process.env.FAST_MODE === 'true' || true // ATIVADO por padrão para evitar timeout
+
+/**
  * Dev/Debug flags
  */
 export const DEBUG_LOGS = process.env.NODE_ENV === 'development'
