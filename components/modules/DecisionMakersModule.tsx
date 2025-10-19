@@ -41,10 +41,13 @@ interface DecisionMaker {
 }
 
 interface DecisionMakersModuleProps {
-  data: DecisionMaker[]
+  companyId?: string
+  companyName?: string
 }
 
-export function DecisionMakersModule({ data }: DecisionMakersModuleProps) {
+export function DecisionMakersModule({ companyId, companyName }: DecisionMakersModuleProps) {
+  // TODO: Buscar decisores reais (Apollo, ZoomInfo, Hunter) - Sprint 2
+  const data: DecisionMaker[] = [] // Vazio até enrichment estar pronto
   const getInfluenceColor = (level: string) => {
     switch (level) {
       case "Alto": return "bg-red-500/20 text-red-400 border-red-500/30"

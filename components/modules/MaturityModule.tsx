@@ -40,10 +40,24 @@ interface MaturityData {
 }
 
 interface MaturityModuleProps {
-  data: MaturityData
+  companyId?: string
+  companyName?: string
 }
 
-export function MaturityModule({ data }: MaturityModuleProps) {
+export function MaturityModule({ companyId, companyName }: MaturityModuleProps) {
+  // TODO: Calcular maturidade real baseado em análise da empresa - Sprint 2
+  const data: MaturityData = {
+    overall: 0,
+    dimensions: {
+      governance: 0,
+      processes: 0,
+      technology: 0,
+      people: 0,
+      data: 0,
+      culture: 0
+    },
+    recommendations: []
+  }
   const getScoreColor = (score: number) => {
     if (score >= 85) return "text-emerald-500"
     if (score >= 70) return "text-blue-500"
