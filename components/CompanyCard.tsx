@@ -10,6 +10,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { CompanyAnalysisModal } from "@/components/modals/CompanyAnalysisModal"
 import { 
   Building2, 
   MapPin, 
@@ -18,7 +19,8 @@ import {
   Play,
   Info,
   TrendingUp,
-  Users
+  Users,
+  BarChart3
 } from "lucide-react"
 
 interface CompanyCardProps {
@@ -38,6 +40,8 @@ export function CompanyCard({
   onAnalyze,
   onViewPreview 
 }: CompanyCardProps) {
+  const [showAnalysisModal, setShowAnalysisModal] = useState(false)
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Ativo": return "bg-green-500/20 text-green-400 border-green-500/30"
@@ -152,14 +156,30 @@ export function CompanyCard({
             </div>
 
             <div className="pt-2 border-t border-slate-700">
-              <p className="text-xs text-blue-400 flex items-center gap-1">
-                <Info className="h-3 w-3" />
-                Clique para ver relatório completo
-              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setShowAnalysisModal(true)
+                }}
+              >
+                <BarChart3 className="h-3 w-3 mr-2" />
+                Ver Análise Completa
+              </Button>
             </div>
           </div>
         </TooltipContent>
       </Tooltip>
+
+      {/* Modal de Análise */}
+      <CompanyAnalysisModal
+        isOpen={showAnalysisModal}
+        companyId={company.id}
+        companyName={company.fantasia || company.razao}
+        onClose={() => setShowAnalysisModal(false)}
+      />
     </TooltipProvider>
   )
 }
