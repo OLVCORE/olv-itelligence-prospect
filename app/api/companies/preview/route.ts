@@ -3,23 +3,20 @@ import { normalizeCnpj, isValidCnpj, normalizeDomain } from '@/lib/utils/cnpj'
 import { fetchReceitaWS } from '@/lib/services/receita-ws'
 import { fetchGoogleCSE } from '@/lib/services/google-cse'
 import { analyzeWithOpenAI } from '@/lib/services/openai-analysis'
-import { randomUUID } from 'crypto'
 
 /**
  * POST /api/companies/preview
- * MÓDULO 1: Resposta rápida parcial (< 7s) + deep-scan assíncrono
+ * MÓDULO 1 SIMPLIFICADO: Busca completa otimizada em uma chamada
  * 
- * FASE 1 (Síncrona, < 7s):
  * - ReceitaWS
- * - Busca básica de website oficial (Google CSE - 1 estratégia)
- * - Retorna jobId para polling
+ * - Presença digital (website, redes sociais, marketplaces, jusbrasil)
+ * - Notícias
+ * - Análise de IA (opcional)
  * 
- * FASE 2 (Assíncrona, background):
- * - Dispara /api/preview/deep-scan para busca profunda
+ * Usa FAST_MODE para evitar timeout
  */
 export async function POST(req: Request) {
   const startTime = Date.now()
-  const DEADLINE_MS = 7000 // 7 segundos deadline budget
 
   try {
     const body = await req.json()
@@ -55,7 +52,7 @@ export async function POST(req: Request) {
 
     console.log('[API /preview] ✅ CNPJ validado:', resolvedCnpj)
 
-    // ====== FASE 1: BUSCA RÁPIDA (< 7s) ======
+    // ====== BUSCA COMPLETA OTIMIZADA (< 10s) ======
 
     // 1. Buscar dados da ReceitaWS (geralmente < 2s)
     console.log('[API /preview] 📊 Buscando ReceitaWS...')
@@ -64,28 +61,54 @@ export async function POST(req: Request) {
     const elapsedAfterReceita = Date.now() - startTime
     console.log(`[API /preview] ⏱️ ReceitaWS concluído em ${elapsedAfterReceita}ms`)
 
-    // 2. Busca BÁSICA de website oficial (apenas 1 estratégia rápida)
-    let quickWebsite = null
-    if (Date.now() - startTime < DEADLINE_MS - 2000) {
-      console.log('[API /preview] 🏠 Busca rápida de website...')
-      quickWebsite = await findQuickWebsite(
-        receitaData.fantasia || receitaData.nome,
-        resolvedCnpj,
-        DEADLINE_MS - (Date.now() - startTime) - 1000 // Reservar 1s de margem
-      )
+    // 2. Buscar presença digital COMPLETA (otimizada com FAST_MODE)
+    console.log('[API /preview] 🔍 Buscando presença digital completa (modo otimizado)...')
+    const { fetchDigitalPresence } = await import('@/lib/services/digital-presence')
+    const digitalPresence = await fetchDigitalPresence(
+      receitaData.nome || '',
+      resolvedCnpj,
+      receitaData.fantasia,
+      undefined
+    )
+    
+    const elapsedAfterDigital = Date.now() - startTime
+    console.log(`[API /preview] ⏱️ Presença digital concluída em ${elapsedAfterDigital}ms`)
+    console.log(`[API /preview] 📊 Encontrado:`, {
+      website: !!digitalPresence.website,
+      redesSociais: Object.keys(digitalPresence.redesSociais).length,
+      marketplaces: digitalPresence.marketplaces.length,
+      jusbrasil: !!digitalPresence.jusbrasil,
+    })
+
+    // 3. Buscar notícias
+    console.log('[API /preview] 📰 Buscando notícias...')
+    const googleData = await fetchGoogleCSE(
+      receitaData.nome || receitaData.fantasia || resolvedCnpj,
+      resolvedCnpj
+    )
+    
+    const elapsedAfterNews = Date.now() - startTime
+    console.log(`[API /preview] ⏱️ Notícias concluídas em ${elapsedAfterNews}ms`)
+
+    // 4. Análise OpenAI (se solicitado e tiver tempo)
+    let aiAnalysis = null
+    if (useAI && Date.now() - startTime < DEADLINE_MS) {
+      console.log('[API /preview] 🧠 Gerando análise preliminar...')
+      try {
+        aiAnalysis = await analyzeWithOpenAI({
+          company: receitaData,
+          website: digitalPresence.website?.url || null,
+          news: googleData.news || [],
+        })
+      } catch (error: any) {
+        console.warn('[API /preview] ⚠️ Erro na análise de IA (não bloqueante):', error.message)
+      }
     }
 
-    const elapsedAfterQuickSearch = Date.now() - startTime
-    console.log(`[API /preview] ⏱️ Busca rápida concluída em ${elapsedAfterQuickSearch}ms`)
-
-    // 3. Gerar jobId para deep-scan
-    const jobId = randomUUID()
-
-    // 4. Normalizar dados parciais
-    const partialPreview = {
+    // 5. Normalizar dados COMPLETOS
+    const preview = {
       mode: 'preview',
-      jobId,
-      status: 'partial', // Indica que deep-scan está em andamento
+      status: 'completed', // Dados completos
       receita: {
         identificacao: {
           cnpj: receitaData.cnpj,
@@ -130,58 +153,35 @@ export async function POST(req: Request) {
           optante: receitaData.simples?.ultimo_evento === 'Mei',
         },
       },
-      // Presença Digital PARCIAL (apenas website básico)
+      // Presença Digital COMPLETA
       presencaDigital: {
-        website: quickWebsite,
-        redesSociais: {}, // Será preenchido pelo deep-scan
-        marketplaces: [], // Será preenchido pelo deep-scan
-        jusbrasil: null, // Será preenchido pelo deep-scan
-        outrosLinks: [], // Será preenchido pelo deep-scan
-        noticias: [], // Será preenchido pelo deep-scan
+        website: digitalPresence.website,
+        redesSociais: digitalPresence.redesSociais,
+        marketplaces: digitalPresence.marketplaces,
+        jusbrasil: digitalPresence.jusbrasil,
+        outrosLinks: digitalPresence.outrosLinks,
+        noticias: googleData.news?.slice(0, 5) || [],
       },
       enrichment: {
-        website: quickWebsite,
-        news: [],
+        website: digitalPresence.website || googleData.website,
+        news: googleData.news?.slice(0, 5) || [],
       },
-      ai: null, // IA será gerada no deep-scan se useAI=true
+      ai: aiAnalysis ? {
+        score: aiAnalysis.score,
+        summary: aiAnalysis.insights?.slice(0, 2).join(' '),
+        insights: aiAnalysis.insights || [],
+        redFlags: aiAnalysis.redFlags || [],
+      } : null,
     }
 
-    const totalSyncTime = Date.now() - startTime
-    console.log(`[API /preview] ✅ Resposta parcial gerada em ${totalSyncTime}ms`)
-
-    // ====== FASE 2: DISPARAR DEEP-SCAN ASSÍNCRONO (NÃO AGUARDAR) ======
-    
-    // Disparar deep-scan em background (fire-and-forget)
-    const deployUrl = process.env.VERCEL_URL 
-      ? `https://${process.env.VERCEL_URL}` 
-      : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
-    
-    const deepScanUrl = `${deployUrl}/api/preview/deep-scan`
-    
-    console.log(`[API /preview] 🚀 Disparando deep-scan assíncrono - JobId: ${jobId}`)
-    
-    // Fire-and-forget: NÃO usar await
-    fetch(deepScanUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        jobId,
-        cnpj: resolvedCnpj,
-        companyName: receitaData.nome,
-        fantasia: receitaData.fantasia,
-        website: quickWebsite?.url,
-        useAI,
-      }),
-    }).catch(err => {
-      console.error('[API /preview] ⚠️ Erro ao disparar deep-scan (não bloqueante):', err.message)
-    })
+    const totalTime = Date.now() - startTime
+    console.log(`[API /preview] ✅ Preview COMPLETO gerado em ${totalTime}ms`)
 
     return NextResponse.json({
-      status: 'partial',
-      message: 'Dados parciais carregados. Deep-scan em andamento.',
-      jobId,
-      data: partialPreview,
-      syncDurationMs: totalSyncTime,
+      status: 'success',
+      message: 'Preview gerado com sucesso',
+      data: preview,
+      durationMs: totalTime,
     })
 
   } catch (error: any) {
@@ -197,75 +197,6 @@ export async function POST(req: Request) {
   }
 }
 
-/**
- * Busca RÁPIDA de website oficial (apenas 1 estratégia)
- * Timeout configurável para respeitar deadline budget
- */
-async function findQuickWebsite(
-  companyName: string,
-  cnpj: string,
-  timeoutMs: number
-): Promise<{ url: string; title: string; status: string } | null> {
-  const apiKey = process.env.GOOGLE_API_KEY
-  const cseId = process.env.GOOGLE_CSE_ID
-
-  if (!apiKey || !cseId) {
-    console.warn('[findQuickWebsite] ⚠️ Google CSE não configurado')
-    return null
-  }
-
-  try {
-    // Estratégia única mais eficaz: nome + "site oficial"
-    const query = `"${companyName}" site oficial`
-    const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cseId}&q=${encodeURIComponent(query)}&num=3`
-
-    // AbortController para timeout
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
-
-    const response = await fetch(url, { 
-      signal: controller.signal,
-      next: { revalidate: 3600 }
-    })
-    
-    clearTimeout(timeoutId)
-
-    if (!response.ok) {
-      console.warn('[findQuickWebsite] ⚠️ Erro na busca:', response.status)
-      return null
-    }
-
-    const data = await response.json()
-    const items = data.items || []
-
-    console.log(`[findQuickWebsite] 📊 Encontrados ${items.length} resultados`)
-
-    // Retornar o primeiro resultado que não seja óbvio exclusão
-    for (const item of items) {
-      const itemUrl = item.link || ''
-      const isExcluded = /wikipedia|youtube\.com\/watch|facebook\.com\/watch|instagram\.com\/p\//i.test(itemUrl)
-      
-      if (!isExcluded) {
-        console.log(`[findQuickWebsite] ✅ Website encontrado: ${itemUrl}`)
-        return {
-          url: itemUrl,
-          title: item.title?.replace(/\s*[-|].*$/, '').trim() || companyName,
-          status: 'ativo'
-        }
-      }
-    }
-
-    return null
-  } catch (error: any) {
-    if (error.name === 'AbortError') {
-      console.warn('[findQuickWebsite] ⏱️ Timeout na busca')
-    } else {
-      console.error('[findQuickWebsite] ❌ Erro:', error.message)
-    }
-    return null
-  }
-}
-
-// Configuração para Vercel: permitir execução mais longa (mas responde antes!)
-export const maxDuration = 10 // 10 segundos max, mas responde em ~7s
+// Configuração para Vercel: permitir execução mais longa
+export const maxDuration = 30 // 30 segundos para busca completa
 
