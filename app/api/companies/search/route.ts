@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase/client'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import { normalizeCnpj, isValidCnpj, normalizeDomain } from '@/lib/utils/cnpj'
 import { fetchReceitaWS } from '@/lib/services/receita-ws'
 import { fetchGoogleCSE, resolveCnpjFromWebsite } from '@/lib/services/google-cse'

@@ -32,15 +32,3 @@ export function getSupabaseBrowser() {
   console.log('[Supabase Client] ✅ Cliente criado com sucesso')
   return browserClient
 }
-
-// Client para uso server-side (admin)
-export const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || '',
-  {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  }
-)
