@@ -1,0 +1,169 @@
+{
+  "vendor": "OLV Internacional",
+  "description": "Consultoria Estratégica Premium especializada em Supply Chain Global, Comércio Exterior e Transformação Digital",
+  "tagline": "Integramos estratégia, tecnologia e operações para elevar a maturidade digital",
+  "experience": "35+ anos em Supply Chain Global e Logística Internacional",
+  
+  "services": [
+    {
+      "id": "olv-consultoria-estrategica",
+      "name": "Consultoria Estratégica Premium",
+      "category": "Consultoria",
+      "description": "Gestão de Projetos 360º que integra estratégia, execução e governança para transformar objetivos em resultados mensuráveis",
+      "features": [
+        "Diagnóstico 360º e Roadmap de Valor",
+        "PMO de Alta Performance",
+        "Execução Ponta a Ponta",
+        "Acompanhamento contínuo"
+      ],
+      "targetSectors": ["Todos"],
+      "targetCompanySize": ["PEQUENO", "MEDIO", "GRANDE"],
+      "averageTicket": 80000,
+      "keywords": ["consultoria", "estratégia", "gestão", "transformação", "pmo", "roadmap"],
+      "benefits": [
+        "Transformação digital efetiva",
+        "Resultados mensuráveis e sustentáveis",
+        "Execução com especialistas",
+        "Governança de projetos"
+      ],
+      "idealFor": [
+        "Empresas em crescimento",
+        "Expansão internacional",
+        "Complexidade operacional",
+        "Múltiplas filiais"
+      ]
+    },
+    {
+      "id": "olv-supply-chain",
+      "name": "Supply Chain Global & Internacionalização",
+      "category": "Supply Chain",
+      "description": "Estratégias sob medida para transformar operações complexas em vantagem competitiva global",
+      "features": [
+        "Comércio Exterior (Import/Export)",
+        "Internacionalização",
+        "Procurement Estratégico",
+        "Gestão de Fornecedores Globais",
+        "Planejamento de Supply Chain",
+        "Compras Estratégicas"
+      ],
+      "targetSectors": ["Agroindústria", "Mineração", "Energia", "Petróleo & Gás", "Metalurgia", "Bens de Capital", "Máquinas & Equipamentos", "Manufatura", "Logística Industrial"],
+      "targetCompanySize": ["MEDIO", "GRANDE"],
+      "averageTicket": 120000,
+      "keywords": ["supply chain", "comércio exterior", "importação", "exportação", "procurement", "fornecedores", "logística internacional", "internacionalização"],
+      "benefits": [
+        "Simplificação de operações complexas",
+        "Otimização de processos globais",
+        "Redução de custos de importação/exportação",
+        "Gestão eficiente de fornecedores internacionais"
+      ],
+      "idealFor": [
+        "Empresas que importam/exportam",
+        "Operações internacionais",
+        "Fornecedores globais",
+        "Indústrias de alta complexidade"
+      ]
+    },
+    {
+      "id": "olv-analytics-bi",
+      "name": "Dashboards Inteligentes & Analytics",
+      "category": "Business Intelligence",
+      "description": "Analytics Avançado + BI Integrado com uma única fonte de verdade, consolidando operações, finanças e logística",
+      "features": [
+        "KPIs críticos em tempo real",
+        "Alertas e previsões inteligentes",
+        "Decisões baseadas em dados",
+        "Dashboards personalizados",
+        "Integração com TOTVS"
+      ],
+      "targetSectors": ["Todos"],
+      "targetCompanySize": ["PEQUENO", "MEDIO", "GRANDE"],
+      "averageTicket": 45000,
+      "keywords": ["analytics", "bi", "dashboards", "kpi", "dados", "inteligência", "relatórios"],
+      "benefits": [
+        "Visibilidade total da operação",
+        "Decisões mais rápidas e assertivas",
+        "Identificação de oportunidades",
+        "Previsões e tendências"
+      ],
+      "idealFor": [
+        "Gestão descentralizada",
+        "Múltiplas filiais",
+        "Necessidade de KPIs em tempo real",
+        "Dados espalhados em sistemas"
+      ]
+    },
+    {
+      "id": "olv-eficiencia-operacional",
+      "name": "Eficiência Operacional",
+      "category": "Otimização de Processos",
+      "description": "Ganhos sustentados por padronização, automação e governança de processos com retorno comprovado",
+      "features": [
+        "Padronização e automação",
+        "Governança de processos",
+        "ROI mensurável e tracking",
+        "Mapeamento de processos",
+        "Eliminação de gargalos"
+      ],
+      "targetSectors": ["Todos"],
+      "targetCompanySize": ["PEQUENO", "MEDIO", "GRANDE"],
+      "averageTicket": 60000,
+      "keywords": ["eficiência", "processos", "automação", "padronização", "otimização", "roi"],
+      "benefits": [
+        "Redução de custos operacionais",
+        "Eliminação de retrabalho",
+        "Processos padronizados",
+        "Aumento de produtividade"
+      ],
+      "idealFor": [
+        "Processos manuais",
+        "Retrabalho frequente",
+        "Falta de padronização",
+        "Crescimento acelerado"
+      ]
+    }
+  ],
+  
+  "differentials": [
+    "35+ anos de experiência em Supply Chain Global",
+    "Especialização em setores industriais de alta complexidade",
+    "Parceiro Oficial TOTVS (consultoria + tecnologia)",
+    "Metodologia comprovada com 95% de taxa de sucesso",
+    "Abordagem: Do diagnóstico à execução",
+    "Experiência global + Tecnologia líder de mercado",
+    "Suporte contínuo 24/7 pós-implementação"
+  ],
+  
+  "approach": {
+    "methodology": "Diagnóstico → Implementação → Resultados Sustentáveis",
+    "phases": [
+      {
+        "name": "Diagnóstico Estratégico",
+        "description": "Análise 360º do negócio, mapeamento de processos e identificação de oportunidades",
+        "duration": "2-4 semanas"
+      },
+      {
+        "name": "Implementação Guiada",
+        "description": "Execução com especialistas certificados TOTVS e metodologia ágil",
+        "duration": "3-6 meses"
+      },
+      {
+        "name": "Resultados Sustentáveis",
+        "description": "Suporte contínuo, monitoramento de performance e otimização",
+        "duration": "Contínuo"
+      }
+    ]
+  },
+  
+  "partnership": {
+    "model": "Consultoria OLV + Tecnologia TOTVS = Transformação Digital Efetiva",
+    "value": "Não apenas implementamos tecnologia: transformamos processos e elevamos maturidade digital",
+    "uniqueness": "Somos mais que um revendedor TOTVS. Somos seu parceiro estratégico na jornada de transformação digital"
+  },
+  
+  "contact": {
+    "email": "consultores@olvinternacional.com.br",
+    "phone": "+55 (11) 2675-1446",
+    "website": "https://parceirototvs.olvinternacional.com.br/"
+  }
+}
+

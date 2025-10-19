@@ -1,0 +1,170 @@
+{
+  "vendor": "OLV Internacional",
+  "specialization": "Especialização vertical para atender necessidades específicas de cada segmento",
+  
+  "sectors": [
+    {
+      "id": "agro",
+      "name": "Agroindústria",
+      "description": "Soluções completas para gestão agroindustrial, do campo ao consumidor final",
+      "challenges": [
+        "Rastreabilidade da produção",
+        "Gestão de safras e estoques",
+        "Controle de qualidade",
+        "Compliance e certificações",
+        "Logística de distribuição"
+      ],
+      "solutions": [
+        "ERP agroindustrial (TOTVS)",
+        "Supply Chain otimizado",
+        "BI para análise de safras",
+        "Gestão de commodities",
+        "Comércio exterior (export)"
+      ],
+      "expertise": "Gestão de fornecedores agrícolas, logística de produtos perecíveis, exportação de commodities"
+    },
+    {
+      "id": "construcao",
+      "name": "Construção",
+      "description": "Tecnologia para gestão de obras, projetos e construção civil",
+      "challenges": [
+        "Gestão de múltiplos projetos",
+        "Controle de custos e materiais",
+        "Cronograma e prazos",
+        "Gestão de subcontratados",
+        "Documentação e compliance"
+      ],
+      "solutions": [
+        "ERP para construção",
+        "Gestão de projetos (Fluig)",
+        "Controle de orçamentos",
+        "BI para acompanhamento de obras",
+        "Assinatura eletrônica de contratos"
+      ],
+      "expertise": "PMO para grandes obras, gestão de fornecedores, controle financeiro de projetos"
+    },
+    {
+      "id": "distribuicao",
+      "name": "Distribuição",
+      "description": "Soluções para atacado, varejo e distribuição",
+      "challenges": [
+        "Gestão de estoque multi-CD",
+        "Logística de última milha",
+        "Gestão de pedidos",
+        "Precificação dinâmica",
+        "Relacionamento com clientes"
+      ],
+      "solutions": [
+        "ERP para distribuição",
+        "WMS (gestão de armazéns)",
+        "CRM e automação de vendas",
+        "Analytics para precificação",
+        "SFA (força de vendas)"
+      ],
+      "expertise": "Otimização de rotas, gestão de CDs, estratégia de distribuição"
+    },
+    {
+      "id": "financial-services",
+      "name": "Financial Services",
+      "description": "Tecnologia para serviços financeiros e fintechs",
+      "challenges": [
+        "Compliance regulatório",
+        "Segurança de dados",
+        "Processamento de pagamentos",
+        "Análise de crédito",
+        "Experiência digital"
+      ],
+      "solutions": [
+        "Techfin (TOTVS)",
+        "Gestão de crédito e cobrança",
+        "Pagamentos integrados",
+        "Analytics de risco",
+        "Assinatura eletrônica"
+      ],
+      "expertise": "Consultoria em processos financeiros, compliance, transformação digital bancária"
+    },
+    {
+      "id": "logistica",
+      "name": "Logística e Transporte",
+      "description": "Soluções completas para operadores logísticos e transportadoras",
+      "challenges": [
+        "Otimização de rotas",
+        "Gestão de frota",
+        "Rastreamento em tempo real",
+        "Custos de frete",
+        "Gestão de entregas"
+      ],
+      "solutions": [
+        "TMS (TOTVS - gestão de transportes)",
+        "WMS (gestão de armazéns)",
+        "Otimização de rotas",
+        "Tracking em tempo real",
+        "Analytics de performance"
+      ],
+      "expertise": "35+ anos em logística internacional, supply chain global, comércio exterior"
+    },
+    {
+      "id": "manufatura",
+      "name": "Manufatura e Indústria",
+      "description": "Soluções para indústrias de transformação e manufatura",
+      "challenges": [
+        "Planejamento de produção (PCP)",
+        "Controle de qualidade",
+        "Gestão de custos industriais",
+        "Manutenção de ativos",
+        "Supply chain complexo"
+      ],
+      "solutions": [
+        "TOTVS Datasul (ERP industrial)",
+        "PCP e chão de fábrica",
+        "Gestão de custos",
+        "Manutenção (QMS)",
+        "Supply Chain Management"
+      ],
+      "expertise": "Especialização em indústrias de alta complexidade: metalurgia, petróleo & gás, energia, mineração"
+    },
+    {
+      "id": "servicos",
+      "name": "Prestadores de Serviços",
+      "description": "Gestão completa para empresas de serviços",
+      "challenges": [
+        "Gestão de projetos",
+        "Controle de horas",
+        "Faturamento recorrente",
+        "Gestão de contratos",
+        "Relacionamento com clientes"
+      ],
+      "solutions": [
+        "ERP para serviços",
+        "Gestão de projetos (Fluig)",
+        "CRM e automação",
+        "Assinatura eletrônica",
+        "BI para análise de rentabilidade"
+      ],
+      "expertise": "Consultoria em otimização de processos, automação de serviços, gestão de contratos"
+    }
+  ],
+  
+  "verticalExpertise": {
+    "description": "OLV possui especialização vertical profunda nos setores industriais de alta complexidade",
+    "coreIndustries": [
+      "Agroindústria",
+      "Mineração",
+      "Energia",
+      "Petróleo & Gás",
+      "Metalurgia",
+      "Bens de Capital",
+      "Máquinas & Equipamentos",
+      "Manufatura",
+      "Logística Industrial"
+    ],
+    "differentials": [
+      "35+ anos de experiência em supply chain global",
+      "Conhecimento profundo de operações complexas",
+      "Experiência em comércio exterior e importação/exportação",
+      "Gestão de fornecedores globais",
+      "Procurement estratégico internacional"
+    ]
+  }
+}
+
