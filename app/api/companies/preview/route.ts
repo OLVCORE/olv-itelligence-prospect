@@ -4,6 +4,11 @@ import { fetchReceitaWS } from '@/lib/services/receita-ws'
 import { fetchGoogleCSE } from '@/lib/services/google-cse'
 import { fetchDigitalPresence } from '@/lib/services/digital-presence'
 import { analyzeWithOpenAI } from '@/lib/services/openai-analysis'
+import { calculatePropensityScore } from '@/lib/scoring/propensity-calculator'
+import { identifyAttentionPoints, generateRecommendation, generateSuggestedActions } from '@/lib/ai/recommendation-engine'
+import { generateExecutiveInsights } from '@/lib/ai/insights-generator'
+import { detectTotvsLite } from '@/lib/services/technographics/totvs-lite'
+import { createReceitaEvidence, createNewsEvidence } from '@/lib/types/evidence'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 
 /**
@@ -191,6 +196,91 @@ export async function POST(req: Request) {
       console.error('[API /preview] ⚠️ Erro no vendor match (não bloqueante):', error.message)
     }
 
+    // 4.5 TOTVS Scan Lite (para usar no score de propensão)
+    console.log('[API /preview] 🔍 Executando TOTVS Scan Lite...')
+    let totvsScan = null
+    try {
+      totvsScan = await detectTotvsLite({
+        website: digitalPresence.website?.url,
+        name: receitaData.fantasia || receitaData.nome
+      })
+      console.log('[API /preview] ✅ TOTVS Scan:', {
+        detected: totvsScan.totvs_detected,
+        produtos: totvsScan.produtos,
+        confidence: totvsScan.confidence_score
+      })
+    } catch (error: any) {
+      console.error('[API /preview] ⚠️ Erro no TOTVS scan (não bloqueante):', error.message)
+    }
+
+    // 4.6 Score de Propensão (MÓDULO A - Seção 6)
+    console.log('[API /preview] 📊 Calculando score de propensão...')
+    const propensityScore = calculatePropensityScore({
+      receita: {
+        capital: { valor: receitaData.capital_social },
+        identificacao: { porte: receitaData.porte },
+        funcionarios: undefined, // TODO: Adicionar quando disponível
+      },
+      presencaDigital: {
+        website: digitalPresence.website,
+        redesSociais: digitalPresence.redesSociais,
+        marketplaces: digitalPresence.marketplaces,
+        jusbrasil: digitalPresence.jusbrasil,
+      },
+      noticias: googleData.news,
+      totvsScan: totvsScan,
+      jusbrasil: digitalPresence.jusbrasil,
+    })
+    console.log('[API /preview] ✅ Propensity Score:', propensityScore.overall)
+
+    // 4.7 Pontos de Atenção (MÓDULO A - Seção 8)
+    console.log('[API /preview] ⚠️ Identificando pontos de atenção...')
+    const attentionPoints = identifyAttentionPoints({
+      websiteValidated: !!digitalPresence.website?.url,
+      websiteScore: digitalPresence.website?.score,
+      redesSociaisCount: Object.keys(digitalPresence.redesSociais || {}).length,
+      noticiasCount: googleData.news?.length || 0,
+      noticiasRecentes: (googleData.news || []).filter((n: any) => {
+        if (!n.date) return false
+        const monthsDiff = (Date.now() - new Date(n.date).getTime()) / (1000 * 60 * 60 * 24 * 30)
+        return monthsDiff <= 6
+      }).length,
+      jusbrasil: digitalPresence.jusbrasil,
+      capital: receitaData.capital_social,
+      porte: receitaData.porte,
+      situacao: receitaData.situacao,
+      totvsDetected: totvsScan?.totvs_detected,
+    })
+    console.log('[API /preview] ⚠️ Pontos de atenção:', attentionPoints.length)
+
+    // 4.8 Recomendação Go/No-Go (MÓDULO A - Seção 9)
+    console.log('[API /preview] 🎯 Gerando recomendação Go/No-Go...')
+    const recommendation = generateRecommendation({
+      score: propensityScore.overall,
+      websiteValidated: !!digitalPresence.website?.url,
+      websiteScore: digitalPresence.website?.score,
+      noticiasRecentes: (googleData.news || []).filter((n: any) => {
+        if (!n.date) return false
+        const monthsDiff = (Date.now() - new Date(n.date).getTime()) / (1000 * 60 * 60 * 24 * 30)
+        return monthsDiff <= 6
+      }).length,
+      attentionPoints,
+      totvsDetected: totvsScan?.totvs_detected,
+      situacao: receitaData.situacao,
+    })
+    console.log('[API /preview] ✅ Recomendação:', recommendation.decision)
+
+    // 4.9 Ações Sugeridas (MÓDULO A - Seção 10)
+    console.log('[API /preview] 📋 Gerando ações sugeridas...')
+    const suggestedActions = generateSuggestedActions({
+      decision: recommendation.decision,
+      leadTemperature: totvsScan?.lead_temperature,
+      totvsDetected: totvsScan?.totvs_detected,
+      decisor: vendorMatch?.decisionMaker,
+      attentionPoints,
+    })
+    console.log('[API /preview] ✅ Ações sugeridas:', suggestedActions.length)
+
     // 5. Análise OpenAI ENRIQUECIDA (se solicitado)
     let aiAnalysis = null
     if (useAI) {
@@ -289,6 +379,28 @@ export async function POST(req: Request) {
         decisionMaker: vendorMatch.decisionMaker,
         nextSteps: vendorMatch.nextSteps,
       } : null,
+      // TOTVS Scan (MÓDULO A - Seção 3)
+      totvsScan: totvsScan,
+      // Score de Propensão (MÓDULO A - Seção 6)
+      propensityScore: propensityScore,
+      // Pontos de Atenção (MÓDULO A - Seção 8)
+      attentionPoints: attentionPoints,
+      // Recomendação Go/No-Go (MÓDULO A - Seção 9)
+      recommendation: recommendation,
+      // Ações Sugeridas (MÓDULO A - Seção 10)
+      suggestedActions: suggestedActions,
+      // Evidências Consolidadas
+      evidences: {
+        receita: createReceitaEvidence(resolvedCnpj, receitaData),
+        noticias: (googleData.news || []).slice(0, 5).map((n: any) => 
+          createNewsEvidence({
+            url: n.link,
+            title: n.title,
+            snippet: n.snippet,
+            date: n.date,
+          })
+        ),
+      },
     }
 
     const totalTime = Date.now() - startTime
