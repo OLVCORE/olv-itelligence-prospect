@@ -38,9 +38,16 @@ export function FitTotvsModule({ companyId, companyName }: FitTotvsModuleProps) 
   const [result, setResult] = useState<TotvsLiteResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [lastFetchedId, setLastFetchedId] = useState<string | null>(null)
 
   const fetchTotvsData = async () => {
     if (!companyId) return
+    
+    // Guard: evitar chamadas duplicadas
+    if (loading || lastFetchedId === companyId) {
+      console.log('[FitTotvs] ⏭️ Scan já em andamento ou já executado para:', companyId)
+      return
+    }
 
     setLoading(true)
     setError(null)
@@ -53,6 +60,7 @@ export function FitTotvsModule({ companyId, companyName }: FitTotvsModuleProps) 
 
       if (data.status === 'success') {
         setResult(data.result)
+        setLastFetchedId(companyId)
         console.log('[FitTotvs] ✅ Scan concluído:', data.result)
       } else {
         setError(data.message || 'Erro no scan TOTVS')
@@ -67,8 +75,13 @@ export function FitTotvsModule({ companyId, companyName }: FitTotvsModuleProps) 
   }
 
   useEffect(() => {
-    if (companyId) {
-      fetchTotvsData()
+    // Apenas carregar se mudar de empresa e ainda não tiver carregado
+    if (companyId && companyId !== lastFetchedId) {
+      const timer = setTimeout(() => {
+        fetchTotvsData()
+      }, 300) // Debounce de 300ms
+      
+      return () => clearTimeout(timer)
     }
   }, [companyId])
 

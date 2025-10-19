@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -132,6 +132,9 @@ export function BenchmarkComparisonModal({
               </Button>
             </div>
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Compare {companies.length} empresas lado a lado com métricas de visão geral, tech stack, maturidade e fit TOTVS
+          </DialogDescription>
         </DialogHeader>
 
         {/* Tabs de Navegação */}

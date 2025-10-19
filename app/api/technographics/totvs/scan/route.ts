@@ -26,28 +26,29 @@ export async function GET(request: NextRequest) {
     const supabase = supabaseAdmin
     const { data: company, error: companyError } = await supabase
       .from('Company')
-      .select('id, razao_social, nome_fantasia, website')
+      .select('id, name, tradeName, domain')
       .eq('id', companyId)
       .single()
 
     if (companyError || !company) {
-      console.error('[TOTVS-Scan] ❌ Empresa não encontrada:', companyError)
+      console.error('[TOTVS-Scan] ❌ Empresa não encontrada:', companyError?.message || 'Erro desconhecido')
       return NextResponse.json(
-        { status: 'error', message: 'Empresa não encontrada' },
+        { status: 'error', message: 'Empresa não encontrada', details: process.env.NODE_ENV === 'development' ? companyError?.message : undefined },
         { status: 404 }
       )
     }
 
     console.log('[TOTVS-Scan] 📊 Empresa encontrada:', {
       id: company.id,
-      razao_social: company.razao_social,
-      website: company.website
+      name: company.name,
+      tradeName: company.tradeName,
+      domain: company.domain
     })
 
     // Executar detecção TOTVS Lite
     const result = await detectTotvsLite({
-      website: company.website || undefined,
-      name: company.nome_fantasia || company.razao_social
+      website: company.domain || undefined,
+      name: company.tradeName || company.name
     })
 
     const response = {
@@ -57,7 +58,7 @@ export async function GET(request: NextRequest) {
       metadata: {
         scanned_at: new Date().toISOString(),
         elapsed_ms: Date.now() - startTime,
-        company_name: company.razao_social
+        company_name: company.name
       }
     }
 
