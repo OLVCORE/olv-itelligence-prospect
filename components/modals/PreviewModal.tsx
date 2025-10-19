@@ -195,15 +195,67 @@ export function PreviewModal({
 
         {/* Indicador de Deep-Scan em andamento */}
         {mergedData && deepScanStatus === 'pending' && (
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4 flex items-center gap-3">
-            <RefreshCw className="h-5 w-5 text-blue-600 animate-spin" />
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
+            <div className="flex items-start gap-3 mb-3">
+              <RefreshCw className="h-5 w-5 text-blue-600 animate-spin flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                  🔍 Análise Profunda em Andamento
+                </p>
+                <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                  {pollingMessage}
+                </p>
+              </div>
+              <Badge variant="outline" className="bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 border-blue-300 dark:border-blue-700">
+                {Math.min(pollAttempts.current * 2, 100)}%
+              </Badge>
+            </div>
+            {/* Barra de Progresso */}
+            <div className="w-full bg-blue-100 dark:bg-blue-900 rounded-full h-2 overflow-hidden">
+              <div 
+                className="bg-blue-600 h-full transition-all duration-500 ease-out"
+                style={{ width: `${Math.min(pollAttempts.current * 3.3, 100)}%` }}
+              />
+            </div>
+            <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+              ⏱️ Tempo estimado: 15-30 segundos • Os dados básicos já estão disponíveis abaixo
+            </p>
+          </div>
+        )}
+
+        {/* Indicador de Análise Completa */}
+        {mergedData && deepScanStatus === 'completed' && (
+          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 mb-4 flex items-center gap-3">
+            <div className="h-5 w-5 text-green-600 flex-shrink-0 flex items-center justify-center">
+              ✓
+            </div>
             <div className="flex-1">
-              <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
-                Análise em andamento
+              <p className="text-sm font-semibold text-green-900 dark:text-green-100">
+                ✅ Análise Completa!
               </p>
-              <p className="text-xs text-blue-700 dark:text-blue-300">
-                {pollingMessage}
+              <p className="text-xs text-green-700 dark:text-green-300">
+                Todos os dados foram carregados com sucesso
               </p>
+            </div>
+            <Badge variant="outline" className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 border-green-300 dark:border-green-700">
+              100%
+            </Badge>
+          </div>
+        )}
+
+        {/* Indicador de Erro/Timeout */}
+        {mergedData && deepScanStatus === 'error' && (
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 mb-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">
+                  ⚠️ Análise Parcialmente Concluída
+                </p>
+                <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                  {pollingMessage || 'Alguns dados podem estar incompletos, mas você já pode salvar o relatório com as informações disponíveis.'}
+                </p>
+              </div>
             </div>
           </div>
         )}
