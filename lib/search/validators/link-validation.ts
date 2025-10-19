@@ -123,13 +123,25 @@ export function validateLink(input: LinkValidationInput): LinkValidationResult {
   
   // B4: Links sociais a partir do site oficial
   const isSocialMedia = /instagram\.com|facebook\.com|linkedin\.com|twitter\.com|x\.com|youtube\.com/i.test(url)
-  if (isSocialMedia && company.domain) {
-    const cleanDomain = company.domain.toLowerCase().replace(/^(https?:\/\/)?(www\.)?/, '').replace(/\/$/, '')
-    const domainNameParts = cleanDomain.split('.')[0] // Ex.: "olvinternacional" de "olvinternacional.com.br"
+  if (isSocialMedia) {
+    // Verificar se o handle/URL contém nome da empresa
+    const companyKeywords = [
+      company.razao?.toLowerCase(),
+      company.fantasia?.toLowerCase(),
+      company.domain ? company.domain.split('.')[0].toLowerCase() : null,
+    ].filter(Boolean)
     
-    if (url.includes(domainNameParts)) {
-      score += 25
-      reasons.push('Rede social vinculada ao domínio oficial')
+    const hasCompanyInUrl = companyKeywords.some(keyword => {
+      if (!keyword) return false
+      // Remover espaços e caracteres especiais para comparação
+      const cleanKeyword = keyword.replace(/[^a-z0-9]/g, '')
+      const cleanUrl = url.replace(/[^a-z0-9]/g, '')
+      return cleanUrl.includes(cleanKeyword)
+    })
+    
+    if (hasCompanyInUrl) {
+      score += 30 // Aumentado de 25 para 30
+      reasons.push('Rede social com handle vinculado à empresa')
     }
   }
   
@@ -208,7 +220,7 @@ export function validateLink(input: LinkValidationInput): LinkValidationResult {
   } else if (score >= 40) {
     linked = true
     confidence = 'medium'
-    warnings.push('Vínculo com confiança média - validação manual recomendada')
+    // Sem warning - confiança média é aceitável
   } else if (score >= 20) {
     linked = false
     confidence = 'low'
