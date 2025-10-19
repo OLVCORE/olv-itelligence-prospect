@@ -33,10 +33,13 @@ interface BenchmarkItem {
 }
 
 interface BenchmarkModuleProps {
-  data: BenchmarkItem[]
+  companyId?: string
+  companyName?: string
 }
 
-export function BenchmarkModule({ data }: BenchmarkModuleProps) {
+export function BenchmarkModule({ companyId, companyName }: BenchmarkModuleProps) {
+  // TODO: Buscar dados reais de benchmark (Google Trends, market data) - Sprint 2
+  const data: BenchmarkItem[] = [] // Vazio até engine de benchmark estar pronta
   const getTrendIcon = (trend: string) => {
     switch (trend) {
       case "up": return <TrendingUp className="h-4 w-4 text-emerald-500" />
