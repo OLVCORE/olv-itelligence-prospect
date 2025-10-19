@@ -9,11 +9,17 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
+import { ScoreBreakdown } from "@/components/scoring/ScoreBreakdown"
 import { Loader2, TrendingUp, AlertTriangle, Lightbulb, Calendar } from "lucide-react"
 
 interface Analysis {
   id: string
   score: number
+  scoreIA?: number
+  scoreRegras?: number
+  breakdown?: any
+  classificacao?: string
+  justification?: string
   insights: string[]
   redFlags: string[]
   createdAt: string
@@ -112,28 +118,39 @@ export function CompanyAnalysisModal({
 
         {analysis && !loading && (
           <div className="space-y-6">
-            {/* Score */}
-            <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">
-                    Score de Propensão
-                  </p>
-                  <div className="flex items-baseline gap-3">
-                    <span className={`text-5xl font-bold ${getScoreColor(analysis.score)}`}>
-                      {analysis.score}
-                    </span>
-                    <span className="text-2xl text-slate-400">/100</span>
+            {/* Score com Breakdown Detalhado */}
+            {analysis.breakdown ? (
+              <ScoreBreakdown
+                scoreTotal={analysis.score}
+                breakdown={analysis.breakdown}
+                classificacao={analysis.classificacao || getScoreBadge(analysis.score).label}
+                justificativa={analysis.justification || 'Análise baseada em múltiplos critérios objetivos'}
+                compact={false}
+              />
+            ) : (
+              /* Score Simples (fallback para análises antigas) */
+              <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">
+                      Score de Propensão
+                    </p>
+                    <div className="flex items-baseline gap-3">
+                      <span className={`text-5xl font-bold ${getScoreColor(analysis.score)}`}>
+                        {analysis.score}
+                      </span>
+                      <span className="text-2xl text-slate-400">/100</span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-2">
+                    <Badge {...getScoreBadge(analysis.score) as any}>
+                      {getScoreBadge(analysis.score).label}
+                    </Badge>
+                    <TrendingUp className={`h-8 w-8 ${getScoreColor(analysis.score)}`} />
                   </div>
                 </div>
-                <div className="flex flex-col items-end gap-2">
-                  <Badge {...getScoreBadge(analysis.score) as any}>
-                    {getScoreBadge(analysis.score).label}
-                  </Badge>
-                  <TrendingUp className={`h-8 w-8 ${getScoreColor(analysis.score)}`} />
-                </div>
               </div>
-            </div>
+            )}
 
             {/* Insights */}
             {analysis.insights && analysis.insights.length > 0 && (

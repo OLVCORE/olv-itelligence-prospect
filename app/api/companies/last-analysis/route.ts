@@ -52,19 +52,45 @@ export async function GET(req: Request) {
 
     console.log('[API /last-analysis] ✅ Análise encontrada:', analysis.id)
 
+    // Parse JSON fields
+    const parsedInsights = typeof analysis.insights === 'string' 
+      ? JSON.parse(analysis.insights) 
+      : analysis.insights
+
+    const parsedRedFlags = analysis.redFlags 
+      ? (typeof analysis.redFlags === 'string' 
+          ? JSON.parse(analysis.redFlags) 
+          : analysis.redFlags)
+      : []
+
+    // Tentar parsear campos novos do scoring híbrido (se existirem)
+    let breakdown = null
+    let scoreIA = null
+    let scoreRegras = null
+    let classificacao = null
+    let justification = null
+
+    // Verificar se insights contém dados de breakdown (novo formato)
+    if (parsedInsights && typeof parsedInsights === 'object' && parsedInsights.breakdown) {
+      breakdown = parsedInsights.breakdown
+      scoreIA = parsedInsights.scoreIA
+      scoreRegras = parsedInsights.scoreRegras
+      classificacao = parsedInsights.classificacao
+      justification = parsedInsights.justification
+    }
+
     return NextResponse.json({
       status: 'success',
       analysis: {
         id: analysis.id,
         score: analysis.score,
-        insights: typeof analysis.insights === 'string' 
-          ? JSON.parse(analysis.insights) 
-          : analysis.insights,
-        redFlags: analysis.redFlags 
-          ? (typeof analysis.redFlags === 'string' 
-              ? JSON.parse(analysis.redFlags) 
-              : analysis.redFlags)
-          : [],
+        scoreIA,
+        scoreRegras,
+        breakdown,
+        classificacao,
+        justification,
+        insights: Array.isArray(parsedInsights) ? parsedInsights : parsedInsights?.insights || [],
+        redFlags: parsedRedFlags,
         createdAt: analysis.createdAt,
         updatedAt: analysis.updatedAt,
       },

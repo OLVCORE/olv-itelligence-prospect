@@ -128,14 +128,22 @@ export async function POST(req: Request) {
 
     console.log('[API] ✅ Company gravada:', company.id)
 
-    // Insert Analysis
+    // Insert Analysis com breakdown completo
     const { data: analysis, error: analysisError } = await supabaseAdmin
       .from('Analysis')
       .insert({
         companyId: company.id,
-        score: aiAnalysis.score,
-        insights: aiAnalysis.insights,
-        redFlags: aiAnalysis.redFlags,
+        score: aiAnalysis.score, // Score híbrido
+        // Salvar insights como objeto completo com breakdown
+        insights: JSON.stringify({
+          insights: aiAnalysis.insights,
+          scoreIA: aiAnalysis.scoreIA,
+          scoreRegras: aiAnalysis.scoreRegras,
+          breakdown: aiAnalysis.breakdown,
+          classificacao: aiAnalysis.classificacao,
+          justification: aiAnalysis.justification,
+        }),
+        redFlags: JSON.stringify(aiAnalysis.redFlags),
       })
       .select()
       .single()
