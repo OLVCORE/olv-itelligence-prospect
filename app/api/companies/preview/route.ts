@@ -90,9 +90,9 @@ export async function POST(req: Request) {
     const elapsedAfterNews = Date.now() - startTime
     console.log(`[API /preview] ⏱️ Notícias concluídas em ${elapsedAfterNews}ms`)
 
-    // 4. Análise OpenAI (se solicitado e tiver tempo)
+    // 4. Análise OpenAI (se solicitado)
     let aiAnalysis = null
-    if (useAI && Date.now() - startTime < DEADLINE_MS) {
+    if (useAI) {
       console.log('[API /preview] 🧠 Gerando análise preliminar...')
       try {
         aiAnalysis = await analyzeWithOpenAI({
