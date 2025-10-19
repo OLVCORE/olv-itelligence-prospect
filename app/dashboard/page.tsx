@@ -158,7 +158,8 @@ function DashboardContent() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false) // Começar fechado
+  const [sidebarHovered, setSidebarHovered] = useState(false)
   const [user, setUser] = useState<any>(null)
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
   const [showCompanyDetails, setShowCompanyDetails] = useState(false)
@@ -255,9 +256,18 @@ function DashboardContent() {
   }, [activeTab, selectedCompany])
 
   const handleCompanyClick = (company: Company) => {
+    // Selecionar empresa diretamente sem modal
+    selectCompany({
+      id: company.id,
+      cnpj: company.cnpj,
+      name: company.name,
+      tradeName: company.tradeName,
+      website: company.website
+    })
+    
+    // Opcional: mostrar modal para detalhes
     setCurrentCompany(company)
     setShowCompanyDetails(true)
-    selectCompany(company) // Definir empresa selecionada para os módulos
   }
 
   const handleSelectCompany = (company: Company) => {
@@ -288,46 +298,68 @@ function DashboardContent() {
       <Header sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
       
       <div className="flex">
-        {/* Sidebar (mantido do original) */}
+        {/* Sidebar Responsivo com Hover Reveal */}
         <aside
           className={`${
-            sidebarOpen ? "translate-x-0" : "-translate-x-full"
-          } fixed inset-y-0 left-0 z-40 w-64 lg:w-80 bg-white/95 backdrop-blur-xl border-r border-gray-200 transition-transform duration-300 ease-in-out lg:translate-x-0 pt-16 lg:pt-20 overflow-y-auto`}
+            sidebarOpen || sidebarHovered ? "translate-x-0 w-64 lg:w-80" : "translate-x-0 w-16 lg:w-20"
+          } fixed inset-y-0 left-0 z-40 bg-white/95 backdrop-blur-xl border-r border-gray-200 transition-all duration-300 ease-in-out pt-16 lg:pt-20 overflow-y-auto`}
+          onMouseEnter={() => setSidebarHovered(true)}
+          onMouseLeave={() => setSidebarHovered(false)}
         >
-          <div className="p-4 lg:p-6 space-y-4 lg:space-y-6">
-            {/* Busca rápida */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Buscar empresas..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+          <div className={`${sidebarOpen || sidebarHovered ? 'p-4 lg:p-6' : 'p-2'} space-y-4 lg:space-y-6`}>
+            {/* Busca rápida - apenas quando expandido */}
+            {(sidebarOpen || sidebarHovered) && (
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Buscar empresas..."
+                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            )}
 
-            {/* Métricas rápidas */}
-            <div className="grid grid-cols-2 gap-2 lg:gap-3">
-              <Card className="bg-gradient-to-br from-blue-50 to-indigo-50">
-                <CardContent className="p-3 lg:p-4">
-                  <div className="text-xs lg:text-sm text-gray-600">Empresas</div>
-                  <div className="text-xl lg:text-2xl font-bold text-blue-600">{companies.length}</div>
-                </CardContent>
-              </Card>
-              <Card className="bg-gradient-to-br from-purple-50 to-pink-50">
-                <CardContent className="p-3 lg:p-4">
-                  <div className="text-xs lg:text-sm text-gray-600">Análises</div>
-                  <div className="text-xl lg:text-2xl font-bold text-purple-600">
+            {/* Métricas rápidas - apenas quando expandido */}
+            {(sidebarOpen || sidebarHovered) && (
+              <div className="grid grid-cols-2 gap-2 lg:gap-3">
+                <Card className="bg-gradient-to-br from-blue-50 to-indigo-50">
+                  <CardContent className="p-3 lg:p-4">
+                    <div className="text-xs lg:text-sm text-gray-600">Empresas</div>
+                    <div className="text-xl lg:text-2xl font-bold text-blue-600">{companies.length}</div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-gradient-to-br from-purple-50 to-pink-50">
+                  <CardContent className="p-3 lg:p-4">
+                    <div className="text-xs lg:text-sm text-gray-600">Análises</div>
+                    <div className="text-xl lg:text-2xl font-bold text-purple-600">
+                      {companies.reduce((acc, c) => acc + (c.analyses?.length || 0), 0)}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* Métricas compactas quando fechado */}
+            {!(sidebarOpen || sidebarHovered) && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-center p-2 bg-blue-50 rounded-lg">
+                  <div className="text-lg font-bold text-blue-600">{companies.length}</div>
+                </div>
+                <div className="flex items-center justify-center p-2 bg-purple-50 rounded-lg">
+                  <div className="text-lg font-bold text-purple-600">
                     {companies.reduce((acc, c) => acc + (c.analyses?.length || 0), 0)}
                   </div>
-                </CardContent>
-              </Card>
-            </div>
+                </div>
+              </div>
+            )}
 
-            {/* Navegação de módulos (mantida) */}
+            {/* Navegação de módulos - responsiva */}
             <div className="space-y-2">
-              <h3 className="text-xs lg:text-sm font-semibold text-gray-500 uppercase tracking-wide px-2">
-                Módulos Inteligentes
-              </h3>
+              {(sidebarOpen || sidebarHovered) && (
+                <h3 className="text-xs lg:text-sm font-semibold text-gray-500 uppercase tracking-wide px-2">
+                  Módulos Inteligentes
+                </h3>
+              )}
               <nav className="space-y-1">
                 {[
                   { id: "dashboard", label: "Dashboard", icon: BarChart3 },
@@ -346,14 +378,19 @@ function DashboardContent() {
                     <button
                       key={item.id}
                       onClick={() => setActiveTab(item.id)}
-                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
+                      className={`w-full flex items-center ${
+                        sidebarOpen || sidebarHovered ? 'gap-3 px-3' : 'justify-center px-2'
+                      } py-2 rounded-lg transition-all ${
                         activeTab === item.id
                           ? "bg-blue-50 text-blue-700 font-medium shadow-sm"
                           : "text-gray-600 hover:bg-gray-50"
                       }`}
+                      title={!(sidebarOpen || sidebarHovered) ? item.label : undefined}
                     >
                       <Icon className="h-4 w-4 lg:h-5 lg:w-5" />
-                      <span className="text-sm lg:text-base">{item.label}</span>
+                      {(sidebarOpen || sidebarHovered) && (
+                        <span className="text-sm lg:text-base">{item.label}</span>
+                      )}
                     </button>
                   )
                 })}
@@ -365,7 +402,7 @@ function DashboardContent() {
         {/* Main Content */}
         <main
           className={`flex-1 transition-all duration-300 ${
-            sidebarOpen ? "lg:ml-80" : "ml-0"
+            sidebarOpen || sidebarHovered ? "lg:ml-80" : "lg:ml-20"
           } pt-16 lg:pt-20`}
         >
           <div className="p-4 lg:p-8 max-w-[2000px] mx-auto">

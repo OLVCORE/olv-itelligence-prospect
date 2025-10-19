@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import { detectTotvsLite } from '@/lib/services/technographics/totvs-lite'
 
 export async function GET(request: NextRequest) {
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Buscar dados da empresa via Admin Client
-    const supabase = createAdminClient()
+    const supabase = supabaseAdmin
     const { data: company, error: companyError } = await supabase
       .from('Company')
       .select('id, razao_social, nome_fantasia, website')
