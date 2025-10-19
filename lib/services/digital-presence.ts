@@ -358,66 +358,76 @@ async function findSocialMedia(
 
   const redesSociais: DigitalPresence['redesSociais'] = {}
 
-  // ESTRATÉGIAS COMPLETAS PARA CADA PLATAFORMA (6 estratégias cada)
+  // MODO RÁPIDO: reduz estratégias para evitar timeout
   const platforms = [
     { 
       name: 'instagram', 
       domain: 'instagram.com', 
-      strategies: [
-        `site:instagram.com "${fantasia || companyName}"`,
-        `site:instagram.com ${fantasia || companyName}`,
-        `"${fantasia || companyName}" instagram`,
-        `${fantasia || companyName} instagram`,
-        `instagram.com/${(fantasia || companyName).toLowerCase().replace(/\s+/g, '')}`,
-        `instagram.com/${(fantasia || companyName).toLowerCase().replace(/\s+/g, '')}`,
-      ]
+      strategies: FAST_MODE 
+        ? [`site:instagram.com "${fantasia || companyName}"`]
+        : [
+            `site:instagram.com "${fantasia || companyName}"`,
+            `site:instagram.com ${fantasia || companyName}`,
+            `"${fantasia || companyName}" instagram`,
+            `${fantasia || companyName} instagram`,
+            `instagram.com/${(fantasia || companyName).toLowerCase().replace(/\s+/g, '')}`,
+            `instagram.com/${(fantasia || companyName).toLowerCase().replace(/\s+/g, '')}`,
+          ]
     },
     { 
       name: 'linkedin', 
       domain: 'linkedin.com', 
-      strategies: [
-        `site:linkedin.com/company "${companyName}"`,
-        `site:linkedin.com/company ${companyName}`,
-        `"${companyName}" linkedin company`,
-        `${companyName} linkedin company`,
-        `site:linkedin.com "${fantasia || companyName}"`,
-        `"${fantasia || companyName}" linkedin`,
-      ]
+      strategies: FAST_MODE
+        ? [`site:linkedin.com/company "${companyName}"`]
+        : [
+            `site:linkedin.com/company "${companyName}"`,
+            `site:linkedin.com/company ${companyName}`,
+            `"${companyName}" linkedin company`,
+            `${companyName} linkedin company`,
+            `site:linkedin.com "${fantasia || companyName}"`,
+            `"${fantasia || companyName}" linkedin`,
+          ]
     },
     { 
       name: 'facebook', 
       domain: 'facebook.com', 
-      strategies: [
-        `site:facebook.com "${fantasia || companyName}"`,
-        `site:facebook.com ${fantasia || companyName}`,
-        `"${fantasia || companyName}" facebook`,
-        `${fantasia || companyName} facebook`,
-        `facebook.com/${(fantasia || companyName).toLowerCase().replace(/\s+/g, '')}`,
-      ]
+      strategies: FAST_MODE
+        ? [`site:facebook.com "${fantasia || companyName}"`]
+        : [
+            `site:facebook.com "${fantasia || companyName}"`,
+            `site:facebook.com ${fantasia || companyName}`,
+            `"${fantasia || companyName}" facebook`,
+            `${fantasia || companyName} facebook`,
+            `facebook.com/${(fantasia || companyName).toLowerCase().replace(/\s+/g, '')}`,
+          ]
     },
     { 
       name: 'twitter', 
       domain: 'twitter.com OR x.com', 
-      strategies: [
-        `(site:twitter.com OR site:x.com) "${fantasia || companyName}"`,
-        `(site:twitter.com OR site:x.com) ${fantasia || companyName}`,
-        `"${fantasia || companyName}" twitter`,
-        `"${fantasia || companyName}" x.com`,
-        `twitter.com/${(fantasia || companyName).toLowerCase().replace(/\s+/g, '')}`,
-        `x.com/${(fantasia || companyName).toLowerCase().replace(/\s+/g, '')}`,
-      ]
+      strategies: FAST_MODE
+        ? [`(site:twitter.com OR site:x.com) "${fantasia || companyName}"`]
+        : [
+            `(site:twitter.com OR site:x.com) "${fantasia || companyName}"`,
+            `(site:twitter.com OR site:x.com) ${fantasia || companyName}`,
+            `"${fantasia || companyName}" twitter`,
+            `"${fantasia || companyName}" x.com`,
+            `twitter.com/${(fantasia || companyName).toLowerCase().replace(/\s+/g, '')}`,
+            `x.com/${(fantasia || companyName).toLowerCase().replace(/\s+/g, '')}`,
+          ]
     },
     { 
       name: 'youtube', 
       domain: 'youtube.com', 
-      strategies: [
-        `site:youtube.com "${fantasia || companyName}"`,
-        `site:youtube.com ${fantasia || companyName}`,
-        `"${fantasia || companyName}" youtube`,
-        `${fantasia || companyName} youtube`,
-        `youtube.com/c/${(fantasia || companyName).toLowerCase().replace(/\s+/g, '')}`,
-        `youtube.com/@${(fantasia || companyName).toLowerCase().replace(/\s+/g, '')}`,
-      ]
+      strategies: FAST_MODE
+        ? [`site:youtube.com "${fantasia || companyName}"`]
+        : [
+            `site:youtube.com "${fantasia || companyName}"`,
+            `site:youtube.com ${fantasia || companyName}`,
+            `"${fantasia || companyName}" youtube`,
+            `${fantasia || companyName} youtube`,
+            `youtube.com/c/${(fantasia || companyName).toLowerCase().replace(/\s+/g, '')}`,
+            `youtube.com/@${(fantasia || companyName).toLowerCase().replace(/\s+/g, '')}`,
+          ]
     },
   ]
 
@@ -489,32 +499,40 @@ async function findMarketplaces(
 
   const marketplaces: DigitalPresence['marketplaces'] = []
 
-  // PORTAL B2B COMPLETOS + MARKETPLACES TRADICIONAIS (20 plataformas)
-  const platforms = [
-    // Portais B2B Específicos (PRIORIDADE!)
-    { name: 'B2Brazil', domains: ['b2brazil.com.br', 'b2brazil.com'] },
-    { name: 'GlobSupplies', domains: ['globsupplies.com', 'globsupplies.com/marketplace'] },
-    { name: 'Alibaba', domains: ['alibaba.com', 'alibaba.com.br'] },
-    { name: 'TradeFord', domains: ['tradeford.com'] },
-    { name: 'ExportHub', domains: ['exporthub.com'] },
-    { name: 'TradeKey', domains: ['tradekey.com'] },
-    { name: 'EC21', domains: ['ec21.com'] },
-    { name: 'Global Sources', domains: ['globalsources.com'] },
-    { name: 'Export Portal', domains: ['exportportal.com'] },
-    { name: 'World Trade', domains: ['worldtrade.com'] },
-    { name: 'Tridge', domains: ['tridge.com'] },
-    { name: 'ExportersIndia', domains: ['exportersindia.com'] },
-    { name: 'Go4WorldBusiness', domains: ['go4worldbusiness.com'] },
-    { name: 'Africa B2B', domains: ['africa-b2b.com'] },
-    { name: 'Foreign Trade Online', domains: ['foreigntradeonline.com'] },
-    
-    // Marketplaces Tradicionais
-    { name: 'Mercado Livre', domains: ['mercadolivre.com.br', 'mercadolibre.com'] },
-    { name: 'Amazon', domains: ['amazon.com.br'] },
-    { name: 'Magazine Luiza', domains: ['magazineluiza.com.br'] },
-    { name: 'Americanas', domains: ['americanas.com.br', 'shoptime.com.br', 'submarino.com.br'] },
-    { name: 'Shopee', domains: ['shopee.com.br'] },
-  ]
+  // MODO RÁPIDO: reduz plataformas para evitar timeout
+  const platforms = FAST_MODE
+    ? [
+        // Apenas 5 portais B2B mais importantes
+        { name: 'B2Brazil', domains: ['b2brazil.com.br'] },
+        { name: 'GlobSupplies', domains: ['globsupplies.com'] },
+        { name: 'Alibaba', domains: ['alibaba.com'] },
+        { name: 'TradeFord', domains: ['tradeford.com'] },
+        { name: 'ExportHub', domains: ['exporthub.com'] },
+      ]
+    : [
+        // BUSCA PROFUNDA (20 plataformas)
+        { name: 'B2Brazil', domains: ['b2brazil.com.br', 'b2brazil.com'] },
+        { name: 'GlobSupplies', domains: ['globsupplies.com', 'globsupplies.com/marketplace'] },
+        { name: 'Alibaba', domains: ['alibaba.com', 'alibaba.com.br'] },
+        { name: 'TradeFord', domains: ['tradeford.com'] },
+        { name: 'ExportHub', domains: ['exporthub.com'] },
+        { name: 'TradeKey', domains: ['tradekey.com'] },
+        { name: 'EC21', domains: ['ec21.com'] },
+        { name: 'Global Sources', domains: ['globalsources.com'] },
+        { name: 'Export Portal', domains: ['exportportal.com'] },
+        { name: 'World Trade', domains: ['worldtrade.com'] },
+        { name: 'Tridge', domains: ['tridge.com'] },
+        { name: 'ExportersIndia', domains: ['exportersindia.com'] },
+        { name: 'Go4WorldBusiness', domains: ['go4worldbusiness.com'] },
+        { name: 'Africa B2B', domains: ['africa-b2b.com'] },
+        { name: 'Foreign Trade Online', domains: ['foreigntradeonline.com'] },
+        // Marketplaces Tradicionais (serão rejeitados pela validação assertiva)
+        { name: 'Mercado Livre', domains: ['mercadolivre.com.br', 'mercadolibre.com'] },
+        { name: 'Amazon', domains: ['amazon.com.br'] },
+        { name: 'Magazine Luiza', domains: ['magazineluiza.com.br'] },
+        { name: 'Americanas', domains: ['americanas.com.br', 'shoptime.com.br', 'submarino.com.br'] },
+        { name: 'Shopee', domains: ['shopee.com.br'] },
+      ]
 
   for (const platform of platforms) {
     console.log(`[DigitalPresence] 🔍 Buscando ${platform.name} com ${platform.domains.length} domínios`)
