@@ -28,7 +28,7 @@ import { DecisionMakersModule } from "@/components/modules/DecisionMakersModule"
 import { FinancialModule } from "@/components/modules/FinancialModule"
 import { MaturityModule } from "@/components/modules/MaturityModule"
 import { BenchmarkModule } from "@/components/modules/BenchmarkModule"
-import { FitTOTVSModule } from "@/components/modules/FitTOTVSModule"
+import { FitTotvsModule } from "@/components/modules/FitTotvsModule"
 import { PlaybooksModule } from "@/components/modules/PlaybooksModule"
 import { AlertsModule } from "@/components/modules/AlertsModule"
 import { CompanySearchModule } from "@/components/modules/CompanySearchModule"
@@ -487,7 +487,10 @@ function DashboardContent() {
               </TabsContent>
 
               <TabsContent value="fit">
-                <FitTOTVSModule company={selectedCompany} data={mockFitTOTVS} />
+                <FitTotvsModule 
+                  companyId={selectedCompany?.id} 
+                  companyName={selectedCompany?.razao_social || selectedCompany?.nome_fantasia} 
+                />
               </TabsContent>
 
               <TabsContent value="playbooks">
