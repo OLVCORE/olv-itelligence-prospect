@@ -38,10 +38,13 @@ interface Alert {
 }
 
 interface AlertsModuleProps {
-  data: Alert[]
+  companyId?: string
+  companyName?: string
 }
 
-export function AlertsModule({ data }: AlertsModuleProps) {
+export function AlertsModule({ companyId, companyName }: AlertsModuleProps) {
+  // TODO: Buscar alertas reais quando engine estiver pronta (Sprint 2)
+  const data: Alert[] = [] // Vazio até engine de alertas 24/7 estar pronta
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "critical": return "bg-red-500/20 text-red-400 border-red-500/30"

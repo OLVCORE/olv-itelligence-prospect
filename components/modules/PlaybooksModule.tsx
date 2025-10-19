@@ -44,10 +44,13 @@ interface Playbook {
 }
 
 interface PlaybooksModuleProps {
-  data: Playbook[]
+  companyId?: string
+  companyName?: string
 }
 
-export function PlaybooksModule({ data }: PlaybooksModuleProps) {
+export function PlaybooksModule({ companyId, companyName }: PlaybooksModuleProps) {
+  // TODO: Buscar playbooks reais quando engine estiver pronta (Sprint 2)
+  const data: Playbook[] = [] // Vazio até biblioteca de playbooks estar pronta
   const getStageColor = (stage: string) => {
     switch (stage) {
       case "Prospecção": return "bg-blue-500/20 text-blue-400 border-blue-500/30"
