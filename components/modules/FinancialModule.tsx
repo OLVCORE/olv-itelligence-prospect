@@ -1,9 +1,10 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { formatCurrency, formatNumber, formatDate, formatPercent } from "@/lib/utils/format"
+import { formatCurrency, formatNumber, formatDate, formatPercent, formatCompanySize } from "@/lib/utils/format"
 import { 
   DollarSign,
   TrendingUp,
@@ -14,7 +15,8 @@ import {
   Building,
   Users as UsersIcon,
   Calendar,
-  BarChart3
+  BarChart3,
+  Loader2
 } from "lucide-react"
 import { 
   Tooltip,
@@ -45,10 +47,121 @@ interface FinancialData {
 }
 
 interface FinancialModuleProps {
-  data: FinancialData
+  companyId?: string
+  companyName?: string
 }
 
-export function FinancialModule({ data }: FinancialModuleProps) {
+export function FinancialModule({ companyId, companyName }: FinancialModuleProps) {
+  const [data, setData] = useState<FinancialData | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  // Buscar dados REAIS da empresa via última análise
+  useEffect(() => {
+    if (!companyId) {
+      setData(null)
+      return
+    }
+
+    const fetchFinancialData = async () => {
+      setLoading(true)
+      setError(null)
+
+      try {
+        console.log('[FinancialModule] 💰 Buscando dados financeiros para:', companyId)
+        
+        // Buscar última análise da empresa
+        const response = await fetch(`/api/companies/last-analysis?companyId=${companyId}`)
+        const result = await response.json()
+
+        if (result.status === 'success' && result.analysis) {
+          const analysis = result.analysis
+          
+          // Transformar dados da análise em FinancialData
+          const financialData: FinancialData = {
+            capitalSocial: analysis.receita?.capital?.valor || 0,
+            faturamentoAnual: 0, // TODO: Buscar de fonte real ou estimar
+            porte: analysis.receita?.identificacao?.porte || 'Não informado',
+            funcionarios: 0, // TODO: Buscar de fonte real
+            risco: 'Não avaliado', // TODO: Integrar Serasa quando disponível
+            scoreSerasa: 0, // TODO: Integrar Serasa quando disponível
+            situacao: analysis.receita?.situacao?.status || 'Não informado',
+            dataAbertura: analysis.receita?.identificacao?.dataAbertura || '',
+            naturezaJuridica: analysis.receita?.identificacao?.naturezaJuridica || 'Não informado',
+            regimeTributario: analysis.receita?.simples?.optante ? 'Simples Nacional' : 'Lucro Presumido',
+            indicadores: {
+              liquidezCorrente: 0,
+              endividamento: 0,
+              margemLiquida: 0,
+              roe: 0,
+              crescimentoAnual: 0
+            },
+            aiInsights: analysis.ai?.summary || 'Análise financeira em desenvolvimento'
+          }
+
+          setData(financialData)
+          console.log('[FinancialModule] ✅ Dados carregados:', financialData)
+        } else {
+          setError('Nenhuma análise disponível para esta empresa')
+        }
+      } catch (error: any) {
+        console.error('[FinancialModule] ❌ Erro:', error.message)
+        setError('Erro ao carregar dados financeiros')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchFinancialData()
+  }, [companyId])
+
+  if (!companyId) {
+    return (
+      <Card className="h-full">
+        <CardHeader>
+          <CardTitle className="text-white">Situação Financeira e Fiscal</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center text-muted-foreground py-8">
+            <DollarSign className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>Selecione uma empresa para ver dados financeiros</p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (loading) {
+    return (
+      <Card className="h-full">
+        <CardHeader>
+          <CardTitle className="text-white">Situação Financeira e Fiscal</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p className="text-sm text-muted-foreground">Carregando dados financeiros...</p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (error || !data) {
+    return (
+      <Card className="h-full">
+        <CardHeader>
+          <CardTitle className="text-white">Situação Financeira e Fiscal</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <AlertTriangle className="h-8 w-8 mx-auto mb-4 text-red-500" />
+            <p className="text-sm text-red-600 mb-4">{error || 'Sem dados disponíveis'}</p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
   const getRiskColor = (risk: string) => {
     switch (risk) {
       case "Baixo": return "text-emerald-500"

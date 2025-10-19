@@ -36,16 +36,8 @@ import { CompanyCard } from "@/components/CompanyCard"
 import { SearchBar } from "@/components/SearchBar"
 import { BenchmarkComparisonModal } from "@/components/modals/BenchmarkComparisonModal"
 import { useMultiSelect } from "@/hooks/useMultiSelect"
-import {
-  mockTechStack,
-  mockDecisionMakers,
-  mockFinancialData,
-  mockMaturityData,
-  mockBenchmarkData,
-  mockFitTOTVS,
-  mockPlaybooks,
-  mockAlerts
-} from "@/lib/mock-data"
+// REMOVIDO: Imports de mock-data
+// Sistema agora usa dados REAIS de APIs
 import {
   Building2,
   Search,
@@ -559,25 +551,40 @@ function DashboardContent() {
                 )}
               </TabsContent>
 
-              {/* Outros módulos (mantidos do original) */}
+              {/* Outros módulos (DADOS REAIS) */}
               <TabsContent value="tech">
-                <TechStackModule company={selectedCompany} data={mockTechStack} />
+                <TechStackModule 
+                  companyId={selectedCompany?.id} 
+                  companyName={selectedCompany?.tradeName || selectedCompany?.name}
+                />
               </TabsContent>
 
               <TabsContent value="decisores">
-                <DecisionMakersModule data={mockDecisionMakers} />
+                <DecisionMakersModule 
+                  companyId={selectedCompany?.id}
+                  companyName={selectedCompany?.tradeName || selectedCompany?.name}
+                />
               </TabsContent>
 
               <TabsContent value="financeiro">
-                <FinancialModule data={mockFinancialData} />
+                <FinancialModule 
+                  companyId={selectedCompany?.id}
+                  companyName={selectedCompany?.tradeName || selectedCompany?.name}
+                />
               </TabsContent>
 
               <TabsContent value="maturidade">
-                <MaturityModule data={mockMaturityData} />
+                <MaturityModule 
+                  companyId={selectedCompany?.id}
+                  companyName={selectedCompany?.tradeName || selectedCompany?.name}
+                />
               </TabsContent>
 
               <TabsContent value="benchmark">
-                <BenchmarkModule data={mockBenchmarkData} />
+                <BenchmarkModule 
+                  companyId={selectedCompany?.id}
+                  companyName={selectedCompany?.tradeName || selectedCompany?.name}
+                />
               </TabsContent>
 
               <TabsContent value="fit">
