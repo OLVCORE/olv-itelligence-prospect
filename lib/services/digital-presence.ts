@@ -34,6 +34,103 @@ interface DigitalPresence {
   }>
 }
 
+/**
+ * Valida se um resultado está realmente vinculado à empresa
+ * Verifica CNPJ, nome da empresa, sócios, domínio
+ */
+function validateCompanyLink(
+  itemUrl: string,
+  title: string,
+  snippet: string,
+  companyName: string,
+  cnpj: string,
+  fantasia?: string
+): { isValid: boolean; confidence: number; reason: string } {
+  const text = `${title} ${snippet}`.toLowerCase()
+  const url = itemUrl.toLowerCase()
+  
+  // 1. VALIDAÇÃO POR CNPJ (MAIS CONFIÁVEL)
+  const cnpjClean = cnpj.replace(/\D/g, '')
+  const cnpjInText = text.includes(cnpjClean) || url.includes(cnpjClean)
+  
+  if (cnpjInText) {
+    return { isValid: true, confidence: 100, reason: 'CNPJ encontrado no conteúdo' }
+  }
+  
+  // 2. VALIDAÇÃO POR NOME EXATO DA EMPRESA
+  const companyWords = companyName.toLowerCase().split(' ').filter(w => w.length > 2)
+  const fantasiaWords = fantasia ? fantasia.toLowerCase().split(' ').filter(w => w.length > 2) : []
+  const allWords = [...companyWords, ...fantasiaWords]
+  
+  const exactMatches = allWords.filter(word => {
+    const regex = new RegExp(`\\b${word}\\b`, 'i')
+    return regex.test(text) || regex.test(url)
+  })
+  
+  // 3. VALIDAÇÃO POR DOMÍNIO ESPECÍFICO
+  const domainMatches = allWords.some(word => {
+    const domainPattern = new RegExp(`[./]${word}[./]`, 'i')
+    return domainPattern.test(url)
+  })
+  
+  // 4. VALIDAÇÃO POR PALAVRAS-CHAVE ESPECÍFICAS
+  const specificKeywords = ['olv', 'internacional', 'comercio', 'importacao', 'exportacao']
+  const keywordMatches = specificKeywords.filter(keyword => 
+    text.includes(keyword) || url.includes(keyword)
+  )
+  
+  // 5. CALCULAR CONFIANÇA
+  let confidence = 0
+  let reason = ''
+  
+  if (exactMatches.length >= Math.min(3, allWords.length)) {
+    confidence = 90
+    reason = `Nome da empresa encontrado (${exactMatches.length}/${allWords.length} palavras)`
+  } else if (exactMatches.length >= 2) {
+    confidence = 70
+    reason = `Nome parcial da empresa encontrado (${exactMatches.length}/${allWords.length} palavras)`
+  } else if (domainMatches) {
+    confidence = 80
+    reason = 'Domínio contém nome da empresa'
+  } else if (keywordMatches.length >= 2) {
+    confidence = 60
+    reason = `Palavras-chave específicas encontradas (${keywordMatches.join(', ')})`
+  } else if (exactMatches.length >= 1) {
+    confidence = 40
+    reason = `Apenas 1 palavra da empresa encontrada`
+  } else {
+    confidence = 0
+    reason = 'Nenhuma correlação encontrada'
+  }
+  
+  // 6. FILTROS DE EXCLUSÃO
+  const exclusionPatterns = [
+    /pdf/i, // PDFs genéricos
+    /documento/i,
+    /arquivo/i,
+    /download/i,
+    /\.pdf$/i,
+    /barueri/i, // Cidade específica sem relação
+    /j\.a\.\s*oliveira/i, // Empresa diferente
+    /olvglobal/i, // Perfil diferente
+  ]
+  
+  const hasExclusion = exclusionPatterns.some(pattern => 
+    pattern.test(text) || pattern.test(url)
+  )
+  
+  if (hasExclusion) {
+    confidence = Math.max(0, confidence - 50)
+    reason += ' (filtro de exclusão aplicado)'
+  }
+  
+  return {
+    isValid: confidence >= 50,
+    confidence,
+    reason
+  }
+}
+
 export async function fetchDigitalPresence(
   companyName: string,
   cnpj: string,
@@ -176,18 +273,12 @@ async function findOfficialWebsite(
         
         if (isObviousExclusion) continue
 
-        // Verificar relevância com critérios mais flexíveis
-        const companyWords = companyName.toLowerCase().split(' ').filter(w => w.length > 2)
-        const fantasiaWords = fantasia ? fantasia.toLowerCase().split(' ').filter(w => w.length > 2) : []
-        const allWords = [...companyWords, ...fantasiaWords]
+        // VALIDAÇÃO ASSERTIVA - verificar se realmente pertence à empresa
+        const validation = validateCompanyLink(itemUrl, title, snippet, companyName, cnpj, fantasia)
         
-        const matches = allWords.filter(word => text.includes(word))
-        const cnpjInText = text.includes(cnpj.replace(/\D/g, ''))
-        
-        // Critério mais permissivo: pelo menos 1 palavra OU CNPJ
-        if (matches.length >= 1 || cnpjInText) {
-          console.log(`[DigitalPresence] ✅ Website candidato encontrado: ${itemUrl}`)
-          console.log(`[DigitalPresence] 📝 Matches: ${matches.length}, CNPJ: ${cnpjInText}`)
+        if (validation.isValid) {
+          console.log(`[DigitalPresence] ✅ Website VÁLIDO encontrado: ${itemUrl}`)
+          console.log(`[DigitalPresence] 📊 Confiança: ${validation.confidence}% - ${validation.reason}`)
           
           // Testar se está ativo
           const status = await checkWebsiteStatus(itemUrl)
@@ -197,6 +288,9 @@ async function findOfficialWebsite(
             title: title.replace(/\s*[-|].*$/, '').trim(),
             status,
           }
+        } else {
+          console.log(`[DigitalPresence] ❌ Website REJEITADO: ${itemUrl}`)
+          console.log(`[DigitalPresence] 📊 Confiança: ${validation.confidence}% - ${validation.reason}`)
         }
       }
     } catch (error) {
@@ -302,16 +396,12 @@ async function findSocialMedia(
           const snippet = item.snippet || ''
           const text = `${title} ${snippet}`.toLowerCase()
 
-          // Verificar se é realmente o perfil da empresa (critério mais permissivo)
-          const companyWords = (fantasia || companyName).toLowerCase().split(' ').filter(w => w.length > 2)
-          const matches = companyWords.filter(word => text.includes(word))
+          // VALIDAÇÃO ASSERTIVA - verificar se realmente pertence à empresa
+          const validation = validateCompanyLink(itemUrl, title, snippet, companyName, cnpj, fantasia)
           
-          // Aceitar se pelo menos 1 palavra da empresa aparecer OU se URL contém nome
-          const urlContainsName = companyWords.some(word => itemUrl.toLowerCase().includes(word))
-          
-          if (matches.length >= 1 || urlContainsName) {
-            console.log(`[DigitalPresence] ✅ ${platform.name} encontrado: ${itemUrl}`)
-            console.log(`[DigitalPresence] 📝 Matches: ${matches.length}, URL match: ${urlContainsName}`)
+          if (validation.isValid) {
+            console.log(`[DigitalPresence] ✅ ${platform.name} VÁLIDO encontrado: ${itemUrl}`)
+            console.log(`[DigitalPresence] 📊 Confiança: ${validation.confidence}% - ${validation.reason}`)
             
             if (platform.name === 'instagram') {
               redesSociais.instagram = { url: itemUrl }
@@ -412,15 +502,12 @@ async function findMarketplaces(
             const snippet = item.snippet || ''
             const text = `${title} ${snippet}`.toLowerCase()
 
-            // Verificar relevância (critério mais permissivo)
-            const companyWords = (fantasia || companyName).toLowerCase().split(' ').filter(w => w.length > 2)
-            const matches = companyWords.filter(word => text.includes(word))
-            const cnpjInText = text.includes(cnpj.replace(/\D/g, ''))
+            // VALIDAÇÃO ASSERTIVA - verificar se realmente pertence à empresa
+            const validation = validateCompanyLink(itemUrl, title, snippet, companyName, cnpj, fantasia)
             
-            // Aceitar se pelo menos 1 palavra da empresa OU CNPJ
-            if (matches.length >= 1 || cnpjInText) {
-              console.log(`[DigitalPresence] ✅ ${platform.name} encontrado: ${itemUrl}`)
-              console.log(`[DigitalPresence] 📝 Matches: ${matches.length}, CNPJ: ${cnpjInText}`)
+            if (validation.isValid) {
+              console.log(`[DigitalPresence] ✅ ${platform.name} VÁLIDO encontrado: ${itemUrl}`)
+              console.log(`[DigitalPresence] 📊 Confiança: ${validation.confidence}% - ${validation.reason}`)
               
               marketplaces.push({
                 plataforma: platform.name,
@@ -429,6 +516,9 @@ async function findMarketplaces(
               })
               
               break // Apenas o primeiro resultado válido por plataforma
+            } else {
+              console.log(`[DigitalPresence] ❌ ${platform.name} REJEITADO: ${itemUrl}`)
+              console.log(`[DigitalPresence] 📊 Confiança: ${validation.confidence}% - ${validation.reason}`)
             }
           }
         }
@@ -496,15 +586,12 @@ async function findJusbrasil(
         const snippet = item.snippet || ''
         const text = `${title} ${snippet}`.toLowerCase()
 
-        // Verificar se é realmente o perfil da empresa no Jusbrasil
-        const companyWords = (fantasia || companyName).toLowerCase().split(' ').filter(w => w.length > 2)
-        const matches = companyWords.filter(word => text.includes(word))
-        const cnpjInText = text.includes(cnpj.replace(/\D/g, ''))
+        // VALIDAÇÃO ASSERTIVA - verificar se realmente pertence à empresa
+        const validation = validateCompanyLink(itemUrl, title, snippet, companyName, cnpj, fantasia)
         
-        // Aceitar se pelo menos 1 palavra da empresa OU CNPJ
-        if (matches.length >= 1 || cnpjInText) {
-          console.log(`[DigitalPresence] ✅ Jusbrasil encontrado: ${itemUrl}`)
-          console.log(`[DigitalPresence] 📝 Matches: ${matches.length}, CNPJ: ${cnpjInText}`)
+        if (validation.isValid) {
+          console.log(`[DigitalPresence] ✅ Jusbrasil VÁLIDO encontrado: ${itemUrl}`)
+          console.log(`[DigitalPresence] 📊 Confiança: ${validation.confidence}% - ${validation.reason}`)
           
           // Tentar extrair informações do snippet
           let processos = 0
@@ -528,6 +615,9 @@ async function findJusbrasil(
             socios: socios > 0 ? socios : undefined,
             ultimaAtualizacao: new Date().toISOString().split('T')[0], // Data atual
           }
+        } else {
+          console.log(`[DigitalPresence] ❌ Jusbrasil REJEITADO: ${itemUrl}`)
+          console.log(`[DigitalPresence] 📊 Confiança: ${validation.confidence}% - ${validation.reason}`)
         }
       }
     } catch (error) {
@@ -594,13 +684,13 @@ async function findOtherLinks(
         
         if (isAlreadyFound) continue
 
-        // Verificar relevância
-        const companyWords = companyName.toLowerCase().split(' ').filter(w => w.length > 2)
-        const matches = companyWords.filter(word => text.includes(word))
-        const cnpjInText = text.includes(cnpj.replace(/\D/g, ''))
+        // VALIDAÇÃO ASSERTIVA - verificar se realmente pertence à empresa
+        const validation = validateCompanyLink(itemUrl, title, snippet, companyName, cnpj, fantasia)
         
-        // Aceitar se pelo menos 1 palavra da empresa OU CNPJ
-        if (matches.length >= 1 || cnpjInText) {
+        if (validation.isValid) {
+          console.log(`[DigitalPresence] ✅ Outro link VÁLIDO encontrado: ${itemUrl}`)
+          console.log(`[DigitalPresence] 📊 Confiança: ${validation.confidence}% - ${validation.reason}`)
+          
           // Classificar tipo de link
           let tipo = 'Outro'
           if (/catálogo|catalogo|produtos|portfolio|portfólio/i.test(text)) {
@@ -622,6 +712,9 @@ async function findOtherLinks(
             url: itemUrl,
             titulo: title,
           })
+        } else {
+          console.log(`[DigitalPresence] ❌ Outro link REJEITADO: ${itemUrl}`)
+          console.log(`[DigitalPresence] 📊 Confiança: ${validation.confidence}% - ${validation.reason}`)
         }
       }
     } catch (error) {
