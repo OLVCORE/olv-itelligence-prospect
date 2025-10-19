@@ -163,8 +163,19 @@ function validateCompanyLink(
 export async function fetchDigitalPresence(
   companyName: string,
   cnpj: string,
-  fantasia?: string
+  fantasia?: string,
+  website?: string
 ): Promise<DigitalPresence> {
+  // Extrair domínio do website para validação (se fornecido)
+  let domain: string | undefined = undefined
+  if (website) {
+    try {
+      domain = new URL(website.startsWith('http') ? website : `https://${website}`).hostname.replace('www.', '')
+      console.log('[DigitalPresence] 🌐 Domínio oficial fornecido:', domain)
+    } catch (e) {
+      console.warn('[DigitalPresence] ⚠️ Erro ao extrair domínio:', e)
+    }
+  }
   const apiKey = process.env.GOOGLE_API_KEY
   const cseId = process.env.GOOGLE_CSE_ID
 
@@ -192,12 +203,22 @@ export async function fetchDigitalPresence(
     if (Date.now() - startTime < maxTime) {
       console.log('[DigitalPresence] 🏠 Buscando website...')
       results.website = await findOfficialWebsite(companyName, cnpj, fantasia)
+      
+      // ATUALIZAR DOMÍNIO após encontrar website (para validações subsequentes)
+      if (results.website && !domain) {
+        try {
+          domain = new URL(results.website.url).hostname.replace('www.', '')
+          console.log('[DigitalPresence] 🌐 Domínio detectado:', domain)
+        } catch (e) {
+          console.warn('[DigitalPresence] ⚠️ Erro ao extrair domínio do website:', e)
+        }
+      }
     }
 
     // 2. Redes sociais (busca limitada)
     if (Date.now() - startTime < maxTime) {
       console.log('[DigitalPresence] 📱 Buscando redes sociais...')
-      results.redesSociais = await findSocialMedia(companyName, cnpj, fantasia)
+      results.redesSociais = await findSocialMedia(companyName, cnpj, fantasia, domain)
     }
 
     // 3. Jusbrasil (importante para empresas brasileiras)
@@ -303,7 +324,7 @@ async function findOfficialWebsite(
         if (isObviousExclusion) continue
 
         // VALIDAÇÃO ASSERTIVA - verificar se realmente pertence à empresa
-        const validation = validateCompanyLink(itemUrl, title, snippet, companyName, cnpj, fantasia)
+        const validation = validateCompanyLink(itemUrl, title, snippet, companyName, cnpj, fantasia, domain)
         
         if (validation.isValid) {
           console.log(`[DigitalPresence] ✅ Website VÁLIDO encontrado: ${itemUrl}`)
@@ -334,7 +355,8 @@ async function findOfficialWebsite(
 async function findSocialMedia(
   companyName: string,
   cnpj: string,
-  fantasia?: string
+  fantasia?: string,
+  domain?: string
 ): Promise<DigitalPresence['redesSociais']> {
   const apiKey = process.env.GOOGLE_API_KEY!
   const cseId = process.env.GOOGLE_CSE_ID!
@@ -616,7 +638,7 @@ async function findJusbrasil(
         const text = `${title} ${snippet}`.toLowerCase()
 
         // VALIDAÇÃO ASSERTIVA - verificar se realmente pertence à empresa
-        const validation = validateCompanyLink(itemUrl, title, snippet, companyName, cnpj, fantasia)
+        const validation = validateCompanyLink(itemUrl, title, snippet, companyName, cnpj, fantasia, domain)
         
         if (validation.isValid) {
           console.log(`[DigitalPresence] ✅ Jusbrasil VÁLIDO encontrado: ${itemUrl}`)
@@ -714,7 +736,7 @@ async function findOtherLinks(
         if (isAlreadyFound) continue
 
         // VALIDAÇÃO ASSERTIVA - verificar se realmente pertence à empresa
-        const validation = validateCompanyLink(itemUrl, title, snippet, companyName, cnpj, fantasia)
+        const validation = validateCompanyLink(itemUrl, title, snippet, companyName, cnpj, fantasia, domain)
         
         if (validation.isValid) {
           console.log(`[DigitalPresence] ✅ Outro link VÁLIDO encontrado: ${itemUrl}`)

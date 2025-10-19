@@ -54,7 +54,8 @@ export async function POST(req: Request) {
     const digitalPresence = await fetchDigitalPresence(
       receitaData.nome || '',
       resolvedCnpj,
-      receitaData.fantasia
+      receitaData.fantasia,
+      undefined // website será detectado na busca
     )
 
     // 2b. Buscar notícias (mantém busca separada para controle)
