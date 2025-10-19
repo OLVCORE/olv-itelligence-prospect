@@ -72,16 +72,16 @@ export function FitTotvsModule({ companyId, companyName }: FitTotvsModuleProps) 
     }
   }, [companyId])
 
-  const getTemperatureColor = (chroma: 'frio' | 'morno' | 'quente') => {
-    switch (chroma) {
+  const getTemperatureColor = (temp: 'frio' | 'morno' | 'quente') => {
+    switch (temp) {
       case 'frio': return 'text-blue-600 bg-blue-50 border-blue-200'
       case 'morno': return 'text-orange-600 bg-orange-50 border-orange-200'
       case 'quente': return 'text-red-600 bg-red-50 border-red-200'
     }
   }
 
-  const getTemperatureIcon = (chroma: 'frio' | 'morno' | 'quente') => {
-    switch (chroma) {
+  const getTemperatureIcon = (temp: 'frio' | 'morno' | 'quente') => {
+    switch (temp) {
       case 'frio': return '❄️'
       case 'morno': return '🌡️'
       case 'quente': return '🔥'
@@ -169,7 +169,7 @@ export function FitTotvsModule({ companyId, companyName }: FitTotvsModuleProps) 
                   <span className="text-sm text-muted-foreground">Confiança:</span>
                   <SmartTooltip 
                     score={result.confidence_score} 
-                    type="confiancula"
+                    type="confianca"
                     customLabel="Score de Confiança"
                     customDescription={`Baseado em ${result.evidences.length} evidências encontradas`}
                   >
