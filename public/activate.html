@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ativar Dados Reais - OLV Intelligence</title>
+    <style>
+        body { font-family: monospace; padding: 40px; background: #1a1a1a; color: #00ff00; }
+        .log { margin: 10px 0; }
+        .success { color: #00ff00; }
+        .error { color: #ff0000; }
+        .info { color: #00aaff; }
+        button { padding: 20px 40px; font-size: 18px; cursor: pointer; background: #00ff00; border: none; color: #000; font-weight: bold; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <h1>🚀 ATIVAR DADOS REAIS - OLV INTELLIGENCE</h1>
+    <button id="activateBtn" onclick="activateAll()">ANALISAR TODAS AS EMPRESAS</button>
+    <div id="logs"></div>
+
+    <script>
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `log ${type}`;
+            div.textContent = message;
+            document.getElementById('logs').appendChild(div);
+        }
+
+        async function activateAll() {
+            const btn = document.getElementById('activateBtn');
+            btn.disabled = true;
+            
+            log('🚀 INICIANDO ATIVAÇÃO...', 'info');
+            log('', 'info');
+
+            try {
+                // Buscar empresas
+                log('📊 Buscando empresas no Supabase...', 'info');
+                const companiesRes = await fetch('/api/companies/list');
+                const companiesData = await companiesRes.json();
+                
+                const companies = companiesData.companies || [];
+                log(`✅ Encontradas ${companies.length} empresas`, 'success');
+                log('', 'info');
+
+                // Analisar cada empresa
+                for (const company of companies) {
+                    log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'info');
+                    log(`🔍 Analisando: ${company.tradeName || company.name}`, 'info');
+                    log(`   CNPJ: ${company.cnpj}`, 'info');
+
+                    try {
+                        const response = await fetch('/api/companies/search', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                                cnpj: company.cnpj,
+                                useAI: true
+                            })
+                        });
+
+                        const result = await response.json();
+
+                        if (result.status === 'success') {
+                            log(`✅ SUCESSO!`, 'success');
+                            log(`   Domain: ${result.company?.domain || 'não encontrado'}`, 'success');
+                            log(`   Score: ${result.analysis?.score || 'N/A'}`, 'success');
+                        } else {
+                            log(`⚠️ ${result.message}`, 'error');
+                        }
+
+                        // Rate limit: 3s entre cada
+                        log(`   Aguardando 3s...`, 'info');
+                        await new Promise(r => setTimeout(r, 3000));
+
+                    } catch (err) {
+                        log(`❌ ERRO: ${err.message}`, 'error');
+                    }
+                }
+
+                log('', 'info');
+                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+                log('✅ ATIVAÇÃO COMPLETA!', 'success');
+                log('🎯 Recarregue o dashboard para ver dados REAIS', 'success');
+
+            } catch (error) {
+                log(`❌ ERRO FATAL: ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
+
