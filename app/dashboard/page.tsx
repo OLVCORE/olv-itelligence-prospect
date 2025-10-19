@@ -257,6 +257,7 @@ function DashboardContent() {
   const handleCompanyClick = (company: Company) => {
     setCurrentCompany(company)
     setShowCompanyDetails(true)
+    selectCompany(company) // Definir empresa selecionada para os módulos
   }
 
   const handleSelectCompany = (company: Company) => {
@@ -489,7 +490,7 @@ function DashboardContent() {
               <TabsContent value="fit">
                 <FitTotvsModule 
                   companyId={selectedCompany?.id} 
-                  companyName={selectedCompany?.razao_social || selectedCompany?.nome_fantasia} 
+                  companyName={selectedCompany?.name || selectedCompany?.tradeName} 
                 />
               </TabsContent>
 

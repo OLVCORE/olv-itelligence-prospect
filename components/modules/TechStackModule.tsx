@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { FitTotvsModule } from "@/components/modules/FitTotvsModule"
 import { 
   CheckCircle, 
   AlertCircle, 
@@ -34,12 +35,13 @@ interface TechStackItem {
 }
 
 interface TechStackModuleProps {
+  company?: any
   data: TechStackItem[]
   companyName?: string
   isLoading?: boolean
 }
 
-export function TechStackModule({ data, companyName = "Empresa", isLoading = false }: TechStackModuleProps) {
+export function TechStackModule({ company, data, companyName = "Empresa", isLoading = false }: TechStackModuleProps) {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "Confirmado": return <CheckCircle className="h-5 w-5 text-emerald-500" />
@@ -68,6 +70,12 @@ export function TechStackModule({ data, companyName = "Empresa", isLoading = fal
 
   return (
     <div className="space-y-6">
+      {/* FIT TOTVS Module */}
+      <FitTotvsModule 
+        companyId={company?.id} 
+        companyName={company?.name || company?.tradeName} 
+      />
+
       {/* Header com Explicação */}
       <Card className="bg-gradient-to-br from-blue-900/30 to-slate-800/30 border-slate-700/50">
         <CardHeader>
