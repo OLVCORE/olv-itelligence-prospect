@@ -7,17 +7,10 @@ import { analyzeWithOpenAI } from '@/lib/services/openai-analysis'
 
 /**
  * POST /api/companies/preview
- * MICRO-SPRINT 1: Deadline Budget + Pipeline por Fases + JSON Sempre
  * Gera pré-relatório SEM persistir no banco
- * Retorna dados parciais rapidamente e continua em background se necessário
+ * Retorna dados da ReceitaWS + Google CSE + OpenAI (opcional)
  */
 export async function POST(req: Request) {
-  const startTime = Date.now()
-  const DEADLINE_MS = 7000 // 7 segundos deadline (Vercel limite ~10s)
-  const traceId = `trace-${Date.now()}-${Math.random().toString(36).substring(7)}`
-
-  console.log(`[API /preview] 🚀 Iniciando preview - TraceId: ${traceId}`)
-
   try {
     const body = await req.json()
     const { cnpj: rawCnpj, website: rawWebsite, useAI = false } = body
@@ -52,220 +45,55 @@ export async function POST(req: Request) {
 
     console.log('[API /preview] ✅ CNPJ validado:', resolvedCnpj)
 
-    // ==========================================
-    // FASE 1: ReceitaWS (OBRIGATÓRIA - até 1.5s)
-    // ==========================================
-    let receitaData = null
-    const phase1Start = Date.now()
+    // 1. Buscar dados da ReceitaWS
+    console.log('[API /preview] 📊 Buscando ReceitaWS...')
+    const receitaData = await fetchReceitaWS(resolvedCnpj)
 
-    try {
-      console.log('[API /preview] 📊 FASE 1: Buscando ReceitaWS...')
-      receitaData = await fetchReceitaWS(resolvedCnpj)
-      const phase1Duration = Date.now() - phase1Start
-      console.log(`[API /preview] ✅ FASE 1 concluída em ${phase1Duration}ms`)
-    } catch (error: any) {
-      const phase1Duration = Date.now() - phase1Start
-      console.error(`[API /preview] ❌ FASE 1 falhou em ${phase1Duration}ms:`, error.message)
+    // 2. Buscar presença digital completa (website + redes sociais + marketplaces)
+    console.log('[API /preview] 🔍 Buscando presença digital completa...')
+    const digitalPresence = await fetchDigitalPresence(
+      receitaData.nome || '',
+      resolvedCnpj,
+      receitaData.fantasia,
+      undefined // website será detectado na busca
+    )
 
-      // SEMPRE retornar JSON, nunca HTML
-      return NextResponse.json(
-        {
-          status: 'error',
-          message: error.message.includes('429')
-            ? 'Limite de requisições da ReceitaWS atingido. Tente novamente em alguns minutos.'
-            : 'Erro ao buscar dados da Receita Federal. Tente novamente.',
-          code: error.message.includes('429') ? 'RATE_LIMIT' : 'RECEITA_ERROR',
-          traceId,
-        },
-        { status: error.message.includes('429') ? 429 : 500 }
-      )
-    }
+    // 2b. Buscar notícias (mantém busca separada para controle)
+    console.log('[API /preview] 📰 Buscando notícias...')
+    const googleData = await fetchGoogleCSE(
+      receitaData.nome || receitaData.fantasia || resolvedCnpj,
+      resolvedCnpj
+    )
 
-    // Verificar budget restante
-    const budgetRemaining = DEADLINE_MS - (Date.now() - startTime)
-    console.log(`[API /preview] ⏱️ Budget restante após FASE 1: ${budgetRemaining}ms`)
-
-    // ==========================================
-    // FASE 2: Website Oficial (até 2.5s total)
-    // ==========================================
-    let websiteData = null
-    let domain = null
-
-    if (budgetRemaining > 1000) {
-      const phase2Start = Date.now()
-      try {
-        console.log('[API /preview] 🏠 FASE 2: Buscando website oficial...')
-
-        // Busca rápida: apenas 1 estratégia mais eficaz
-        const apiKey = process.env.GOOGLE_API_KEY
-        const cseId = process.env.GOOGLE_CSE_ID
-
-        if (apiKey && cseId) {
-          const query = receitaData.fantasia
-            ? `"${receitaData.fantasia}" CNPJ ${cnpj}`
-            : `"${receitaData.nome}" CNPJ ${cnpj}`
-
-          const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cseId}&q=${encodeURIComponent(
-            query
-          )}&num=5`
-
-          const controller = new AbortController()
-          const timeoutId = setTimeout(() => controller.abort(), 2000) // 2s timeout
-
-          const response = await fetch(url, { signal: controller.signal })
-          clearTimeout(timeoutId)
-
-          if (response.ok) {
-            const data = await response.json()
-            const items = data.items || []
-
-            for (const item of items) {
-              const itemUrl = item.link || ''
-              const title = item.title || ''
-
-              // Filtro simples: não pode ser rede social ou marketplace
-              const isObvious =
-                /instagram|facebook|linkedin|twitter|youtube|mercadolivre|amazon|americanas/i.test(
-                  itemUrl
-                )
-
-              if (!isObvious) {
-                websiteData = { url: itemUrl, title: title.replace(/\s*[-|].*$/, '').trim() }
-                domain = new URL(itemUrl).hostname.replace('www.', '')
-                console.log(`[API /preview] ✅ Website detectado: ${itemUrl}`)
-                break
-              }
-            }
-          }
-        }
-
-        // FALLBACK: construir domínio heurístico
-        if (!domain && receitaData.fantasia) {
-          const cleanName = receitaData.fantasia.toLowerCase().replace(/[^a-z0-9]/g, '')
-          domain = `${cleanName}.com.br`
-          console.log(`[API /preview] 🌐 Domínio heurístico: ${domain}`)
-        }
-
-        const phase2Duration = Date.now() - phase2Start
-        console.log(`[API /preview] ✅ FASE 2 concluída em ${phase2Duration}ms`)
-      } catch (error: any) {
-        const phase2Duration = Date.now() - phase2Start
-        console.warn(`[API /preview] ⚠️ FASE 2 timeout/erro em ${phase2Duration}ms:`, error.message)
-        // Continuar mesmo sem website
-      }
-    } else {
-      console.log('[API /preview] ⏭️ FASE 2 pulada (budget insuficiente)')
-    }
-
-    const budgetAfterPhase2 = DEADLINE_MS - (Date.now() - startTime)
-    console.log(`[API /preview] ⏱️ Budget restante após FASE 2: ${budgetAfterPhase2}ms`)
-
-    // ==========================================
-    // FASE 3: Notícias (até 3.5s total) - OPCIONAL
-    // ==========================================
-    let newsItems: any[] = []
-
-    if (budgetAfterPhase2 > 1000) {
-      const phase3Start = Date.now()
-      try {
-        console.log('[API /preview] 📰 FASE 3: Buscando notícias...')
-
-        const googleData = await fetchGoogleCSE(
-          receitaData.nome || receitaData.fantasia || resolvedCnpj,
-          resolvedCnpj
-        )
-
-        newsItems = googleData.news.slice(0, 3)
-
-        const phase3Duration = Date.now() - phase3Start
-        console.log(`[API /preview] ✅ FASE 3 concluída em ${phase3Duration}ms - ${newsItems.length} notícias`)
-      } catch (error: any) {
-        const phase3Duration = Date.now() - phase3Start
-        console.warn(`[API /preview] ⚠️ FASE 3 timeout/erro em ${phase3Duration}ms:`, error.message)
-        // Continuar mesmo sem notícias
-      }
-    } else {
-      console.log('[API /preview] ⏭️ FASE 3 pulada (budget insuficiente)')
-    }
-
-    const budgetAfterPhase3 = DEADLINE_MS - (Date.now() - startTime)
-    console.log(`[API /preview] ⏱️ Budget restante após FASE 3: ${budgetAfterPhase3}ms`)
-
-    // ==========================================
-    // FASE 4: Deep Scan (ADIADO para background se budget insuficiente)
-    // ==========================================
-    const needsDeepScan = budgetAfterPhase3 < 2000
-    const jobId = needsDeepScan ? `job-${Date.now()}-${Math.random().toString(36).substring(7)}` : null
-
-    if (needsDeepScan) {
-      console.log(`[API /preview] ⏭️ FASE 4 adiada - JobId: ${jobId}`)
-      
-      // DISPARAR deep-scan assíncrono (sem await)
-      fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/preview/deep-scan`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          cnpj: resolvedCnpj,
-          jobId,
-          companyName: receitaData.nome,
-          fantasia: receitaData.fantasia,
-          website: websiteData?.url,
-        }),
-      }).catch((err) => {
-        console.error('[API /preview] ⚠️ Erro ao disparar deep-scan:', err)
+    // 3. Análise OpenAI (opcional)
+    let aiAnalysis = null
+    if (useAI) {
+      console.log('[API /preview] 🧠 Gerando análise preliminar...')
+      aiAnalysis = await analyzeWithOpenAI({
+        company: receitaData,
+        website: googleData.website?.url || null,
+        news: googleData.news,
       })
     }
 
-    // ==========================================
-    // FASE 5: Análise IA (OPCIONAL - apenas se useAI=true e budget permite)
-    // ==========================================
-    let aiAnalysis = null
+    console.log('[API /preview] ✅ Preview gerado com sucesso')
 
-    if (useAI && budgetAfterPhase3 > 1500) {
-      const phase5Start = Date.now()
-      try {
-        console.log('[API /preview] 🧠 FASE 5: Gerando análise preliminar...')
-        aiAnalysis = await analyzeWithOpenAI({
-          company: receitaData,
-          website: websiteData?.url || null,
-          news: newsItems,
-        })
-        const phase5Duration = Date.now() - phase5Start
-        console.log(`[API /preview] ✅ FASE 5 concluída em ${phase5Duration}ms`)
-      } catch (error: any) {
-        const phase5Duration = Date.now() - phase5Start
-        console.warn(`[API /preview] ⚠️ FASE 5 timeout/erro em ${phase5Duration}ms:`, error.message)
-        // Continuar mesmo sem IA
-      }
-    } else if (useAI) {
-      console.log('[API /preview] ⏭️ FASE 5 pulada (budget insuficiente)')
-    }
-
-    // ==========================================
-    // MONTAGEM DO RESPONSE (SEMPRE JSON)
-    // ==========================================
-    const totalDuration = Date.now() - startTime
-    console.log(`[API /preview] ✅ Preview concluído em ${totalDuration}ms - TraceId: ${traceId}`)
-
+    // Normalizar dados da Receita
     const preview = {
-      cnpj: resolvedCnpj,
-
-      // Dados da Receita Federal (SEMPRE disponível)
+      mode: 'preview',
       receita: {
-        nome: receitaData.nome,
-        fantasia: receitaData.fantasia,
-        cnpj: receitaData.cnpj,
-        tipo: receitaData.tipo,
-        porte: receitaData.porte,
-        natureza_juridica: receitaData.natureza_juridica,
-        data_abertura: receitaData.abertura,
-        capital_social: receitaData.capital_social,
-        situacao: receitaData.situacao,
-        data_situacao: receitaData.data_situacao,
-        motivo_situacao: receitaData.motivo_situacao,
-        atividade_principal: receitaData.atividade_principal,
-        atividades_secundarias: receitaData.atividades_secundarias || [],
-        qsa: receitaData.qsa || [],
+        // Identificação
+        identificacao: {
+          cnpj: receitaData.cnpj,
+          razaoSocial: receitaData.nome,
+          nomeFantasia: receitaData.fantasia,
+          tipo: receitaData.tipo,
+          porte: receitaData.porte,
+          naturezaJuridica: receitaData.natureza_juridica,
+          dataAbertura: receitaData.abertura,
+          dataAtualizacao: receitaData.ultima_atualizacao,
+        },
+        // Endereço
         endereco: {
           logradouro: receitaData.logradouro,
           numero: receitaData.numero,
@@ -274,89 +102,72 @@ export async function POST(req: Request) {
           municipio: receitaData.municipio,
           uf: receitaData.uf,
           cep: receitaData.cep,
-        },
-        contato: {
-          telefone: receitaData.telefone,
           email: receitaData.email,
+          telefone: receitaData.telefone,
         },
+        // Situação
+        situacao: {
+          status: receitaData.situacao,
+          data: receitaData.data_situacao,
+          motivo: receitaData.motivo_situacao,
+        },
+        // Capital
+        capital: {
+          valor: receitaData.capital_social,
+        },
+        // Atividades
+        atividades: {
+          principal: receitaData.atividade_principal,
+          secundarias: receitaData.atividades_secundarias,
+        },
+        // Quadro societário
+        qsa: receitaData.qsa || [],
+        // Simples/MEI
         simples: {
-          optante: receitaData.simples_optante,
-          data_opcao: receitaData.simples_data_opcao,
-          data_exclusao: receitaData.simples_data_exclusao,
+          optante: receitaData.simples?.optante,
+          dataOpcao: receitaData.simples?.data_opcao,
+          dataExclusao: receitaData.simples?.data_exclusao,
         },
-        mei: receitaData.mei,
+        mei: {
+          optante: receitaData.simples?.ultimo_evento === 'Mei',
+        },
       },
-
-      // Presença Digital (parcial ou completo)
+      // Website e notícias
+      // Presença Digital Completa (NOVO!)
       presencaDigital: {
-        website: websiteData,
-        redesSociais: {}, // Deep-scan
-        marketplaces: [], // Deep-scan
-        jusbrasil: null, // Deep-scan
-        outrosLinks: [], // Deep-scan
-        noticias: newsItems,
+        website: digitalPresence.website,
+        redesSociais: digitalPresence.redesSociais,
+        marketplaces: digitalPresence.marketplaces,
+        outrosLinks: digitalPresence.outrosLinks,
+        noticias: googleData.news.slice(0, 3),
       },
-
       // Mantém enrichment para compatibilidade
       enrichment: {
-        website: websiteData?.url || null,
-        news: newsItems,
+        website: digitalPresence.website || googleData.website,
+        news: googleData.news.slice(0, 3),
       },
-
-      // Análise IA (se disponível)
-      aiAnalysis,
-
-      // Metadados
-      metadata: {
-        traceId,
-        generatedAt: new Date().toISOString(),
-        durationMs: totalDuration,
-        phases: {
-          receita: true,
-          website: !!websiteData,
-          news: newsItems.length > 0,
-          ai: !!aiAnalysis,
-          deepScan: !!jobId,
-        },
-        jobId, // null se completo, ou jobId se precisa deep-scan
-      },
+      // IA (opcional)
+      ai: aiAnalysis ? {
+        score: aiAnalysis.score,
+        summary: aiAnalysis.insights.slice(0, 2).join(' '), // 2 frases de resumo
+        insights: aiAnalysis.insights,
+        redFlags: aiAnalysis.redFlags,
+      } : null,
     }
 
-    return NextResponse.json(
-      {
-        status: jobId ? 'partial' : 'success',
-        preview,
-        message: jobId
-          ? 'Pré-relatório parcial gerado. Varredura profunda em andamento...'
-          : 'Pré-relatório gerado com sucesso',
-      },
-      {
-        headers: {
-          'X-Trace-Id': traceId,
-          'X-Duration-Ms': totalDuration.toString(),
-        },
-      }
-    )
+    return NextResponse.json({
+      status: 'success',
+      data: preview,
+    })
   } catch (error: any) {
-    const totalDuration = Date.now() - startTime
-    console.error(`[API /preview] ❌ Erro geral em ${totalDuration}ms:`, error)
-
-    // SEMPRE retornar JSON, nunca HTML
+    console.error('[API /preview] ❌ Erro:', error)
     return NextResponse.json(
       {
         status: 'error',
-        message: 'Erro ao gerar pré-relatório. Tente novamente.',
-        code: 'INTERNAL_ERROR',
-        traceId,
-        durationMs: totalDuration,
+        message: error.message || 'Erro interno ao gerar preview',
       },
-      {
-        status: 500,
-        headers: {
-          'X-Trace-Id': traceId,
-          'X-Duration-Ms': totalDuration.toString(),
-        },
-      }
+      { status: 500 }
     )
   }
 }
+
