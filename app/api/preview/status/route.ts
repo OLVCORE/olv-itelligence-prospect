@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createAdminClient } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 
 /**
  * GET /api/preview/status?jobId=<id>
@@ -21,10 +21,8 @@ export async function GET(req: Request) {
     console.log(`[API /status] 🔍 Verificando status - JobId: ${jobId}`)
 
     // Buscar no cache
-    const supabase = createAdminClient()
-
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from('preview_cache')
         .select('*')
         .eq('job_id', jobId)

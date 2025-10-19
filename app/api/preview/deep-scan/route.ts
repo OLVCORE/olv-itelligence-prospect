@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { fetchDigitalPresence } from '@/lib/services/digital-presence'
 import { fetchGoogleCSE } from '@/lib/services/google-cse'
 import { analyzeWithOpenAI } from '@/lib/services/openai-analysis'
-import { createAdminClient } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 
 /**
  * POST /api/preview/deep-scan
@@ -119,8 +119,6 @@ export async function POST(req: Request) {
     }
 
     // 5. Salvar resultado no cache (Supabase)
-    const supabase = createAdminClient()
-
     const cacheData = {
       job_id: jobId,
       cnpj,
@@ -132,7 +130,7 @@ export async function POST(req: Request) {
 
     // Tentar salvar no cache (se tabela existir)
     try {
-      await supabase.from('preview_cache').upsert(cacheData, {
+      await supabaseAdmin.from('preview_cache').upsert(cacheData, {
         onConflict: 'job_id',
       })
       console.log(`[API /deep-scan] ✅ Resultado salvo no cache: ${jobId}`)
@@ -156,8 +154,7 @@ export async function POST(req: Request) {
 
     // Salvar erro no cache também (para não ficar em pending infinito)
     try {
-      const supabase = createAdminClient()
-      await supabase.from('preview_cache').upsert({
+      await supabaseAdmin.from('preview_cache').upsert({
         job_id: body.jobId,
         cnpj: body.cnpj,
         status: 'error',
