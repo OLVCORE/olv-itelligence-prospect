@@ -290,7 +290,14 @@ export function PreviewModal({
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Capital Social</p>
-                  <p className="font-semibold text-sm">{formatCurrency(mergedData.receita.capital.valor)}</p>
+                  <p className="font-semibold text-sm">
+                    {formatCurrency(
+                      // GUARD: Se capital > 1M, pode estar multiplicado - dividir por 1000
+                      mergedData.receita.capital.valor > 1000000 
+                        ? mergedData.receita.capital.valor / 1000 
+                        : mergedData.receita.capital.valor
+                    )}
+                  </p>
                 </div>
               </div>
             </section>
@@ -847,7 +854,7 @@ export function PreviewModal({
                               <div className="flex justify-between text-xs mb-1">
                                 <span className="font-medium">{labels[key]}</span>
                                 <span className="text-muted-foreground">
-                                  Peso: {formatPercent(data.peso * 100, true)} • 
+                                  Peso: {formatPercent(data.peso, true)} • 
                                   Valor: {data.valor}/100 • 
                                   Contribui: {data.contribuicao.toFixed(1)}
                                 </span>
@@ -1173,37 +1180,37 @@ export function PreviewModal({
                       <tbody>
                         <tr className="border-b">
                           <td className="py-1">1. Receita/Porte (capital social, porte)</td>
-                          <td className="text-center">{formatPercent(mergedData.propensityScore.breakdown.receita_porte.peso * 100, true)}</td>
+                          <td className="text-center">{formatPercent(mergedData.propensityScore.breakdown.receita_porte.peso, true)}</td>
                           <td className="text-center">{mergedData.propensityScore.breakdown.receita_porte.valor}/100</td>
                           <td className="text-right font-semibold">{mergedData.propensityScore.breakdown.receita_porte.contribuicao.toFixed(1)}</td>
                         </tr>
                         <tr className="border-b">
                           <td className="py-1">2. Presença Digital (website, redes, marketplaces)</td>
-                          <td className="text-center">{formatPercent(mergedData.propensityScore.breakdown.presenca_digital.peso * 100, true)}</td>
+                          <td className="text-center">{formatPercent(mergedData.propensityScore.breakdown.presenca_digital.peso, true)}</td>
                           <td className="text-center">{mergedData.propensityScore.breakdown.presenca_digital.valor}/100</td>
                           <td className="text-right font-semibold">{mergedData.propensityScore.breakdown.presenca_digital.contribuicao.toFixed(1)}</td>
                         </tr>
                         <tr className="border-b">
                           <td className="py-1">3. Stack/TOTVS (tecnografia, produtos detectados)</td>
-                          <td className="text-center">{formatPercent(mergedData.propensityScore.breakdown.stack_totvs.peso * 100, true)}</td>
+                          <td className="text-center">{formatPercent(mergedData.propensityScore.breakdown.stack_totvs.peso, true)}</td>
                           <td className="text-center">{mergedData.propensityScore.breakdown.stack_totvs.valor}/100</td>
                           <td className="text-right font-semibold">{mergedData.propensityScore.breakdown.stack_totvs.contribuicao.toFixed(1)}</td>
                         </tr>
                         <tr className="border-b">
                           <td className="py-1">4. Notícias Recentes (quantidade, recência, sentimento)</td>
-                          <td className="text-center">{formatPercent(mergedData.propensityScore.breakdown.noticias.peso * 100, true)}</td>
+                          <td className="text-center">{formatPercent(mergedData.propensityScore.breakdown.noticias.peso, true)}</td>
                           <td className="text-center">{mergedData.propensityScore.breakdown.noticias.valor}/100</td>
                           <td className="text-right font-semibold">{mergedData.propensityScore.breakdown.noticias.contribuicao.toFixed(1)}</td>
                         </tr>
                         <tr className="border-b">
                           <td className="py-1">5. Regulatórios (situação cadastral, processos)</td>
-                          <td className="text-center">{formatPercent(mergedData.propensityScore.breakdown.regulatorios.peso * 100, true)}</td>
+                          <td className="text-center">{formatPercent(mergedData.propensityScore.breakdown.regulatorios.peso, true)}</td>
                           <td className="text-center">{mergedData.propensityScore.breakdown.regulatorios.valor}/100</td>
                           <td className="text-right font-semibold">{mergedData.propensityScore.breakdown.regulatorios.contribuicao.toFixed(1)}</td>
                         </tr>
                         <tr className="border-b font-semibold">
                           <td className="py-1">6. Setor/Benchmark (comparação setorial)</td>
-                          <td className="text-center">{formatPercent(mergedData.propensityScore.breakdown.setor_benchmark.peso * 100, true)}</td>
+                          <td className="text-center">{formatPercent(mergedData.propensityScore.breakdown.setor_benchmark.peso, true)}</td>
                           <td className="text-center">{mergedData.propensityScore.breakdown.setor_benchmark.valor}/100</td>
                           <td className="text-right">{mergedData.propensityScore.breakdown.setor_benchmark.contribuicao.toFixed(1)}</td>
                         </tr>

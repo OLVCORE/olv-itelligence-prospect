@@ -282,6 +282,20 @@ function DashboardContent() {
       capitalSocial: company.capital?.toString() || '0'
     })
   }
+  
+  const handleAnalyzeCompany = async (company: Company) => {
+    // Abrir SearchBar com CNPJ para gerar NOVO relatório
+    const searchBar = document.querySelector('input[placeholder*="CNPJ"]') as HTMLInputElement
+    if (searchBar) {
+      searchBar.value = company.cnpj
+      searchBar.dispatchEvent(new Event('input', { bubbles: true }))
+      // Trigger busca automática
+      const form = searchBar.closest('form')
+      if (form) {
+        form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+      }
+    }
+  }
 
   if (isCheckingAuth) {
     return <LoadingState />
@@ -538,11 +552,11 @@ function DashboardContent() {
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation()
-                              handleSelectCompany(company)
+                              handleAnalyzeCompany(company)
                             }}
                           >
-                            <Eye className="h-4 w-4 mr-2" />
-                            Analisar
+                            <RefreshCw className="h-4 w-4 mr-2" />
+                            Gerar Relatório
                           </Button>
                         </CardContent>
                       </Card>

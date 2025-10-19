@@ -41,7 +41,7 @@ export function BenchmarkComparisonModal({
   // Dados mock para demonstração - serão substituídos por dados reais
   const getMockData = (company: MultiSelectCompany) => ({
     score: Math.floor(Math.random() * 40) + 60, // 60-100
-    capital: company.capital || Math.floor(Math.random() * 10000) + 1000,
+    capital: company.capital || 0, // Usar capital REAL sem modificar
     analyses: company.analyses?.length || Math.floor(Math.random() * 5),
     techStack: {
       total: Math.floor(Math.random() * 15) + 5,
@@ -72,7 +72,7 @@ export function BenchmarkComparisonModal({
         company.name || company.tradeName || 'N/A',
         formatCNPJ(company.cnpj),
         data.score,
-        formatCurrency(data.capital * 1000), // Mock está em milhares
+        formatCurrency(data.capital), // Capital REAL da Receita Federal
         data.analyses,
         data.techStack.total,
         data.maturity.overall,
@@ -200,7 +200,7 @@ export function BenchmarkComparisonModal({
                           <div>
                             <p className="text-xs text-gray-500 mb-1">Capital Social</p>
                             <p className="text-lg font-bold text-green-600">
-                              {formatCurrency(data.capital * 1000)}
+                              {formatCurrency(data.capital)}
                             </p>
                           </div>
                         </div>
