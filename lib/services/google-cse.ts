@@ -1,7 +1,14 @@
 /**
  * Serviço de integração com Google Custom Search Engine
  * Busca específica e relevante para empresas
+ * 
+ * NOTA: Agora usa sistema multi-API com fallback automático!
+ * Se Google falhar (429), tenta Bing e Serper automaticamente.
+ * 
+ * Ver: lib/services/search/multi-search.ts
  */
+
+import { searchCompanyWebsite, searchCompanyNews } from './search/multi-search'
 
 interface GoogleCSEResult {
   website: { url: string; title: string } | null
@@ -14,93 +21,14 @@ interface GoogleCSEResult {
 }
 
 export async function fetchGoogleCSE(companyName: string, cnpj?: string): Promise<GoogleCSEResult> {
-  const apiKey = process.env.GOOGLE_API_KEY
-  const cseId = process.env.GOOGLE_CSE_ID
-
-  if (!apiKey || !cseId) {
-    console.warn('[GoogleCSE] ⚠️ Credenciais não configuradas, retornando vazio')
-    return { website: null, news: [] }
-  }
-
   try {
-    console.log('[GoogleCSE] 🔍 Buscando empresa:', companyName, cnpj ? `(CNPJ: ${cnpj})` : '')
+    console.log('[GoogleCSE] 🔍 Buscando empresa via Multi-Search:', companyName, cnpj ? `(CNPJ: ${cnpj})` : '')
 
-    // Busca 1: Site oficial - muito mais específica
-    const siteQuery = cnpj 
-      ? `"${companyName}" CNPJ ${cnpj} (site oficial OR sobre OR empresa)`
-      : `"${companyName}" (site oficial OR sobre OR empresa OR contato)`
-    
-    const siteUrl = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cseId}&q=${encodeURIComponent(siteQuery)}&num=3`
-    const siteResponse = await fetch(siteUrl, { next: { revalidate: 3600 } })
-    
-    if (!siteResponse.ok) {
-      console.error('[GoogleCSE] ❌ Erro na busca de site:', siteResponse.status)
-      return { website: null, news: [] }
-    }
-    
-    const siteData = await siteResponse.json()
-    
-    // Filtrar apenas resultados que mencionam a empresa
-    let website = null
-    for (const item of siteData.items || []) {
-      const text = `${item.title} ${item.snippet}`.toLowerCase()
-      const companyWords = companyName.toLowerCase().split(' ').filter(w => w.length > 3)
-      
-      // Verificar se o resultado realmente é sobre a empresa
-      const relevantMatches = companyWords.filter(word => text.includes(word))
-      if (relevantMatches.length >= Math.min(2, companyWords.length)) {
-        website = { url: item.link, title: item.title }
-        break
-      }
-    }
-
-    // Busca 2: Notícias recentes - MUITO mais específica
-    const newsQuery = cnpj
-      ? `"${companyName}" CNPJ ${cnpj} (anuncia OR lança OR investimento OR expansão OR contrato)`
-      : `"${companyName}" (anuncia OR lança OR investimento OR expansão OR contrato OR novidade)`
-    
-    const newsUrl = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cseId}&q=${encodeURIComponent(newsQuery)}&num=5&dateRestrict=y1` // Apenas último ano
-    const newsResponse = await fetch(newsUrl, { next: { revalidate: 1800 } })
-    
-    if (!newsResponse.ok) {
-      console.error('[GoogleCSE] ❌ Erro na busca de notícias:', newsResponse.status)
-      return { website, news: [] }
-    }
-    
-    const newsData = await newsResponse.json()
-
-    // Filtrar notícias relevantes
-    const news = (newsData.items || [])
-      .filter((item: any) => {
-        const text = `${item.title} ${item.snippet}`.toLowerCase()
-        const companyWords = companyName.toLowerCase().split(' ').filter(w => w.length > 3)
-        
-        // Verificar relevância
-        const relevantMatches = companyWords.filter(word => text.includes(word))
-        
-        // Excluir resultados muito genéricos
-        const excludeTerms = [
-          'bilionário', 'criptomoeda', 'bitcoin', 'defesa civil',
-          'aggregation report', 'mapa em tempo real', 'como agir'
-        ]
-        const hasExcludedTerm = excludeTerms.some(term => text.includes(term))
-        
-        // Aceitar apenas se:
-        // - Tem pelo menos 2 palavras-chave da empresa
-        // - OU tem CNPJ mencionado
-        // - E não tem termos excluídos
-        const hasCnpj = cnpj && text.includes(cnpj.replace(/\D/g, ''))
-        return (relevantMatches.length >= 2 || hasCnpj) && !hasExcludedTerm
-      })
-      .slice(0, 3)
-      .map((item: any) => ({
-        title: item.title,
-        snippet: item.snippet,
-        link: item.link,
-        date: item.pagemap?.metatags?.[0]?.['article:published_time'] || 
-              item.pagemap?.metatags?.[0]?.['og:updated_time'] ||
-              null,
-      }))
+    // Usar sistema multi-API com fallback automático
+    const [website, news] = await Promise.all([
+      searchCompanyWebsite(companyName, cnpj),
+      searchCompanyNews(companyName, cnpj, 5)
+    ])
 
     console.log('[GoogleCSE] ✅ Website:', website?.url || 'não encontrado')
     console.log('[GoogleCSE] ✅ Notícias relevantes:', news.length)
