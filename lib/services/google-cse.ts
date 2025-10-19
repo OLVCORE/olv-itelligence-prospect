@@ -8,7 +8,7 @@
  * Ver: lib/services/search/multi-search.ts
  */
 
-import { searchCompanyWebsite, searchCompanyNews } from './search/multi-search'
+import { searchCompanyWebsite, searchCompanyNews } from '../search/orchestrator'
 
 interface GoogleCSEResult {
   website: { url: string; title: string } | null

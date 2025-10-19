@@ -6,7 +6,7 @@
 
 import { SEARCH_ASSERTIVE, FAST_MODE } from '@/lib/config/feature-flags'
 import { validateLink, validateJusbrasil as validateJusbr, validateMarketplaceB2B } from '@/lib/search/validators/link-validation'
-import { searchCompanyWebsite, searchCompanyNews } from './search/multi-search'
+import { searchCompanyWebsite, searchCompanyNews } from '../search/orchestrator'
 
 interface DigitalPresence {
   website: {
@@ -273,8 +273,13 @@ async function findOfficialWebsite(
   console.log('[DigitalPresence] 🌐 Buscando website via MULTI-SEARCH (Google + Bing + Serper)...')
   
   try {
-    // Usar o sistema multi-search que busca em 3 APIs simultaneamente
-    const websiteResult = await searchCompanyWebsite(companyName, cnpj)
+    // Usar o sistema multi-search que busca em 3 APIs simultaneamente + validação assertiva
+    const websiteResult = await searchCompanyWebsite(companyName, cnpj, {
+      razao: companyName,
+      fantasia: fantasia,
+      socios: [], // Será preenchido com dados da ReceitaWS se disponível
+      domain: undefined
+    })
     
     if (websiteResult) {
       console.log(`[DigitalPresence] ✅ Website encontrado via multi-search: ${websiteResult.url}`)

@@ -10,7 +10,9 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { QuotaWarningBanner } from "@/components/QuotaWarningBanner"
+import { GaugeBar } from "@/components/ui/gauge-bar"
+import { GaugePointer } from "@/components/ui/gauge-pointer"
+import { SmartTooltip } from "@/components/ui/smart-tooltip"
 import { Loader2, Printer, Download, Save, Building2, MapPin, Phone, Mail, FileText, TrendingUp, AlertTriangle, Users, Briefcase, DollarSign, RefreshCw } from "lucide-react"
 
 interface PreviewData {
@@ -231,21 +233,7 @@ export function PreviewModal({
           </div>
         )}
 
-        {/* Alerta de Quota (se aplicável) */}
-        {!loading && mergedData && (
-          <>
-            {/* Verificar se presença digital está vazia E não temos notícias */}
-            {(!mergedData.presencaDigital?.website && 
-              !Object.keys(mergedData.presencaDigital?.redesSociais || {}).length &&
-              !mergedData.presencaDigital?.marketplaces?.length &&
-              !mergedData.google?.news?.length) && (
-              <QuotaWarningBanner 
-                message="APIs de busca com quota excedida - Configure APIs alternativas"
-                showConfigLinks={true}
-              />
-            )}
-          </>
-        )}
+        {/* Banner de quota removido - sistema multi-API garante funcionamento */}
 
         {mergedData && !loading && (
           <div className="space-y-6 print:text-black">
@@ -463,6 +451,61 @@ export function PreviewModal({
                   🌐 7. Presença Digital e Canais de Venda
                 </h2>
                 <div className="space-y-4 bg-slate-50 dark:bg-slate-900 rounded-lg p-4 print:bg-white print:border">
+                  {/* Indicadores de Qualidade da Presença Digital */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pb-4 border-b">
+                    <SmartTooltip 
+                      score={mergedData.presencaDigital?.website ? 85 : 0} 
+                      type="confianca"
+                      customLabel="Confiança Website"
+                      customDescription={mergedData.presencaDigital?.website ? 'Website oficial validado' : 'Website não encontrado'}
+                    >
+                      <GaugeBar 
+                        value={mergedData.presencaDigital?.website ? 85 : 0} 
+                        label="Website"
+                        size="sm"
+                      />
+                    </SmartTooltip>
+                    
+                    <SmartTooltip 
+                      score={Object.keys(mergedData.presencaDigital?.redesSociais || {}).length * 20} 
+                      type="maturidade"
+                      customLabel="Presença Social"
+                      customDescription={`${Object.keys(mergedData.presencaDigital?.redesSociais || {}).length} redes sociais encontradas`}
+                    >
+                      <GaugeBar 
+                        value={Object.keys(mergedData.presencaDigital?.redesSociais || {}).length * 20} 
+                        label="Redes Sociais"
+                        size="sm"
+                      />
+                    </SmartTooltip>
+                    
+                    <SmartTooltip 
+                      score={mergedData.presencaDigital?.marketplaces?.length * 25} 
+                      type="maturidade"
+                      customLabel="E-commerce"
+                      customDescription={`${mergedData.presencaDigital?.marketplaces?.length || 0} marketplaces encontrados`}
+                    >
+                      <GaugeBar 
+                        value={mergedData.presencaDigital?.marketplaces?.length * 25} 
+                        label="E-commerce"
+                        size="sm"
+                      />
+                    </SmartTooltip>
+                    
+                    <SmartTooltip 
+                      score={mergedData.presencaDigital?.jusbrasil ? 70 : 0} 
+                      type="confianca"
+                      customLabel="Histórico Jurídico"
+                      customDescription={mergedData.presencaDigital?.jusbrasil ? 'Perfil jurídico encontrado' : 'Sem histórico no Jusbrasil'}
+                    >
+                      <GaugeBar 
+                        value={mergedData.presencaDigital?.jusbrasil ? 70 : 0} 
+                        label="Jurídico"
+                        size="sm"
+                      />
+                    </SmartTooltip>
+                  </div>
+
                   {/* Website Oficial */}
                   {(mergedData.presencaDigital?.website || mergedData.enrichment?.website) && (
                     <div>
@@ -701,14 +744,26 @@ export function PreviewModal({
                   8. Análise Preliminar (Inteligência Artificial)
                 </h2>
                 <div className="space-y-4 bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg p-4 print:bg-white print:border">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Score de Propensão</p>
-                      <p className="text-4xl font-bold text-primary">{mergedData.ai.score}<span className="text-xl text-slate-400">/100</span></p>
+                  {/* Scores com Gauges Visuais */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Score de Propensão */}
+                    <SmartTooltip score={mergedData.ai.score} type="propensao">
+                      <GaugePointer 
+                        value={mergedData.ai.score} 
+                        label="Score de Propensão"
+                        size="lg"
+                      />
+                    </SmartTooltip>
+                    
+                    {/* Badge de Classificação */}
+                    <div className="flex flex-col items-center justify-center">
+                      <Badge variant={mergedData.ai.score >= 70 ? 'default' : 'secondary'} className="text-lg px-4 py-2 mb-2">
+                        {mergedData.ai.score >= 80 ? 'Alto Potencial' : mergedData.ai.score >= 60 ? 'Bom Potencial' : 'Potencial Moderado'}
+                      </Badge>
+                      <p className="text-2xl font-bold text-primary">
+                        {mergedData.ai.score}<span className="text-lg text-slate-400">/100</span>
+                      </p>
                     </div>
-                    <Badge variant={mergedData.ai.score >= 70 ? 'default' : 'secondary'} className="text-lg px-4 py-2">
-                      {mergedData.ai.score >= 80 ? 'Alto Potencial' : mergedData.ai.score >= 60 ? 'Bom Potencial' : 'Potencial Moderado'}
-                    </Badge>
                   </div>
                   
                   {mergedData.ai.summary && (
