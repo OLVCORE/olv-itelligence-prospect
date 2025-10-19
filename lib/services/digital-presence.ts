@@ -1,7 +1,11 @@
 /**
  * Serviço Avançado de Detecção de Presença Digital
  * Encontra: Website, Redes Sociais, Marketplaces, Portais
+ * MÓDULO 9: Com validação ASSERTIVA por CNPJ/sócios/domínio
  */
+
+import { SEARCH_ASSERTIVE } from '@/lib/config/feature-flags'
+import { validateLink, validateJusbrasil as validateJusbr, validateMarketplaceB2B } from '@/lib/search/validators/link-validation'
 
 interface DigitalPresence {
   website: {
@@ -35,8 +39,8 @@ interface DigitalPresence {
 }
 
 /**
- * Valida se um resultado está realmente vinculado à empresa
- * Verifica CNPJ, nome da empresa, sócios, domínio
+ * MÓDULO 9: Valida se um resultado está realmente vinculado à empresa
+ * Usa validação ASSERTIVA se flag SEARCH_ASSERTIVE=true
  */
 function validateCompanyLink(
   itemUrl: string,
@@ -44,8 +48,32 @@ function validateCompanyLink(
   snippet: string,
   companyName: string,
   cnpj: string,
-  fantasia?: string
+  fantasia?: string,
+  domain?: string
 ): { isValid: boolean; confidence: number; reason: string } {
+  // Se flag SEARCH_ASSERTIVE ativa, usar validação do Módulo 9
+  if (SEARCH_ASSERTIVE) {
+    const result = validateLink({
+      candidateUrl: itemUrl,
+      candidateTitle: title,
+      candidateSnippet: snippet,
+      company: {
+        cnpj,
+        razao: companyName,
+        fantasia,
+        domain,
+      },
+    })
+
+    return {
+      isValid: result.linked,
+      confidence: result.score,
+      reason: result.reasons.join('; '),
+    }
+  }
+
+  // Fallback: validação original (menos rigorosa)
+  {
   const text = `${title} ${snippet}`.toLowerCase()
   const url = itemUrl.toLowerCase()
   
@@ -129,6 +157,7 @@ function validateCompanyLink(
     confidence,
     reason
   }
+  } // fim do fallback
 }
 
 export async function fetchDigitalPresence(
