@@ -213,6 +213,43 @@ export async function fetchDigitalPresence(
           console.warn('[DigitalPresence] ⚠️ Erro ao extrair domínio do website:', e)
         }
       }
+      
+      // FALLBACK: tentar construir domínio a partir do nome fantasia
+      if (!domain && fantasia) {
+        const cleanName = fantasia.toLowerCase().replace(/[^a-z0-9]/g, '')
+        const possibleDomain = `${cleanName}.com.br`
+        console.log('[DigitalPresence] 🌐 Tentando domínio construído:', possibleDomain)
+        
+        // Verificar se existe (HEAD request rápido)
+        try {
+          const testUrl = `https://${possibleDomain}`
+          const controller = new AbortController()
+          const timeoutId = setTimeout(() => controller.abort(), 3000)
+          
+          const response = await fetch(testUrl, {
+            method: 'HEAD',
+            signal: controller.signal,
+          })
+          
+          clearTimeout(timeoutId)
+          
+          if (response.ok) {
+            domain = possibleDomain
+            console.log('[DigitalPresence] ✅ Domínio construído válido:', domain)
+            
+            // Atualizar results.website se estava vazio
+            if (!results.website) {
+              results.website = {
+                url: testUrl,
+                title: fantasia || companyName,
+                status: 'ativo',
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('[DigitalPresence] ⚠️ Domínio construído não acessível:', possibleDomain)
+        }
+      }
     }
 
     // 2. Redes sociais (busca limitada)
