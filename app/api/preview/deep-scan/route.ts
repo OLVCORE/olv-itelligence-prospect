@@ -24,26 +24,59 @@ export async function POST(req: Request) {
     }
 
     console.log(`[API /deep-scan] 🚀 Iniciando deep-scan - JobId: ${jobId}`)
+    console.log(`[API /deep-scan] 📋 Dados: CNPJ=${cnpj}, Nome=${companyName}, Fantasia=${fantasia}`)
+    
+    // Verificar variáveis de ambiente
+    const hasGoogleKeys = !!(process.env.GOOGLE_API_KEY && process.env.GOOGLE_CSE_ID)
+    const hasOpenAI = !!process.env.OPENAI_API_KEY
+    console.log(`[API /deep-scan] 🔑 Google Keys: ${hasGoogleKeys ? '✅' : '❌'}`)
+    console.log(`[API /deep-scan] 🔑 OpenAI Key: ${hasOpenAI ? '✅' : '❌'}`)
 
     // 1. Busca completa de presença digital (redes sociais, marketplaces, jusbrasil)
     console.log(`[API /deep-scan] 🔍 Buscando presença digital completa...`)
-    const digitalPresence = await fetchDigitalPresence(
-      companyName || '',
-      cnpj,
-      fantasia,
-      website
-    )
+    let digitalPresence
+    try {
+      digitalPresence = await fetchDigitalPresence(
+        companyName || '',
+        cnpj,
+        fantasia,
+        website
+      )
+      console.log(`[API /deep-scan] ✅ Presença digital concluída:`, {
+        website: !!digitalPresence.website,
+        redesSociais: Object.keys(digitalPresence.redesSociais).length,
+        marketplaces: digitalPresence.marketplaces.length,
+        jusbrasil: !!digitalPresence.jusbrasil,
+        outrosLinks: digitalPresence.outrosLinks.length
+      })
+    } catch (error: any) {
+      console.error(`[API /deep-scan] ❌ Erro na busca de presença digital:`, error.message)
+      digitalPresence = { 
+        website: null, 
+        redesSociais: {}, 
+        marketplaces: [], 
+        jusbrasil: null, 
+        outrosLinks: [] 
+      }
+    }
 
     // 2. Buscar notícias
     console.log(`[API /deep-scan] 📰 Buscando notícias...`)
-    const googleData = await fetchGoogleCSE(
-      companyName || fantasia || cnpj,
-      cnpj
-    )
+    let googleData
+    try {
+      googleData = await fetchGoogleCSE(
+        companyName || fantasia || cnpj,
+        cnpj
+      )
+      console.log(`[API /deep-scan] ✅ Notícias encontradas: ${googleData.news?.length || 0}`)
+    } catch (error: any) {
+      console.error(`[API /deep-scan] ❌ Erro ao buscar notícias:`, error.message)
+      googleData = { website: null, news: [] }
+    }
 
     // 3. Análise OpenAI (se solicitado)
     let aiAnalysis = null
-    if (useAI) {
+    if (useAI && hasOpenAI) {
       console.log(`[API /deep-scan] 🧠 Gerando análise preliminar com IA...`)
       try {
         aiAnalysis = await analyzeWithOpenAI({
@@ -55,9 +88,12 @@ export async function POST(req: Request) {
           website: digitalPresence.website?.url || website || null,
           news: googleData.news || [],
         })
+        console.log(`[API /deep-scan] ✅ Análise de IA gerada: score=${aiAnalysis?.score}`)
       } catch (error: any) {
         console.error('[API /deep-scan] ⚠️ Erro na análise de IA (não bloqueante):', error.message)
       }
+    } else if (useAI && !hasOpenAI) {
+      console.warn('[API /deep-scan] ⚠️ IA solicitada mas OpenAI key não configurada')
     }
 
     // 4. Montar resultado completo
