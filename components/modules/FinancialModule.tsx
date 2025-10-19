@@ -3,6 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+import { formatCurrency, formatNumber, formatDate, formatPercent } from "@/lib/utils/format"
 import { 
   DollarSign,
   TrendingUp,
@@ -139,7 +140,7 @@ export function FinancialModule({ data }: FinancialModuleProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">{data.capitalSocial}</div>
+            <div className="text-2xl font-bold text-white">{formatCurrency(data.capitalSocial)}</div>
           </CardContent>
         </Card>
 
@@ -160,10 +161,10 @@ export function FinancialModule({ data }: FinancialModuleProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">{data.faturamentoAnual}</div>
+            <div className="text-2xl font-bold text-white">{formatCurrency(data.faturamentoAnual)}</div>
             <div className="flex items-center gap-1 mt-1 text-emerald-500 text-sm">
               <TrendingUp className="h-4 w-4" />
-              +{data.indicadores.crescimentoAnual}% a.a.
+              +{formatPercent(data.indicadores.crescimentoAnual)} a.a.
             </div>
           </CardContent>
         </Card>
@@ -415,7 +416,7 @@ export function FinancialModule({ data }: FinancialModuleProps) {
             </div>
             <div>
               <p className="text-xs text-slate-400 mb-1">Data de Abertura</p>
-              <p className="text-sm text-white">{data.dataAbertura}</p>
+              <p className="text-sm text-white">{formatDate(data.dataAbertura)}</p>
             </div>
             <div>
               <p className="text-xs text-slate-400 mb-1">Natureza Jurídica</p>

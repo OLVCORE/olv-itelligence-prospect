@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { GaugeBar } from '@/components/ui/gauge-bar'
 import { GaugePointer } from '@/components/ui/gauge-pointer'
 import { SmartTooltip } from '@/components/ui/smart-tooltip'
+import { formatCurrency, formatNumber, formatCNPJ } from '@/lib/utils/format'
 import { 
   X, 
   Download, 
@@ -69,9 +70,9 @@ export function BenchmarkComparisonModal({
       const data = getMockData(company)
       return [
         company.name || company.tradeName || 'N/A',
-        company.cnpj,
+        formatCNPJ(company.cnpj),
         data.score,
-        `R$ ${data.capital.toLocaleString()}k`,
+        formatCurrency(data.capital * 1000), // Mock está em milhares
         data.analyses,
         data.techStack.total,
         data.maturity.overall,
@@ -181,7 +182,7 @@ export function BenchmarkComparisonModal({
                             #{index + 1}
                           </Badge>
                         </CardTitle>
-                        <p className="text-sm text-gray-600">CNPJ: {company.cnpj}</p>
+                        <p className="text-sm text-gray-600">CNPJ: {formatCNPJ(company.cnpj)}</p>
                       </CardHeader>
                       <CardContent className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
@@ -199,7 +200,7 @@ export function BenchmarkComparisonModal({
                           <div>
                             <p className="text-xs text-gray-500 mb-1">Capital Social</p>
                             <p className="text-lg font-bold text-green-600">
-                              R$ {data.capital.toLocaleString()}k
+                              {formatCurrency(data.capital * 1000)}
                             </p>
                           </div>
                         </div>
@@ -245,7 +246,7 @@ export function BenchmarkComparisonModal({
                             </div>
                             <div>
                               <p className="font-medium">{company.name || company.tradeName}</p>
-                              <p className="text-sm text-gray-600">{company.cnpj}</p>
+                              <p className="text-sm text-gray-600">{formatCNPJ(company.cnpj)}</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-4">
@@ -293,7 +294,7 @@ export function BenchmarkComparisonModal({
                             <td className="p-3">
                               <div>
                                 <p className="font-medium">{company.name || company.tradeName}</p>
-                                <p className="text-sm text-gray-600">{company.cnpj}</p>
+                                <p className="text-sm text-gray-600">{formatCNPJ(company.cnpj)}</p>
                               </div>
                             </td>
                             <td className="text-center p-3">
@@ -333,7 +334,7 @@ export function BenchmarkComparisonModal({
                       <div className="flex items-start justify-between">
                         <div>
                           <h3 className="text-lg font-semibold">{company.name || company.tradeName}</h3>
-                          <p className="text-sm text-gray-600">{company.cnpj}</p>
+                          <p className="text-sm text-gray-600">{formatCNPJ(company.cnpj)}</p>
                         </div>
                         <div className="flex items-center gap-4">
                           <div className="text-center">

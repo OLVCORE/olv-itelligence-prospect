@@ -11,6 +11,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { CompanyAnalysisModal } from "@/components/modals/CompanyAnalysisModal"
+import { formatCurrency, formatCNPJ, formatDate, formatCompanySize } from "@/lib/utils/format"
 import { 
   Building2, 
   MapPin, 
@@ -71,7 +72,7 @@ export function CompanyCard({
                     {company.fantasia || company.razao}
                   </CardTitle>
                   <CardDescription className="text-slate-400 font-mono text-[10px] sm:text-xs truncate">
-                    {company.cnpj}
+                    {formatCNPJ(company.cnpj)}
                   </CardDescription>
                 </div>
                 <Badge className={`${getStatusColor(company.status)} text-[10px] sm:text-xs whitespace-nowrap`}>
@@ -87,11 +88,11 @@ export function CompanyCard({
                 </div>
                 <div className="flex items-center gap-2 text-slate-300">
                   <Building2 className="h-4 w-4 text-purple-400" />
-                  Porte: {company.porte}
+                  Porte: {formatCompanySize(company.porte)}
                 </div>
                 <div className="flex items-center gap-2 text-slate-300">
                   <Activity className="h-4 w-4 text-green-400" />
-                  {new Date(company.lastAnalyzed).toLocaleDateString('pt-BR')}
+                  {formatDate(company.lastAnalyzed)}
                 </div>
               </div>
               <div className="flex gap-2 mt-3 sm:mt-4">
@@ -139,7 +140,7 @@ export function CompanyCard({
             <div className="space-y-1 text-xs">
               <div className="flex justify-between">
                 <span className="text-slate-400">CNPJ:</span>
-                <span className="text-white font-mono">{company.cnpj}</span>
+                <span className="text-white font-mono">{formatCNPJ(company.cnpj)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Localização:</span>
@@ -147,11 +148,11 @@ export function CompanyCard({
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Porte:</span>
-                <span className="text-white">{company.porte}</span>
+                <span className="text-white">{formatCompanySize(company.porte)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Capital Social:</span>
-                <span className="text-white">{company.capitalSocial}</span>
+                <span className="text-white font-semibold">{formatCurrency(company.capitalSocial || company.capital)}</span>
               </div>
             </div>
 

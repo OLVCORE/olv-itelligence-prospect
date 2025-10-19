@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { GaugeBar } from "@/components/ui/gauge-bar"
 import { GaugePointer } from "@/components/ui/gauge-pointer"
 import { SmartTooltip } from "@/components/ui/smart-tooltip"
+import { formatCurrency, formatCNPJ, formatDate, formatPhone, formatCEP } from "@/lib/utils/format"
 import { Loader2, Printer, Download, Save, Building2, MapPin, Phone, Mail, FileText, TrendingUp, AlertTriangle, Users, Briefcase, DollarSign, RefreshCw } from "lucide-react"
 
 interface PreviewData {
@@ -262,7 +263,7 @@ export function PreviewModal({
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">CNPJ</p>
-                  <p className="font-mono font-semibold text-sm">{mergedData.receita.identificacao.cnpj}</p>
+                  <p className="font-mono font-semibold text-sm">{formatCNPJ(mergedData.receita.identificacao.cnpj)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Tipo</p>
@@ -278,11 +279,11 @@ export function PreviewModal({
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Data de Abertura</p>
-                  <p className="font-semibold text-sm">{mergedData.receita.identificacao.dataAbertura}</p>
+                  <p className="font-semibold text-sm">{formatDate(mergedData.receita.identificacao.dataAbertura)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Capital Social</p>
-                  <p className="font-semibold text-sm">R$ {mergedData.receita.capital.valor}</p>
+                  <p className="font-semibold text-sm">{formatCurrency(mergedData.receita.capital.valor)}</p>
                 </div>
               </div>
             </section>
@@ -303,14 +304,14 @@ export function PreviewModal({
                   <p className="text-sm text-slate-600 dark:text-slate-400">
                     {mergedData.receita.endereco.bairro} - {mergedData.receita.endereco.municipio}/{mergedData.receita.endereco.uf}
                   </p>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">CEP: {mergedData.receita.endereco.cep}</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">CEP: {formatCEP(mergedData.receita.endereco.cep)}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4 pt-2 border-t">
                   <div>
                     <p className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1">
                       <Phone className="h-3 w-3" /> Telefone
                     </p>
-                    <p className="font-semibold text-sm">{mergedData.receita.endereco.telefone || 'Não informado'}</p>
+                    <p className="font-semibold text-sm">{formatPhone(mergedData.receita.endereco.telefone)}</p>
                   </div>
                   <div>
                     <p className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1">
