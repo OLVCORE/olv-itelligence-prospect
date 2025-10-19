@@ -44,7 +44,7 @@ export async function fetchDigitalPresence(
 
   if (!apiKey || !cseId) {
     console.warn('[DigitalPresence] ⚠️ Google CSE não configurado')
-    return { website: null, redesSociais: {}, marketplaces: [], outrosLinks: [] }
+    return { website: null, redesSociais: {}, marketplaces: [], jusbrasil: null, outrosLinks: [] }
   }
 
   console.log('[DigitalPresence] 🔍 Buscando presença digital para:', companyName)
@@ -58,22 +58,42 @@ export async function fetchDigitalPresence(
   }
 
   try {
-    // 1. Buscar website oficial (específico com CNPJ)
-    results.website = await findOfficialWebsite(companyName, cnpj, fantasia)
+    // BUSCA SEQUENCIAL COM TIMEOUT (evita 504)
+    const startTime = Date.now()
+    const maxTime = 8000 // 8 segundos máximo
 
-    // 2. Buscar redes sociais
-    results.redesSociais = await findSocialMedia(companyName, cnpj, fantasia)
+    // 1. Website oficial (PRIORIDADE - busca rápida)
+    if (Date.now() - startTime < maxTime) {
+      console.log('[DigitalPresence] 🏠 Buscando website...')
+      results.website = await findOfficialWebsite(companyName, cnpj, fantasia)
+    }
 
-    // 3. Buscar presença em marketplaces
-    results.marketplaces = await findMarketplaces(companyName, cnpj, fantasia)
+    // 2. Redes sociais (busca limitada)
+    if (Date.now() - startTime < maxTime) {
+      console.log('[DigitalPresence] 📱 Buscando redes sociais...')
+      results.redesSociais = await findSocialMedia(companyName, cnpj, fantasia)
+    }
 
-    // 4. Buscar Jusbrasil (processos, sócios, histórico jurídico)
-    results.jusbrasil = await findJusbrasil(companyName, cnpj, fantasia)
+    // 3. Jusbrasil (importante para empresas brasileiras)
+    if (Date.now() - startTime < maxTime) {
+      console.log('[DigitalPresence] ⚖️ Buscando Jusbrasil...')
+      results.jusbrasil = await findJusbrasil(companyName, cnpj, fantasia)
+    }
 
-    // 5. Buscar outros links relevantes (catálogos, portais B2B, etc)
-    results.outrosLinks = await findOtherLinks(companyName, cnpj)
+    // 4. Marketplaces (busca limitada)
+    if (Date.now() - startTime < maxTime) {
+      console.log('[DigitalPresence] 🛒 Buscando marketplaces...')
+      results.marketplaces = await findMarketplaces(companyName, cnpj, fantasia)
+    }
 
-    console.log('[DigitalPresence] ✅ Presença digital mapeada:', {
+    // 5. Outros links (busca rápida)
+    if (Date.now() - startTime < maxTime) {
+      console.log('[DigitalPresence] 🔗 Buscando outros links...')
+      results.outrosLinks = await findOtherLinks(companyName, cnpj)
+    }
+
+    const totalTime = Date.now() - startTime
+    console.log('[DigitalPresence] ✅ Presença digital mapeada em', totalTime, 'ms:', {
       website: !!results.website,
       redesSociais: Object.keys(results.redesSociais).length,
       marketplaces: results.marketplaces.length,
@@ -98,12 +118,12 @@ async function findOfficialWebsite(
   const apiKey = process.env.GOOGLE_API_KEY!
   const cseId = process.env.GOOGLE_CSE_ID!
 
-  // ESTRATÉGIAS MÚLTIPLAS DE BUSCA PROFUNDA
+  // ESTRATÉGIAS OTIMIZADAS (máximo 5 para evitar timeout)
   const searchStrategies = [
-    // Estratégia 1: Nome exato + CNPJ
+    // Estratégia 1: Nome exato + CNPJ (MAIS EFICAZ)
     `"${companyName}" CNPJ ${cnpj}`,
     
-    // Estratégia 2: Fantasia + CNPJ
+    // Estratégia 2: Fantasia + CNPJ (SEGUNDA OPÇÃO)
     fantasia ? `"${fantasia}" CNPJ ${cnpj}` : null,
     
     // Estratégia 3: Nome + site oficial
@@ -112,22 +132,7 @@ async function findOfficialWebsite(
     // Estratégia 4: Fantasia + site oficial
     fantasia ? `"${fantasia}" site oficial` : null,
     
-    // Estratégia 5: Nome + .com.br
-    `"${companyName}" .com.br`,
-    
-    // Estratégia 6: Fantasia + .com.br
-    fantasia ? `"${fantasia}" .com.br` : null,
-    
-    // Estratégia 7: Nome + website
-    `"${companyName}" website`,
-    
-    // Estratégia 8: Fantasia + website
-    fantasia ? `"${fantasia}" website` : null,
-    
-    // Estratégia 9: Nome + homepage
-    `"${companyName}" homepage`,
-    
-    // Estratégia 10: Busca mais ampla (sem aspas)
+    // Estratégia 5: Busca ampla (fallback)
     `${companyName} ${cnpj}`,
   ].filter(Boolean)
 
@@ -198,18 +203,14 @@ async function findSocialMedia(
 
   const redesSociais: DigitalPresence['redesSociais'] = {}
 
-  // ESTRATÉGIAS MÚLTIPLAS PARA CADA PLATAFORMA
+  // ESTRATÉGIAS OTIMIZADAS (máximo 2 por plataforma)
   const platforms = [
     { 
       name: 'instagram', 
       domain: 'instagram.com', 
       strategies: [
         `site:instagram.com "${fantasia || companyName}"`,
-        `site:instagram.com ${fantasia || companyName}`,
         `"${fantasia || companyName}" instagram`,
-        `${fantasia || companyName} instagram`,
-        `instagram.com/${(fantasia || companyName).toLowerCase().replace(/\s+/g, '')}`,
-        `instagram.com/${(fantasia || companyName).toLowerCase().replace(/\s+/g, '')}`,
       ]
     },
     { 
@@ -217,11 +218,7 @@ async function findSocialMedia(
       domain: 'linkedin.com', 
       strategies: [
         `site:linkedin.com/company "${companyName}"`,
-        `site:linkedin.com/company ${companyName}`,
         `"${companyName}" linkedin company`,
-        `${companyName} linkedin company`,
-        `site:linkedin.com "${fantasia || companyName}"`,
-        `"${fantasia || companyName}" linkedin`,
       ]
     },
     { 
@@ -229,10 +226,7 @@ async function findSocialMedia(
       domain: 'facebook.com', 
       strategies: [
         `site:facebook.com "${fantasia || companyName}"`,
-        `site:facebook.com ${fantasia || companyName}`,
         `"${fantasia || companyName}" facebook`,
-        `${fantasia || companyName} facebook`,
-        `facebook.com/${(fantasia || companyName).toLowerCase().replace(/\s+/g, '')}`,
       ]
     },
     { 
@@ -240,11 +234,7 @@ async function findSocialMedia(
       domain: 'twitter.com OR x.com', 
       strategies: [
         `(site:twitter.com OR site:x.com) "${fantasia || companyName}"`,
-        `(site:twitter.com OR site:x.com) ${fantasia || companyName}`,
         `"${fantasia || companyName}" twitter`,
-        `"${fantasia || companyName}" x.com`,
-        `twitter.com/${(fantasia || companyName).toLowerCase().replace(/\s+/g, '')}`,
-        `x.com/${(fantasia || companyName).toLowerCase().replace(/\s+/g, '')}`,
       ]
     },
     { 
@@ -252,11 +242,7 @@ async function findSocialMedia(
       domain: 'youtube.com', 
       strategies: [
         `site:youtube.com "${fantasia || companyName}"`,
-        `site:youtube.com ${fantasia || companyName}`,
         `"${fantasia || companyName}" youtube`,
-        `${fantasia || companyName} youtube`,
-        `youtube.com/c/${(fantasia || companyName).toLowerCase().replace(/\s+/g, '')}`,
-        `youtube.com/@${(fantasia || companyName).toLowerCase().replace(/\s+/g, '')}`,
       ]
     },
   ]
@@ -333,26 +319,17 @@ async function findMarketplaces(
 
   const marketplaces: DigitalPresence['marketplaces'] = []
 
-  // PORTAL B2B ESPECÍFICOS + MARKETPLACES TRADICIONAIS
+  // PORTAL B2B PRIORITÁRIOS (máximo 8 para evitar timeout)
   const platforms = [
     // Portais B2B Específicos (PRIORIDADE!)
-    { name: 'B2Brazil', domains: ['b2brazil.com.br', 'b2brazil.com'] },
-    { name: 'GlobSupplies', domains: ['globsupplies.com', 'globsupplies.com/marketplace'] },
-    { name: 'Alibaba', domains: ['alibaba.com', 'alibaba.com.br'] },
+    { name: 'B2Brazil', domains: ['b2brazil.com.br'] },
+    { name: 'GlobSupplies', domains: ['globsupplies.com'] },
+    { name: 'Alibaba', domains: ['alibaba.com'] },
     { name: 'TradeFord', domains: ['tradeford.com'] },
     { name: 'ExportHub', domains: ['exporthub.com'] },
     { name: 'TradeKey', domains: ['tradekey.com'] },
     { name: 'EC21', domains: ['ec21.com'] },
     { name: 'Global Sources', domains: ['globalsources.com'] },
-    { name: 'Export Portal', domains: ['exportportal.com'] },
-    { name: 'World Trade', domains: ['worldtrade.com'] },
-    
-    // Marketplaces Tradicionais
-    { name: 'Mercado Livre', domains: ['mercadolivre.com.br', 'mercadolibre.com'] },
-    { name: 'Amazon', domains: ['amazon.com.br'] },
-    { name: 'Magazine Luiza', domains: ['magazineluiza.com.br'] },
-    { name: 'Americanas', domains: ['americanas.com.br', 'shoptime.com.br', 'submarino.com.br'] },
-    { name: 'Shopee', domains: ['shopee.com.br'] },
   ]
 
   for (const platform of platforms) {
@@ -432,9 +409,9 @@ async function findJusbrasil(
 
   console.log(`[DigitalPresence] ⚖️ Buscando Jusbrasil para: ${companyName}`)
 
-  // ESTRATÉGIAS MÚLTIPLAS PARA JUSBRASIL
+  // ESTRATÉGIAS OTIMIZADAS (máximo 3 para evitar timeout)
   const strategies = [
-    // Estratégia 1: Nome + site:jusbrasil.com.br
+    // Estratégia 1: Nome + site:jusbrasil.com.br (MAIS EFICAZ)
     `site:jusbrasil.com.br "${companyName}"`,
     
     // Estratégia 2: Fantasia + site:jusbrasil.com.br
@@ -442,15 +419,6 @@ async function findJusbrasil(
     
     // Estratégia 3: Nome + CNPJ + jusbrasil
     `"${companyName}" CNPJ ${cnpj} jusbrasil`,
-    
-    // Estratégia 4: Fantasia + CNPJ + jusbrasil
-    fantasia ? `"${fantasia}" CNPJ ${cnpj} jusbrasil` : null,
-    
-    // Estratégia 5: Nome + processos
-    `"${companyName}" processos jusbrasil`,
-    
-    // Estratégia 6: Fantasia + processos
-    fantasia ? `"${fantasia}" processos jusbrasil` : null,
   ].filter(Boolean)
 
   for (const strategy of strategies) {
@@ -523,25 +491,16 @@ async function findOtherLinks(
 
   const outrosLinks: DigitalPresence['outrosLinks'] = []
 
-  // ESTRATÉGIAS MÚLTIPLAS PARA OUTROS LINKS
+  // ESTRATÉGIAS OTIMIZADAS (máximo 3 para evitar timeout)
   const strategies = [
     // Busca específica por catálogos
-    `"${companyName}" (catálogo OR catalogo OR produtos OR portfólio OR portfolio)`,
+    `"${companyName}" (catálogo OR catalogo OR produtos OR portfólio)`,
     
     // Busca por portais B2B genéricos
-    `"${companyName}" (b2b OR fornecedor OR atacado OR distribuidor)`,
-    
-    // Busca por notícias e imprensa
-    `"${companyName}" (notícia OR noticia OR imprensa OR news)`,
-    
-    // Busca por certificações e registros
-    `"${companyName}" (certificação OR certificacao OR registro OR licença)`,
+    `"${companyName}" (b2b OR fornecedor OR atacado)`,
     
     // Busca ampla com CNPJ
     `"${companyName}" CNPJ ${cnpj}`,
-    
-    // Busca por associações
-    `"${companyName}" (associação OR associacao OR sindicato OR federação)`,
   ]
 
   console.log(`[DigitalPresence] 🔍 Executando ${strategies.length} estratégias para outros links`)
