@@ -8,10 +8,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { FitTotvsModule } from "@/components/modules/FitTotvsModule"
 import { Layers, Plus, Search, Download, RefreshCw } from "lucide-react"
 
 export default function TechStackPage() {
   const [isAddingStack, setIsAddingStack] = useState(false)
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string | undefined>()
+  const [selectedCompanyName, setSelectedCompanyName] = useState<string | undefined>()
 
   // Mock data for demonstration
   const stacks = [
@@ -231,6 +234,14 @@ export default function TechStackPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* FIT TOTVS Module */}
+        <div className="mb-8">
+          <FitTotvsModule 
+            companyId={selectedCompanyId}
+            companyName={selectedCompanyName}
+          />
+        </div>
 
         {/* Stack List */}
         <div className="space-y-4">

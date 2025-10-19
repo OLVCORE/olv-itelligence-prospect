@@ -1,24 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { detectTotvsLite } from '@/lib/services/technographics/totvs-lite'
-import { createAdminClient } from '@/lib/supabase/server'
-
 /**
- * GET /api/technographics/totvs/scan?companyId=<id>
- * Escaneia a empresa para detectar produtos TOTVS
+ * TOTVS Technographics Scan Endpoint
+ * GET /api/technographics/totvs/scan?companyId=...
  */
-export async function GET(req: NextRequest) {
+
+import { NextRequest, NextResponse } from 'next/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { detectTotvsLite } from '@/lib/services/technographics/totvs-lite'
+
+export async function GET(request: NextRequest) {
+  console.log('[TOTVS-Scan] 🔍 Iniciando scan TOTVS...')
+  const startTime = Date.now()
+
   try {
-    // 1. Verificar autenticação
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user?.email) {
-      return NextResponse.json({ status: 'error', message: 'Não autenticado' }, { status: 401 })
-    }
-
-    // 2. Obter companyId da query
-    const { searchParams } = new URL(req.url)
+    const { searchParams } = new URL(request.url)
     const companyId = searchParams.get('companyId')
 
     if (!companyId) {
@@ -28,53 +22,71 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    console.log('[API /technographics/totvs/scan] Iniciando scan para companyId:', companyId)
-
-    // 3. Buscar dados da empresa
+    // Buscar dados da empresa via Admin Client
     const supabase = createAdminClient()
-
     const { data: company, error: companyError } = await supabase
       .from('Company')
-      .select('id, cnpj, razao_social, nome_fantasia, website, enrichment')
+      .select('id, razao_social, nome_fantasia, website')
       .eq('id', companyId)
       .single()
 
     if (companyError || !company) {
-      console.error('[API /technographics/totvs/scan] Empresa não encontrada:', companyError)
+      console.error('[TOTVS-Scan] ❌ Empresa não encontrada:', companyError)
       return NextResponse.json(
         { status: 'error', message: 'Empresa não encontrada' },
         { status: 404 }
       )
     }
 
-    // 4. Detectar TOTVS
-    const result = await detectTotvsLite({
-      website: company.website || undefined,
-      name: company.nome_fantasia || company.razao_social || undefined,
+    console.log('[TOTVS-Scan] 📊 Empresa encontrada:', {
+      id: company.id,
+      razao_social: company.razao_social,
+      website: company.website
     })
 
-    console.log('[API /technographics/totvs/scan] ✅ Scan concluído:', {
-      companyId,
+    // Executar detecção TOTVS Lite
+    const result = await detectTotvsLite({
+      website: company.website || undefined,
+      name: company.nome_fantasia || company.razao_social
+    })
+
+    const response = {
+      status: 'success',
+      companyId: company.id,
+      result,
+      metadata: {
+        scanned_at: new Date().toISOString(),
+        elapsed_ms: Date.now() - startTime,
+        company_name: company.razao_social
+      }
+    }
+
+    console.log('[TOTVS-Scan] ✅ Scan concluído:', {
       totvs_detected: result.totvs_detected,
       produtos: result.produtos,
       confidence_score: result.confidence_score,
+      elapsed_ms: Date.now() - startTime
     })
 
-    // 5. Retornar resultado (sem persistir)
-    return NextResponse.json({
-      status: 'success',
-      companyId,
-      result,
+    return NextResponse.json(response, {
+      status: 200,
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
     })
+
   } catch (error: any) {
-    console.error('[API /technographics/totvs/scan] Erro:', error)
+    console.error('[TOTVS-Scan] ❌ Erro no scan:', error.message)
+    
     return NextResponse.json(
       {
         status: 'error',
-        message: error.message || 'Erro ao escanear empresa',
+        message: 'Erro interno do servidor',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
       },
       { status: 500 }
     )
   }
 }
-

@@ -1,431 +1,322 @@
-"use client"
+'use client'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { Button } from "@/components/ui/button"
-import { 
-  Target,
-  Info,
-  DollarSign,
-  TrendingUp,
-  Calendar,
-  Award,
-  Zap,
-  CheckCircle2,
-  Package,
-  ArrowRight
-} from "lucide-react"
-import { 
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
+import { useState, useEffect } from 'react'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { GaugeBar } from '@/components/ui/gauge-bar'
+import { GaugePointer } from '@/components/ui/gauge-pointer'
+import { SmartTooltip } from '@/components/ui/smart-tooltip'
+import { Loader2, RefreshCw, Target, TrendingUp, AlertCircle } from 'lucide-react'
 
-interface FitFactor {
-  name: string
-  score: number
-  weight: number
-  description: string
-}
-
-interface Opportunity {
-  product: string
-  fit: number
-  priority: "Alta" | "Média" | "Baixa"
-  reason: string
-}
-
-interface FitTOTVSData {
-  overall: number
-  propensity: number
-  priority: number
-  ticketEstimate: string
-  roi: number
-  paybackMonths: number
-  factors: FitFactor[]
-  opportunities: Opportunity[]
-  aiInsights: string
-}
-
-interface FitTOTVSModuleProps {
-  data: FitTOTVSData
-}
-
-export function FitTOTVSModule({ data }: FitTOTVSModuleProps) {
-  const getScoreColor = (score: number) => {
-    if (score >= 85) return "text-emerald-500"
-    if (score >= 70) return "text-blue-500"
-    if (score >= 55) return "text-yellow-500"
-    return "text-orange-500"
+interface TotvsLiteResult {
+  totvs_detected: boolean
+  produtos: string[]
+  confidence_score: number
+  evidences: Array<{
+    source: 'website' | 'cse'
+    url: string
+    snippet?: string
+    strength: 'A' | 'B' | 'C'
+  }>
+  last_scanned_at: string
+  lead_temperature: 'frio' | 'morno' | 'quente'
+  recommendations: string[]
+  pitches: {
+    frio: string[]
+    morno: string[]
+    quente: string[]
   }
+}
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "Alta": return "bg-red-500/20 text-red-400 border-red-500/30"
-      case "Média": return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
-      default: return "bg-blue-500/20 text-blue-400 border-blue-500/30"
+interface FitTotvsModuleProps {
+  companyId?: string
+  companyName?: string
+}
+
+export function FitTotvsModule({ companyId, companyName }: FitTotvsModuleProps) {
+  const [result, setResult] = useState<TotvsLiteResult | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchTotvsData = async () => {
+    if (!companyId) return
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      console.log('[FitTotvs] 🔍 Iniciando scan TOTVS para empresa:', companyId)
+      
+      const response = await fetch(`/api/technographics/totvs/scan?companyId=${companyId}`)
+      const data = await response.json()
+
+      if (data.status === 'success') {
+        setResult(data.result)
+        console.log('[FitTotvs] ✅ Scan concluído:', data.result)
+      } else {
+        setError(data.message || 'Erro no scan TOTVS')
+        console.error('[FitTotvs] ❌ Erro no scan:', data.message)
+      }
+    } catch (error: any) {
+      setError('Erro ao conectar com o servidor')
+      console.error('[FitTotvs] ❌ Erro na requisição:', error.message)
+    } finally {
+      setLoading(false)
     }
   }
 
-  return (
-    <div className="space-y-6">
-      {/* Header com Explicação */}
-      <Card className="bg-gradient-to-br from-purple-900/30 to-slate-800/30 border-slate-700/50">
+  useEffect(() => {
+    if (companyId) {
+      fetchTotvsData()
+    }
+  }, [companyId])
+
+  const getTemperatureColor = (chroma: 'frio' | 'morno' | 'quente') => {
+    switch (chroma) {
+      case 'frio': return 'text-blue-600 bg-blue-50 border-blue-200'
+      case 'morno': return 'text-orange-600 bg-orange-50 border-orange-200'
+      case 'quente': return 'text-red-600 bg-red-50 border-red-200'
+    }
+  }
+
+  const getTemperatureIcon = (chroma: 'frio' | 'morno' | 'quente') => {
+    switch (chroma) {
+      case 'frio': return '❄️'
+      case 'morno': return '🌡️'
+      case 'quente': return '🔥'
+    }
+  }
+
+  if (!companyId) {
+    return (
+      <Card className="h-full">
         <CardHeader>
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <CardTitle className="text-2xl text-white flex items-center gap-2">
-                Fit TOTVS/OLV e Modelagem de Negócio
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Info className="h-5 w-5 text-purple-400" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-md">
-                      <p className="font-semibold mb-2">O que é Fit TOTVS?</p>
-                      <p className="text-sm">
-                        Modelo preditivo que calcula a propensão de conversão e prioridade 
-                        de abordagem baseado em 6 fatores: porte, maturidade, stack, decisores, 
-                        timing e fit com portfólio TOTVS.
-                      </p>
-                      <p className="text-sm mt-2 font-semibold">Para que serve?</p>
-                      <ul className="text-sm list-disc pl-4 mt-1">
-                        <li>Priorizar prospects com maior probabilidade de conversão</li>
-                        <li>Estimar ticket médio e ROI da venda</li>
-                        <li>Identificar produtos TOTVS mais adequados</li>
-                        <li>Calcular payback e justificar investimento</li>
-                      </ul>
-                      <p className="text-sm mt-2 font-semibold">Correlação com outros módulos:</p>
-                      <ul className="text-sm list-disc pl-4 mt-1">
-                        <li><strong>Todos os módulos:</strong> Consolida dados de todos</li>
-                        <li><strong>Playbooks:</strong> Define estratégia de abordagem</li>
-                        <li><strong>Relatórios:</strong> Seção executiva de recomendação</li>
-                      </ul>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </CardTitle>
-              <CardDescription className="text-slate-300 mt-2">
-                <strong>Modelo preditivo</strong> que combina <strong>maturidade digital</strong>, 
-                <strong> capacidade financeira</strong>, <strong>stack atual</strong> e 
-                <strong> decisores mapeados</strong> para calcular fit e ROI esperado.
-              </CardDescription>
-            </div>
-            <div className="flex gap-2">
-              <Badge variant="outline" className={`border-purple-500 ${getScoreColor(data.overall)} bg-purple-500/10`}>
-                <Target className="h-3 w-3 mr-1" />
-                Fit: {data.overall}%
-              </Badge>
-              <Badge variant="outline" className="border-emerald-500 text-emerald-400 bg-emerald-500/10">
-                <TrendingUp className="h-3 w-3 mr-1" />
-                ROI: {data.roi}%
-              </Badge>
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
-
-      {/* KPIs Principais de Fit */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-br from-purple-900/50 to-slate-800/50 border-purple-700/50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-slate-300 flex items-center gap-2">
-              Fit Geral
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Info className="h-3 w-3" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="text-sm">Score consolidado de todos os fatores</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className={`text-3xl font-bold ${getScoreColor(data.overall)}`}>
-              {data.overall}%
-            </div>
-            <Progress value={data.overall} className="mt-2" />
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-blue-900/50 to-slate-800/50 border-blue-700/50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-slate-300 flex items-center gap-2">
-              Propensão
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Info className="h-3 w-3" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="text-sm">Probabilidade de conversão (0-100%)</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className={`text-3xl font-bold ${getScoreColor(data.propensity)}`}>
-              {data.propensity}%
-            </div>
-            <p className="text-xs text-slate-400 mt-1">
-              {data.propensity >= 75 ? "Muito Alta" : data.propensity >= 60 ? "Alta" : "Moderada"}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-red-900/50 to-slate-800/50 border-red-700/50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-slate-300 flex items-center gap-2">
-              Prioridade
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Info className="h-3 w-3" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="text-sm">Urgência de abordagem (0-100)</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className={`text-3xl font-bold ${getScoreColor(data.priority)}`}>
-              {data.priority}
-            </div>
-            <p className="text-xs text-slate-400 mt-1">
-              {data.priority >= 90 ? "Crítica" : data.priority >= 75 ? "Alta" : "Normal"}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-emerald-900/50 to-slate-800/50 border-emerald-700/50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-slate-300 flex items-center gap-2">
-              Ticket Estimado
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Info className="h-3 w-3" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="text-sm">Valor estimado do contrato</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg font-bold text-white">
-              {data.ticketEstimate}
-            </div>
-            <p className="text-xs text-slate-400 mt-1">Range esperado</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Fatores de Fit */}
-      <Card className="bg-slate-800/50 border-slate-700/50">
-        <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
-            Fatores de Análise Preditiva
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger>
-                  <Info className="h-4 w-4 text-slate-400" />
-                </TooltipTrigger>
-                <TooltipContent className="max-w-sm">
-                  <p className="text-sm">
-                    Cada fator tem um peso no cálculo final do fit. 
-                    Score final = Σ (score × peso) de todos os fatores.
-                  </p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {data.factors.map((factor, idx) => (
-            <div key={idx} className="space-y-2">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-slate-300">{factor.name}</span>
-                  <Badge variant="outline" className="border-slate-600 text-slate-400 text-xs">
-                    Peso: {(factor.weight * 100).toFixed(0)}%
-                  </Badge>
-                </div>
-                <span className={`text-lg font-bold ${getScoreColor(factor.score)}`}>
-                  {factor.score}
-                </span>
-              </div>
-              <Progress value={factor.score} />
-              <p className="text-xs text-slate-400">{factor.description}</p>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      {/* Oportunidades TOTVS */}
-      <Card className="bg-slate-800/50 border-slate-700/50">
-        <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
-            <Package className="h-5 w-5 text-purple-400" />
-            Produtos TOTVS Recomendados
-          </CardTitle>
-          <CardDescription className="text-slate-300">
-            Portfólio TOTVS com maior fit baseado no perfil da empresa
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {data.opportunities.map((opp, idx) => (
-            <Card key={idx} className="bg-slate-700/30 border-slate-600/50">
-              <CardContent className="pt-4">
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <h3 className="font-semibold text-white text-lg">{opp.product}</h3>
-                    <p className="text-sm text-slate-400 mt-1">{opp.reason}</p>
-                  </div>
-                  <div className="text-right">
-                    <div className={`text-2xl font-bold ${getScoreColor(opp.fit)}`}>
-                      {opp.fit}%
-                    </div>
-                    <Badge className={`mt-1 ${getPriorityColor(opp.priority)} border`}>
-                      {opp.priority}
-                    </Badge>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button size="sm" className="bg-gradient-to-r from-purple-600 to-blue-600">
-                    <ArrowRight className="h-3 w-3 mr-1" />
-                    Ver Detalhes
-                  </Button>
-                  <Button size="sm" variant="outline" className="border-slate-600 text-slate-200">
-                    Criar Proposta
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </CardContent>
-      </Card>
-
-      {/* Análise de ROI */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="bg-slate-800/50 border-slate-700/50">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-emerald-400" />
-              Análise de ROI
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-xs text-slate-400 mb-1">ROI Estimado</p>
-                <p className="text-3xl font-bold text-emerald-500">{data.roi}%</p>
-                <p className="text-xs text-slate-500 mt-1">Em 24 meses</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400 mb-1">Payback</p>
-                <p className="text-3xl font-bold text-blue-500">{data.paybackMonths}</p>
-                <p className="text-xs text-slate-500 mt-1">meses</p>
-              </div>
-            </div>
-            <div className="bg-emerald-900/20 border border-emerald-700/30 rounded-lg p-3">
-              <p className="text-xs font-semibold text-emerald-400 mb-2">Benefícios Esperados:</p>
-              <ul className="text-xs text-slate-300 space-y-1">
-                <li>• Redução de custos operacionais: 20-30%</li>
-                <li>• Aumento de produtividade: 35-45%</li>
-                <li>• Melhoria em processos: 40-50%</li>
-                <li>• Integração de sistemas: 60-70%</li>
-              </ul>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-slate-800/50 border-slate-700/50">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-blue-400" />
-              Timeline de Implementação
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold text-sm flex-shrink-0">
-                  1
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-white">Fase 1: Discovery (1-2 meses)</p>
-                  <p className="text-xs text-slate-400">Levantamento detalhado e POC</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-400 font-bold text-sm flex-shrink-0">
-                  2
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-white">Fase 2: Implementação (3-6 meses)</p>
-                  <p className="text-xs text-slate-400">Deploy, integração e treinamento</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold text-sm flex-shrink-0">
-                  3
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-white">Fase 3: Go-Live (1 mês)</p>
-                  <p className="text-xs text-slate-400">Produção e estabilização</p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Insights de IA */}
-      <Card className="bg-gradient-to-br from-blue-900/30 to-purple-900/30 border-blue-700/50">
-        <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
-            <Zap className="h-5 w-5 text-blue-400" />
-            Recomendação Executiva (IA)
+          <CardTitle className="flex items-center gap-2">
+            <Target className="h-5 w-5" />
+            FIT TOTVS
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-slate-300 leading-relaxed mb-4">{data.aiInsights}</p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div className="bg-emerald-900/30 border border-emerald-700/30 rounded-lg p-3">
-              <CheckCircle2 className="h-5 w-5 text-emerald-400 mb-2" />
-              <p className="text-xs font-semibold text-emerald-400 mb-1">Cliente Ideal</p>
-              <p className="text-xs text-slate-300">
-                Alto fit em múltiplas dimensões. Probabilidade de conversão: 75-85%
-              </p>
-            </div>
-            <div className="bg-blue-900/30 border border-blue-700/30 rounded-lg p-3">
-              <Award className="h-5 w-5 text-blue-400 mb-2" />
-              <p className="text-xs font-semibold text-blue-400 mb-1">Abordagem</p>
-              <p className="text-xs text-slate-300">
-                Consultiva com foco em BPM/automação como porta de entrada
-              </p>
-            </div>
-            <div className="bg-purple-900/30 border border-purple-700/30 rounded-lg p-3">
-              <TrendingUp className="h-5 w-5 text-purple-400 mb-2" />
-              <p className="text-xs font-semibold text-purple-400 mb-1">Timing</p>
-              <p className="text-xs text-slate-300">
-                Janela de oportunidade favorável. Abordar nos próximos 30 dias
-              </p>
-            </div>
+          <div className="text-center text-muted-foreground py-8">
+            <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>Selecione uma empresa para analisar o FIT TOTVS</p>
           </div>
         </CardContent>
       </Card>
-    </div>
+    )
+  }
+
+  return (
+    <Card className="h-full">
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Target className="h-5 w-5" />
+            FIT TOTVS
+          </div>
+          {companyName && (
+            <div className="text-sm text-muted-foreground">
+              {companyName}
+            </div>
+          )}
+        </CardTitle>
+      </CardHeader>
+      
+      <CardContent className="space-y-6">
+        {loading && (
+          <div className="text-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p className="text-sm text-muted-foreground">
+              Analisando tecnografia TOTVS...
+            </p>
+          </div>
+        )}
+
+        {error && (
+          <div className="text-center py-8">
+            <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-4" />
+            <p className="text-sm text-red-600 mb-4">{error}</p>
+            <Button 
+              onClick={fetchTotvsData} 
+              variant="outline" 
+              size="sm"
+              disabled={loading}
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Tentar Novamente
+            </Button>
+          </div>
+        )}
+
+        {result && !loading && (
+          <div className="space-y-6">
+            {/* Status Principal */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Badge 
+                  variant={result.totvs_detected ? "default" : "secondary"}
+                  className={`text-lg px-4 py-2 ${
+                    result.totvs_detected 
+                      ? 'bg-green-600 text-white' 
+                      : 'bg-gray-200 text-gray-700'
+                  }`}
+                >
+                  {result.totvs_detected ? '✅ TOTVS DETECTADO' : '❌ SEM TOTVS'}
+                </Badge>
+                
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Confiança:</span>
+                  <SmartTooltip 
+                    score={result.confidence_score} 
+                    type="confiancula"
+                    customLabel="Score de Confiança"
+                    customDescription={`Baseado em ${result.evidences.length} evidências encontradas`}
+                  >
+                    <GaugePointer 
+                      value={result.confidence_score} 
+                      size="sm"
+                    />
+                  </SmartTooltip>
+                </div>
+              </div>
+              
+              <Button 
+                onClick={fetchTotvsData} 
+                variant="outline" 
+                size="sm"
+                disabled={loading}
+              >
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Produtos Detectados */}
+            {result.produtos.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium mb-3">Produtos TOTVS Detectados:</h3>
+                <div className="flex flex-wrap gap-2">
+                  {result.produtos.map((produto, index) => (
+                    <Badge key={index} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                      {produto}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Temperatura do Lead */}
+            <div>
+              <h3 className="text-sm font-medium mb-3">Temperatura do Lead:</h3>
+              <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg border ${getTemperatureColor(result.lead_temperature)}`}>
+                <span className="text-2xl">{getTemperatureIcon(result.lead_temperature)}</span>
+                <span className="font-medium capitalize">{result.lead_temperature}</span>
+                <span className="text-sm opacity-75">
+                  ({result.confidence_score < 30 ? '< 30%' : result.confidence_score < 60 ? '30-59%' : '≥ 60%'})
+                </span>
+              </div>
+            </div>
+
+            {/* Evidências */}
+            {result.evidences.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium mb-3">Evidências Encontradas:</h3>
+                <div className="space-y-2">
+                  {result.evidences.slice(0, 3).map((evidence, index) => (
+                    <div key={index} className="p-3 bg-gray-50 rounded-lg border">
+                      <div className="flex items-start justify-between mb-2">
+                        <Badge 
+                          variant="outline" 
+                          className={`text-xs ${
+                            evidence.strength === 'A' ? 'bg-green-100 text-green-700' :
+                            evidence.strength === 'B' ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-gray-100 text-gray-700'
+                          }`}
+                        >
+                          {evidence.strength}
+                        </Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {evidence.source === 'website' ? '🌐 Website' : '🔍 Busca'}
+                        </Badge>
+                      </div>
+                      
+                      <p className="text-sm text-gray-700 mb-2">
+                        {evidence.snippet || 'Evidência encontrada'}
+                      </p>
+                      
+                      <a 
+                        href={evidence.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-xs text-blue-600 hover:underline"
+                      >
+                        Ver fonte →
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Recomendações */}
+            {result.recommendations.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium mb-3">Recomendações:</h3>
+                <div className="space-y-2">
+                  {result.recommendations.map((recommendation, index) => (
+                    <div key={index} className="flex items-start gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <TrendingUp className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <p className="text-sm text-blue-800">{recommendation}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Pitches por Estágio */}
+            <div>
+              <h3 className="text-sm font-medium mb-3">Estratégia por Estágio:</h3>
+              <div className="space-y-3">
+                {Object.entries(result.pitches).map(([stage, pitches]) => (
+                  <div key={stage} className="p-3 bg-gray-50 rounded-lg border">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-sm font-medium capitalize">{stage}:</span>
+                      <span className="text-2xl">{getTemperatureIcon(stage as any)}</span>
+                    </div>
+                    <ul className="space-y-1">
+                      {pitches.map((pitch, index) => (
+                        <li key={index} className="text-sm text-gray-700 flex items-start gap-2">
+                          <span className="text-blue-600 mt-1">•</span>
+                          <span>{pitch}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Metadata */}
+            <div className="text-xs text-muted-foreground pt-4 border-t">
+              <p>Última análise: {new Date(result.last_scanned_at).toLocaleString('pt-BR')}</p>
+              <p>Evidências analisadas: {result.evidences.length}</p>
+            </div>
+          </div>
+        )}
+
+        {!result && !loading && !error && (
+          <div className="text-center py-8">
+            <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p className="text-sm text-muted-foreground mb-4">
+              Clique em "Analisar TOTVS" para iniciar a detecção
+            </p>
+            <Button onClick={fetchTotvsData} disabled={loading}>
+              <Target className="h-4 w-4 mr-2" />
+              Analisar TOTVS
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   )
 }
-
