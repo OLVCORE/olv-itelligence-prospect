@@ -64,45 +64,74 @@ export async function POST(req: Request) {
 
     // 2. Buscar presença digital COMPLETA (otimizada com FAST_MODE)
     console.log('[API /preview] 🔍 Buscando presença digital completa (modo otimizado)...')
-    const digitalPresence = await fetchDigitalPresence(
-      receitaData.nome || '',
-      resolvedCnpj,
-      receitaData.fantasia,
-      undefined
-    )
+    console.log('[API /preview] 🔑 GOOGLE_API_KEY presente?', !!process.env.GOOGLE_API_KEY)
+    console.log('[API /preview] 🔑 GOOGLE_CSE_ID presente?', !!process.env.GOOGLE_CSE_ID)
     
-    const elapsedAfterDigital = Date.now() - startTime
-    console.log(`[API /preview] ⏱️ Presença digital concluída em ${elapsedAfterDigital}ms`)
-    console.log(`[API /preview] 📊 Encontrado:`, {
-      website: !!digitalPresence.website,
-      redesSociais: Object.keys(digitalPresence.redesSociais).length,
-      marketplaces: digitalPresence.marketplaces.length,
-      jusbrasil: !!digitalPresence.jusbrasil,
-    })
+    let digitalPresence
+    try {
+      digitalPresence = await fetchDigitalPresence(
+        receitaData.nome || '',
+        resolvedCnpj,
+        receitaData.fantasia,
+        undefined
+      )
+      
+      const elapsedAfterDigital = Date.now() - startTime
+      console.log(`[API /preview] ⏱️ Presença digital concluída em ${elapsedAfterDigital}ms`)
+      console.log(`[API /preview] 📊 RESULTADO PRESENÇA DIGITAL:`, JSON.stringify({
+        website: digitalPresence.website,
+        redesSociais: digitalPresence.redesSociais,
+        marketplaces: digitalPresence.marketplaces,
+        jusbrasil: digitalPresence.jusbrasil,
+        outrosLinks: digitalPresence.outrosLinks
+      }, null, 2))
+    } catch (error: any) {
+      console.error('[API /preview] ❌ ERRO na busca de presença digital:', error.message)
+      console.error('[API /preview] ❌ Stack trace:', error.stack)
+      digitalPresence = {
+        website: null,
+        redesSociais: {},
+        marketplaces: [],
+        jusbrasil: null,
+        outrosLinks: []
+      }
+    }
 
     // 3. Buscar notícias
     console.log('[API /preview] 📰 Buscando notícias...')
-    const googleData = await fetchGoogleCSE(
-      receitaData.nome || receitaData.fantasia || resolvedCnpj,
-      resolvedCnpj
-    )
-    
-    const elapsedAfterNews = Date.now() - startTime
-    console.log(`[API /preview] ⏱️ Notícias concluídas em ${elapsedAfterNews}ms`)
+    let googleData
+    try {
+      googleData = await fetchGoogleCSE(
+        receitaData.nome || receitaData.fantasia || resolvedCnpj,
+        resolvedCnpj
+      )
+      
+      const elapsedAfterNews = Date.now() - startTime
+      console.log(`[API /preview] ⏱️ Notícias concluídas em ${elapsedAfterNews}ms`)
+      console.log(`[API /preview] 📰 NOTÍCIAS encontradas:`, googleData.news?.length || 0)
+    } catch (error: any) {
+      console.error('[API /preview] ❌ ERRO na busca de notícias:', error.message)
+      googleData = { website: null, news: [] }
+    }
 
     // 4. Análise OpenAI (se solicitado)
     let aiAnalysis = null
     if (useAI) {
       console.log('[API /preview] 🧠 Gerando análise preliminar...')
+      console.log('[API /preview] 🔑 OPENAI_API_KEY presente?', !!process.env.OPENAI_API_KEY)
       try {
         aiAnalysis = await analyzeWithOpenAI({
           company: receitaData,
           website: digitalPresence.website?.url || null,
           news: googleData.news || [],
         })
+        console.log('[API /preview] ✅ Análise de IA gerada. Score:', aiAnalysis?.score)
       } catch (error: any) {
-        console.warn('[API /preview] ⚠️ Erro na análise de IA (não bloqueante):', error.message)
+        console.error('[API /preview] ❌ ERRO na análise de IA:', error.message)
+        console.error('[API /preview] ❌ Stack trace:', error.stack)
       }
+    } else {
+      console.log('[API /preview] ⏭️ Análise de IA não solicitada (useAI=false)')
     }
 
     // 5. Normalizar dados COMPLETOS
