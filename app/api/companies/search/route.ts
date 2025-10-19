@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import { getDefaultProjectId } from '@/lib/projects/get-default-project'
 import { normalizeCnpj, isValidCnpj, normalizeDomain } from '@/lib/utils/cnpj'
 import { fetchReceitaWS } from '@/lib/services/receita-ws'
 import { fetchGoogleCSE, resolveCnpjFromWebsite } from '@/lib/services/google-cse'
@@ -72,6 +73,10 @@ export async function POST(req: Request) {
     // 4. Gravação no Supabase
     console.log('[API] 💾 Gravando no Supabase...')
 
+    // Obter ou criar projeto padrão (resolve FK obrigatória)
+    const projectId = await getDefaultProjectId()
+    console.log('[API] ✅ ProjectId obtido:', projectId)
+
     // Parse capital (string → number) com fallback 0
     const capitalNum = Number(
       (receitaData.capital_social || '0')
@@ -87,7 +92,7 @@ export async function POST(req: Request) {
       .from('Company')
       .upsert({
         id: crypto.randomUUID(), // Gerar ID explícito
-        projectId: 'default-project', // ID padrão para projeto
+        projectId, // FK obrigatória - usa projeto padrão
         cnpj: resolvedCnpj,
         name: receitaData.nome || 'Empresa sem razão social',
         tradeName: receitaData.fantasia ?? null,
@@ -105,6 +110,16 @@ export async function POST(req: Request) {
 
     if (companyError) {
       console.error('[API] ❌ Erro ao gravar Company:', companyError)
+      
+      // Mensagem de erro específica para FK
+      if (companyError.message?.includes('foreign key constraint')) {
+        throw new Error(
+          `Falha ao gravar empresa: ${companyError.message}. ` +
+          `Dica: Defina DEFAULT_PROJECT_ID no .env com um ID de Project existente, ` +
+          `ou deixe o sistema criar um automaticamente.`
+        )
+      }
+      
       throw new Error(`Falha ao gravar empresa: ${companyError.message}`)
     }
 
