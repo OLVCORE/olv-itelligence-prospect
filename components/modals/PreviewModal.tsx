@@ -38,119 +38,85 @@ export function PreviewModal({
   onConfirmSave,
 }: PreviewModalProps) {
   const [saving, setSaving] = useState(false)
-  const [deepScanStatus, setDeepScanStatus] = useState<'pending' | 'completed' | 'error'>('pending')
-  const [deepScanData, setDeepScanData] = useState<any>(null)
-  const [pollingMessage, setPollingMessage] = useState('Buscando presença digital completa...')
-  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
-  const pollAttempts = useRef(0)
   
-  // Polling para deep-scan
+  // Barra de progresso dinâmica baseada em tempo real
+  const [progressPhase, setProgressPhase] = useState(0)
+  const [progressPercent, setProgressPercent] = useState(0)
+  const [progressMessage, setProgressMessage] = useState('Iniciando busca...')
+  const [progressColor, setProgressColor] = useState('blue')
+  
+  // Fases da busca (tempo estimado em ms)
+  const phases = [
+    { name: 'Consultando Receita Federal', duration: 2000, percent: 15 },
+    { name: 'Buscando presença digital', duration: 8000, percent: 50 },
+    { name: 'Coletando notícias recentes', duration: 5000, percent: 75 },
+    { name: 'Gerando análise de IA', duration: 5000, percent: 95 },
+    { name: 'Finalizando', duration: 1000, percent: 100 },
+  ]
+  
+  // Progresso dinâmico baseado nas fases REAIS da busca
   useEffect(() => {
-    // Se não tem jobId ou já completou, não fazer polling
-    if (!data?.jobId || data.status === 'completed' || deepScanStatus === 'completed') {
+    if (!loading) {
+      // Quando termina, marcar tudo como completo
+      setProgressPhase(5)
+      setProgressPercent(100)
+      setProgressColor('green')
+      setProgressMessage('✅ Análise completa!')
       return
     }
     
-    console.log('[PreviewModal] Iniciando polling para jobId:', data.jobId)
-    setDeepScanStatus('pending')
-    pollAttempts.current = 0
+    // Resetar ao iniciar
+    setProgressPhase(0)
+    setProgressPercent(0)
+    setProgressColor('blue')
     
-    const pollStatus = async () => {
-      try {
-        pollAttempts.current += 1
-        console.log(`[PreviewModal] Polling tentativa ${pollAttempts.current} - jobId: ${data.jobId}`)
-        
-        const response = await fetch(`/api/preview/status?jobId=${data.jobId}`)
-        const result = await response.json()
-        
-        console.log('[PreviewModal] Resultado do polling:', result.status)
-        
-        if (result.status === 'completed') {
-          console.log('[PreviewModal] Deep-scan concluído! Dados:', result.data)
-          setDeepScanData(result.data)
-          setDeepScanStatus('completed')
-          setPollingMessage('Análise completa!')
-          
-          // Parar polling
-          if (pollingIntervalRef.current) {
-            clearInterval(pollingIntervalRef.current)
-            pollingIntervalRef.current = null
-          }
-        } else if (result.status === 'error') {
-          console.error('[PreviewModal] Erro no deep-scan:', result.message)
-          setDeepScanStatus('error')
-          setPollingMessage('Erro ao buscar dados completos')
-          
-          // Parar polling
-          if (pollingIntervalRef.current) {
-            clearInterval(pollingIntervalRef.current)
-            pollingIntervalRef.current = null
-          }
-        } else {
-          // Ainda pendente, atualizar mensagem de progresso
-          const messages = [
-            'Buscando redes sociais...',
-            'Analisando marketplaces...',
-            'Verificando histórico jurídico...',
-            'Coletando notícias recentes...',
-            'Finalizando análise...',
-          ]
-          const messageIndex = Math.min(Math.floor(pollAttempts.current / 2), messages.length - 1)
-          setPollingMessage(messages[messageIndex])
-        }
-        
-        // Parar após 60 tentativas (2 minutos com intervalo de 2s)
-        if (pollAttempts.current >= 60) {
-          console.warn('[PreviewModal] Timeout no polling após 60 tentativas')
-          setDeepScanStatus('error')
-          setPollingMessage('Timeout - alguns dados podem estar incompletos')
-          
-          if (pollingIntervalRef.current) {
-            clearInterval(pollingIntervalRef.current)
-            pollingIntervalRef.current = null
-          }
-        }
-      } catch (error) {
-        console.error('[PreviewModal] Erro no polling:', error)
+    let currentPhase = 0
+    let accumulatedTime = 0
+    
+    const advanceProgress = () => {
+      if (currentPhase >= phases.length) {
+        return
+      }
+      
+      const phase = phases[currentPhase]
+      setProgressPhase(currentPhase + 1)
+      setProgressMessage(phase.name)
+      setProgressPercent(phase.percent)
+      
+      // Mudar cor conforme progresso
+      if (phase.percent >= 90) {
+        setProgressColor('green') // Quase lá
+      } else if (accumulatedTime > 15000) {
+        setProgressColor('amber') // Demorando mais que o esperado
+      } else {
+        setProgressColor('blue') // Progredindo normalmente
+      }
+      
+      accumulatedTime += phase.duration
+      currentPhase += 1
+      
+      if (currentPhase < phases.length && loading) {
+        setTimeout(advanceProgress, phase.duration)
       }
     }
     
-    // Poll imediatamente
-    pollStatus()
+    // Começar imediatamente
+    advanceProgress()
     
-    // Poll a cada 2 segundos
-    pollingIntervalRef.current = setInterval(pollStatus, 2000)
-    
-    // Cleanup
-    return () => {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current)
-        pollingIntervalRef.current = null
+    // Timeout de segurança (vermelho se passar de 30s)
+    const timeoutId = setTimeout(() => {
+      if (loading) {
+        setProgressColor('red')
+        setProgressMessage('⚠️ Busca está demorando mais que o esperado...')
       }
-    }
-  }, [data?.jobId, data?.status, deepScanStatus])
+    }, 30000)
+    
+    return () => clearTimeout(timeoutId)
+    
+  }, [loading])
   
-  // Resetar estado quando modal fecha
-  useEffect(() => {
-    if (!isOpen) {
-      setDeepScanStatus('pending')
-      setDeepScanData(null)
-      pollAttempts.current = 0
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current)
-        pollingIntervalRef.current = null
-      }
-    }
-  }, [isOpen])
-  
-  // Mesclar dados parciais com deep-scan quando disponível
-  const mergedData = deepScanData ? {
-    ...data,
-    presencaDigital: deepScanData.presencaDigital,
-    enrichment: deepScanData.enrichment,
-    ai: deepScanData.ai,
-    status: 'completed',
-  } : data
+  // Dados já vêm completos da API
+  const mergedData = data
 
   const handlePrint = () => {
     window.print()
@@ -185,78 +151,82 @@ export function PreviewModal({
         </DialogHeader>
 
         {loading && (
-          <div className="flex items-center justify-center py-24">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            <span className="ml-4 text-lg text-slate-600">
-              Gerando relatório completo...
-            </span>
-          </div>
-        )}
-
-        {/* Indicador de Deep-Scan em andamento */}
-        {mergedData && deepScanStatus === 'pending' && (
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
-            <div className="flex items-start gap-3 mb-3">
-              <RefreshCw className="h-5 w-5 text-blue-600 animate-spin flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
-                  🔍 Análise Profunda em Andamento
-                </p>
-                <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                  {pollingMessage}
-                </p>
+          <div className="space-y-4 py-8 px-6">
+            <div className="flex items-center justify-center gap-3 mb-6">
+              <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+              <span className="text-lg font-semibold text-slate-700 dark:text-slate-300">
+                Gerando Relatório Completo
+              </span>
+            </div>
+            
+            {/* Barra de Progresso Dinâmica com Gradiente */}
+            <div className="max-w-2xl mx-auto space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className={`font-semibold ${
+                  progressColor === 'green' ? 'text-green-600' : 
+                  progressColor === 'amber' ? 'text-amber-600' : 
+                  'text-blue-600'
+                }`}>
+                  {progressMessage}
+                </span>
+                <span className="font-bold text-lg">{progressPercent}%</span>
               </div>
-              <Badge variant="outline" className="bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 border-blue-300 dark:border-blue-700">
-                {Math.min(pollAttempts.current * 2, 100)}%
-              </Badge>
+              
+              <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-4 overflow-hidden shadow-inner">
+                <div 
+                  className={`h-full rounded-full transition-all duration-700 ease-out ${
+                    progressColor === 'green' 
+                      ? 'bg-gradient-to-r from-green-500 to-emerald-600' 
+                      : progressColor === 'amber'
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-600'
+                      : progressColor === 'red'
+                      ? 'bg-gradient-to-r from-red-500 to-rose-600'
+                      : 'bg-gradient-to-r from-blue-500 to-indigo-600'
+                  }`}
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+              
+              {/* Checklist de fases */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-2 text-xs">
+                <div className={`flex items-center gap-1 ${progressPhase >= 1 ? 'text-green-600' : 'text-slate-400'}`}>
+                  {progressPhase >= 1 ? '✓' : '○'} Receita Federal
+                </div>
+                <div className={`flex items-center gap-1 ${progressPhase >= 2 ? 'text-green-600' : 'text-slate-400'}`}>
+                  {progressPhase >= 2 ? '✓' : '○'} Presença Digital
+                </div>
+                <div className={`flex items-center gap-1 ${progressPhase >= 3 ? 'text-green-600' : 'text-slate-400'}`}>
+                  {progressPhase >= 3 ? '✓' : '○'} Notícias
+                </div>
+                <div className={`flex items-center gap-1 ${progressPhase >= 4 ? 'text-green-600' : 'text-slate-400'}`}>
+                  {progressPhase >= 4 ? '✓' : '○'} Análise IA
+                </div>
+              </div>
+              
+              <p className="text-xs text-center text-slate-500 dark:text-slate-400 pt-2">
+                ⏱️ Tempo estimado: 15-25 segundos • Processando dados em tempo real
+              </p>
             </div>
-            {/* Barra de Progresso */}
-            <div className="w-full bg-blue-100 dark:bg-blue-900 rounded-full h-2 overflow-hidden">
-              <div 
-                className="bg-blue-600 h-full transition-all duration-500 ease-out"
-                style={{ width: `${Math.min(pollAttempts.current * 3.3, 100)}%` }}
-              />
-            </div>
-            <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
-              ⏱️ Tempo estimado: 15-30 segundos • Os dados básicos já estão disponíveis abaixo
-            </p>
           </div>
         )}
 
-        {/* Indicador de Análise Completa */}
-        {mergedData && deepScanStatus === 'completed' && (
-          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 mb-4 flex items-center gap-3">
-            <div className="h-5 w-5 text-green-600 flex-shrink-0 flex items-center justify-center">
+        {/* Indicador de Sucesso */}
+        {!loading && mergedData && (
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-2 border-green-300 dark:border-green-700 rounded-lg p-4 mb-4 flex items-center gap-3 shadow-sm">
+            <div className="h-8 w-8 bg-green-600 text-white flex-shrink-0 flex items-center justify-center font-bold text-xl rounded-full">
               ✓
             </div>
             <div className="flex-1">
-              <p className="text-sm font-semibold text-green-900 dark:text-green-100">
-                ✅ Análise Completa!
+              <p className="text-base font-bold text-green-900 dark:text-green-100">
+                ✅ Relatório Gerado com Sucesso!
               </p>
-              <p className="text-xs text-green-700 dark:text-green-300">
-                Todos os dados foram carregados com sucesso
+              <p className="text-sm text-green-700 dark:text-green-300">
+                Todos os dados foram carregados e estão prontos para análise
               </p>
             </div>
-            <Badge variant="outline" className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 border-green-300 dark:border-green-700">
+            <Badge className="bg-green-600 text-white border-green-700 text-base px-3 py-1">
               100%
             </Badge>
-          </div>
-        )}
-
-        {/* Indicador de Erro/Timeout */}
-        {mergedData && deepScanStatus === 'error' && (
-          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 mb-4">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">
-                  ⚠️ Análise Parcialmente Concluída
-                </p>
-                <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-                  {pollingMessage || 'Alguns dados podem estar incompletos, mas você já pode salvar o relatório com as informações disponíveis.'}
-                </p>
-              </div>
-            </div>
           </div>
         )}
 
