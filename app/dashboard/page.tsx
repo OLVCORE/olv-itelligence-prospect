@@ -77,6 +77,9 @@ import {
   Lightbulb
 } from "lucide-react"
 
+// Inicializar Supabase Client (singleton) - uma única instância para todo o app
+const supabase = getSupabaseBrowser()
+
 // Tipo para empresas do Supabase
 interface Company {
   id: string
@@ -166,8 +169,6 @@ function DashboardContent() {
     try {
       setError(null)
       setLoading(true)
-
-      const supabase = getSupabaseBrowser()
 
       // TODO: Recolocar "analyses:Analysis(*)" após padronizar DDL no banco.
       // Alternativa: criar view v_company_with_last_analysis e consumir direto.
