@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import {
   Dialog,
   DialogContent,
@@ -10,11 +10,14 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, Printer, Download, Save, Building2, MapPin, Phone, Mail, FileText, TrendingUp, AlertTriangle, Users, Briefcase, DollarSign } from "lucide-react"
+import { Loader2, Printer, Download, Save, Building2, MapPin, Phone, Mail, FileText, TrendingUp, AlertTriangle, Users, Briefcase, DollarSign, RefreshCw } from "lucide-react"
 
 interface PreviewData {
   mode: string
+  jobId?: string
+  status?: 'partial' | 'completed'
   receita: any
+  presencaDigital?: any
   enrichment: any
   ai: any
 }
@@ -35,6 +38,119 @@ export function PreviewModal({
   onConfirmSave,
 }: PreviewModalProps) {
   const [saving, setSaving] = useState(false)
+  const [deepScanStatus, setDeepScanStatus] = useState<'pending' | 'completed' | 'error'>('pending')
+  const [deepScanData, setDeepScanData] = useState<any>(null)
+  const [pollingMessage, setPollingMessage] = useState('Buscando presença digital completa...')
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const pollAttempts = useRef(0)
+  
+  // Polling para deep-scan
+  useEffect(() => {
+    // Se não tem jobId ou já completou, não fazer polling
+    if (!data?.jobId || data.status === 'completed' || deepScanStatus === 'completed') {
+      return
+    }
+    
+    console.log('[PreviewModal] Iniciando polling para jobId:', data.jobId)
+    setDeepScanStatus('pending')
+    pollAttempts.current = 0
+    
+    const pollStatus = async () => {
+      try {
+        pollAttempts.current += 1
+        console.log(`[PreviewModal] Polling tentativa ${pollAttempts.current} - jobId: ${data.jobId}`)
+        
+        const response = await fetch(`/api/preview/status?jobId=${data.jobId}`)
+        const result = await response.json()
+        
+        console.log('[PreviewModal] Resultado do polling:', result.status)
+        
+        if (result.status === 'completed') {
+          console.log('[PreviewModal] Deep-scan concluído! Dados:', result.data)
+          setDeepScanData(result.data)
+          setDeepScanStatus('completed')
+          setPollingMessage('Análise completa!')
+          
+          // Parar polling
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current)
+            pollingIntervalRef.current = null
+          }
+        } else if (result.status === 'error') {
+          console.error('[PreviewModal] Erro no deep-scan:', result.message)
+          setDeepScanStatus('error')
+          setPollingMessage('Erro ao buscar dados completos')
+          
+          // Parar polling
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current)
+            pollingIntervalRef.current = null
+          }
+        } else {
+          // Ainda pendente, atualizar mensagem de progresso
+          const messages = [
+            'Buscando redes sociais...',
+            'Analisando marketplaces...',
+            'Verificando histórico jurídico...',
+            'Coletando notícias recentes...',
+            'Finalizando análise...',
+          ]
+          const messageIndex = Math.min(Math.floor(pollAttempts.current / 2), messages.length - 1)
+          setPollingMessage(messages[messageIndex])
+        }
+        
+        // Parar após 60 tentativas (2 minutos com intervalo de 2s)
+        if (pollAttempts.current >= 60) {
+          console.warn('[PreviewModal] Timeout no polling após 60 tentativas')
+          setDeepScanStatus('error')
+          setPollingMessage('Timeout - alguns dados podem estar incompletos')
+          
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current)
+            pollingIntervalRef.current = null
+          }
+        }
+      } catch (error) {
+        console.error('[PreviewModal] Erro no polling:', error)
+      }
+    }
+    
+    // Poll imediatamente
+    pollStatus()
+    
+    // Poll a cada 2 segundos
+    pollingIntervalRef.current = setInterval(pollStatus, 2000)
+    
+    // Cleanup
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current)
+        pollingIntervalRef.current = null
+      }
+    }
+  }, [data?.jobId, data?.status, deepScanStatus])
+  
+  // Resetar estado quando modal fecha
+  useEffect(() => {
+    if (!isOpen) {
+      setDeepScanStatus('pending')
+      setDeepScanData(null)
+      pollAttempts.current = 0
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current)
+        pollingIntervalRef.current = null
+      }
+    }
+  }, [isOpen])
+  
+  // Mesclar dados parciais com deep-scan quando disponível
+  const mergedData = deepScanData ? {
+    ...data,
+    presencaDigital: deepScanData.presencaDigital,
+    enrichment: deepScanData.enrichment,
+    ai: deepScanData.ai,
+    status: 'completed',
+  } : data
 
   const handlePrint = () => {
     window.print()
@@ -77,7 +193,22 @@ export function PreviewModal({
           </div>
         )}
 
-        {data && !loading && (
+        {/* Indicador de Deep-Scan em andamento */}
+        {mergedData && deepScanStatus === 'pending' && (
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4 flex items-center gap-3">
+            <RefreshCw className="h-5 w-5 text-blue-600 animate-spin" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                Análise em andamento
+              </p>
+              <p className="text-xs text-blue-700 dark:text-blue-300">
+                {pollingMessage}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {mergedData && !loading && (
           <div className="space-y-6 print:text-black">
             {/* Header do Relatório (Print) */}
             <div className="hidden print:block border-b-2 pb-4 mb-6">
@@ -96,35 +227,35 @@ export function PreviewModal({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-900 rounded-lg p-4 print:bg-white print:border">
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Razão Social</p>
-                  <p className="font-semibold text-sm">{data.receita.identificacao.razaoSocial}</p>
+                  <p className="font-semibold text-sm">{mergedData.receita.identificacao.razaoSocial}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Nome Fantasia</p>
-                  <p className="font-semibold text-sm">{data.receita.identificacao.nomeFantasia || '-'}</p>
+                  <p className="font-semibold text-sm">{mergedData.receita.identificacao.nomeFantasia || '-'}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">CNPJ</p>
-                  <p className="font-mono font-semibold text-sm">{data.receita.identificacao.cnpj}</p>
+                  <p className="font-mono font-semibold text-sm">{mergedData.receita.identificacao.cnpj}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Tipo</p>
-                  <Badge variant="outline">{data.receita.identificacao.tipo}</Badge>
+                  <Badge variant="outline">{mergedData.receita.identificacao.tipo}</Badge>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Porte</p>
-                  <Badge>{data.receita.identificacao.porte}</Badge>
+                  <Badge>{mergedData.receita.identificacao.porte}</Badge>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Natureza Jurídica</p>
-                  <p className="font-semibold text-sm">{data.receita.identificacao.naturezaJuridica}</p>
+                  <p className="font-semibold text-sm">{mergedData.receita.identificacao.naturezaJuridica}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Data de Abertura</p>
-                  <p className="font-semibold text-sm">{data.receita.identificacao.dataAbertura}</p>
+                  <p className="font-semibold text-sm">{mergedData.receita.identificacao.dataAbertura}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Capital Social</p>
-                  <p className="font-semibold text-sm">R$ {data.receita.capital.valor}</p>
+                  <p className="font-semibold text-sm">R$ {mergedData.receita.capital.valor}</p>
                 </div>
               </div>
             </section>
@@ -139,26 +270,26 @@ export function PreviewModal({
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-1">Endereço Completo</p>
                   <p className="font-semibold text-sm">
-                    {data.receita.endereco.logradouro}, {data.receita.endereco.numero}
-                    {data.receita.endereco.complemento && ` - ${data.receita.endereco.complemento}`}
+                    {mergedData.receita.endereco.logradouro}, {mergedData.receita.endereco.numero}
+                    {mergedData.receita.endereco.complemento && ` - ${mergedData.receita.endereco.complemento}`}
                   </p>
                   <p className="text-sm text-slate-600 dark:text-slate-400">
-                    {data.receita.endereco.bairro} - {data.receita.endereco.municipio}/{data.receita.endereco.uf}
+                    {mergedData.receita.endereco.bairro} - {mergedData.receita.endereco.municipio}/{mergedData.receita.endereco.uf}
                   </p>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">CEP: {data.receita.endereco.cep}</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">CEP: {mergedData.receita.endereco.cep}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4 pt-2 border-t">
                   <div>
                     <p className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1">
                       <Phone className="h-3 w-3" /> Telefone
                     </p>
-                    <p className="font-semibold text-sm">{data.receita.endereco.telefone || 'Não informado'}</p>
+                    <p className="font-semibold text-sm">{mergedData.receita.endereco.telefone || 'Não informado'}</p>
                   </div>
                   <div>
                     <p className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1">
                       <Mail className="h-3 w-3" /> Email
                     </p>
-                    <p className="font-semibold text-sm">{data.receita.endereco.email || 'Não informado'}</p>
+                    <p className="font-semibold text-sm">{mergedData.receita.endereco.email || 'Não informado'}</p>
                   </div>
                 </div>
               </div>
@@ -173,17 +304,17 @@ export function PreviewModal({
               <div className="grid grid-cols-3 gap-3 bg-slate-50 dark:bg-slate-900 rounded-lg p-4 print:bg-white print:border">
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Status</p>
-                  <Badge variant={data.receita.situacao.status === 'ATIVA' ? 'default' : 'secondary'} className="mt-1">
-                    {data.receita.situacao.status}
+                  <Badge variant={mergedData.receita.situacao.status === 'ATIVA' ? 'default' : 'secondary'} className="mt-1">
+                    {mergedData.receita.situacao.status}
                   </Badge>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Data da Situação</p>
-                  <p className="font-semibold text-sm">{data.receita.situacao.data}</p>
+                  <p className="font-semibold text-sm">{mergedData.receita.situacao.data}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Motivo</p>
-                  <p className="font-semibold text-sm">{data.receita.situacao.motivo || 'N/A'}</p>
+                  <p className="font-semibold text-sm">{mergedData.receita.situacao.motivo || 'N/A'}</p>
                 </div>
               </div>
             </section>
@@ -197,9 +328,9 @@ export function PreviewModal({
               <div className="space-y-3 bg-slate-50 dark:bg-slate-900 rounded-lg p-4 print:bg-white print:border">
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2">Atividade Principal</p>
-                  {data.receita.atividades.principal && data.receita.atividades.principal.length > 0 ? (
+                  {mergedData.receita.atividades.principal && mergedData.receita.atividades.principal.length > 0 ? (
                     <div className="space-y-1">
-                      {data.receita.atividades.principal.map((ativ: any, idx: number) => (
+                      {mergedData.receita.atividades.principal.map((ativ: any, idx: number) => (
                         <div key={idx} className="text-sm">
                           <span className="font-mono text-primary">{ativ.code}</span> - {ativ.text}
                         </div>
@@ -210,13 +341,13 @@ export function PreviewModal({
                   )}
                 </div>
                 
-                {data.receita.atividades.secundarias && data.receita.atividades.secundarias.length > 0 && (
+                {mergedData.receita.atividades.secundarias && mergedData.receita.atividades.secundarias.length > 0 && (
                   <div className="pt-3 border-t">
                     <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2">
-                      Atividades Secundárias ({data.receita.atividades.secundarias.length})
+                      Atividades Secundárias ({mergedData.receita.atividades.secundarias.length})
                     </p>
                     <div className="space-y-1 max-h-48 overflow-y-auto">
-                      {data.receita.atividades.secundarias.map((ativ: any, idx: number) => (
+                      {mergedData.receita.atividades.secundarias.map((ativ: any, idx: number) => (
                         <div key={idx} className="text-xs">
                           <span className="font-mono text-primary">{ativ.code}</span> - {ativ.text}
                         </div>
@@ -228,7 +359,7 @@ export function PreviewModal({
             </section>
 
             {/* 5. Quadro Societário (QSA) */}
-            {data.receita.qsa && data.receita.qsa.length > 0 && (
+            {mergedData.receita.qsa && mergedData.receita.qsa.length > 0 && (
               <section className="break-inside-avoid">
                 <h2 className="text-lg font-bold mb-3 flex items-center gap-2 border-b pb-2">
                   <Users className="h-5 w-5 text-primary" />
@@ -236,7 +367,7 @@ export function PreviewModal({
                 </h2>
                 <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-4 print:bg-white print:border">
                   <div className="space-y-2">
-                    {data.receita.qsa.map((socio: any, idx: number) => (
+                    {mergedData.receita.qsa.map((socio: any, idx: number) => (
                       <div key={idx} className="flex justify-between items-start border-b pb-2 last:border-0">
                         <div>
                           <p className="font-semibold text-sm">{socio.nome}</p>
@@ -267,64 +398,64 @@ export function PreviewModal({
               <div className="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-900 rounded-lg p-4 print:bg-white print:border">
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2">Simples Nacional</p>
-                  <Badge variant={data.receita.simples.optante ? 'default' : 'secondary'}>
-                    {data.receita.simples.optante ? 'OPTANTE' : 'NÃO OPTANTE'}
+                  <Badge variant={mergedData.receita.simples.optante ? 'default' : 'secondary'}>
+                    {mergedData.receita.simples.optante ? 'OPTANTE' : 'NÃO OPTANTE'}
                   </Badge>
-                  {data.receita.simples.dataOpcao && (
-                    <p className="text-xs text-slate-600 mt-2">Data Opção: {data.receita.simples.dataOpcao}</p>
+                  {mergedData.receita.simples.dataOpcao && (
+                    <p className="text-xs text-slate-600 mt-2">Data Opção: {mergedData.receita.simples.dataOpcao}</p>
                   )}
-                  {data.receita.simples.dataExclusao && (
-                    <p className="text-xs text-slate-600">Data Exclusão: {data.receita.simples.dataExclusao}</p>
+                  {mergedData.receita.simples.dataExclusao && (
+                    <p className="text-xs text-slate-600">Data Exclusão: {mergedData.receita.simples.dataExclusao}</p>
                   )}
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2">MEI</p>
-                  <Badge variant={data.receita.mei.optante ? 'default' : 'secondary'}>
-                    {data.receita.mei.optante ? 'SIM' : 'NÃO'}
+                  <Badge variant={mergedData.receita.mei.optante ? 'default' : 'secondary'}>
+                    {mergedData.receita.mei.optante ? 'SIM' : 'NÃO'}
                   </Badge>
                 </div>
               </div>
             </section>
 
             {/* 7. Presença Digital Completa (EXPANDIDO!) */}
-            {(data.presencaDigital || data.enrichment) && (
+            {(mergedData.presencaDigital || mergedData.enrichment) && (
               <section className="break-inside-avoid">
                 <h2 className="text-lg font-bold mb-3 flex items-center gap-2 border-b pb-2">
                   🌐 7. Presença Digital e Canais de Venda
                 </h2>
                 <div className="space-y-4 bg-slate-50 dark:bg-slate-900 rounded-lg p-4 print:bg-white print:border">
                   {/* Website Oficial */}
-                  {(data.presencaDigital?.website || data.enrichment?.website) && (
+                  {(mergedData.presencaDigital?.website || mergedData.enrichment?.website) && (
                     <div>
                       <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2 flex items-center gap-2">
                         🏠 Website Oficial
-                        {data.presencaDigital?.website?.status && (
-                          <Badge variant={data.presencaDigital.website.status === 'ativo' ? 'default' : 'secondary'} className="text-xs">
-                            {data.presencaDigital.website.status}
+                        {mergedData.presencaDigital?.website?.status && (
+                          <Badge variant={mergedData.presencaDigital.website.status === 'ativo' ? 'default' : 'secondary'} className="text-xs">
+                            {mergedData.presencaDigital.website.status}
                           </Badge>
                         )}
                       </p>
                       <a
-                        href={(data.presencaDigital?.website || data.enrichment?.website)?.url}
+                        href={(mergedData.presencaDigital?.website || mergedData.enrichment?.website)?.url}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-primary hover:underline font-semibold text-sm break-all block"
                       >
-                        {(data.presencaDigital?.website || data.enrichment?.website)?.title || (data.presencaDigital?.website || data.enrichment?.website)?.url}
+                        {(mergedData.presencaDigital?.website || mergedData.enrichment?.website)?.title || (mergedData.presencaDigital?.website || mergedData.enrichment?.website)?.url}
                       </a>
                     </div>
                   )}
 
                   {/* Redes Sociais */}
-                  {data.presencaDigital?.redesSociais && Object.keys(data.presencaDigital.redesSociais).length > 0 && (
+                  {mergedData.presencaDigital?.redesSociais && Object.keys(mergedData.presencaDigital.redesSociais).length > 0 && (
                     <div className="pt-3 border-t">
                       <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-3">
-                        📱 Redes Sociais ({Object.keys(data.presencaDigital.redesSociais).length})
+                        📱 Redes Sociais ({Object.keys(mergedData.presencaDigital.redesSociais).length})
                       </p>
                       <div className="grid grid-cols-2 gap-2">
-                        {data.presencaDigital.redesSociais.instagram && (
+                        {mergedData.presencaDigital.redesSociais.instagram && (
                           <a
-                            href={data.presencaDigital.redesSociais.instagram.url}
+                            href={mergedData.presencaDigital.redesSociais.instagram.url}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-2 text-sm hover:text-primary transition-colors"
@@ -333,9 +464,9 @@ export function PreviewModal({
                             <span>Instagram</span>
                           </a>
                         )}
-                        {data.presencaDigital.redesSociais.linkedin && (
+                        {mergedData.presencaDigital.redesSociais.linkedin && (
                           <a
-                            href={data.presencaDigital.redesSociais.linkedin.url}
+                            href={mergedData.presencaDigital.redesSociais.linkedin.url}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-2 text-sm hover:text-primary transition-colors"
@@ -344,9 +475,9 @@ export function PreviewModal({
                             <span>LinkedIn</span>
                           </a>
                         )}
-                        {data.presencaDigital.redesSociais.facebook && (
+                        {mergedData.presencaDigital.redesSociais.facebook && (
                           <a
-                            href={data.presencaDigital.redesSociais.facebook.url}
+                            href={mergedData.presencaDigital.redesSociais.facebook.url}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-2 text-sm hover:text-primary transition-colors"
@@ -355,9 +486,9 @@ export function PreviewModal({
                             <span>Facebook</span>
                           </a>
                         )}
-                        {data.presencaDigital.redesSociais.twitter && (
+                        {mergedData.presencaDigital.redesSociais.twitter && (
                           <a
-                            href={data.presencaDigital.redesSociais.twitter.url}
+                            href={mergedData.presencaDigital.redesSociais.twitter.url}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-2 text-sm hover:text-primary transition-colors"
@@ -366,9 +497,9 @@ export function PreviewModal({
                             <span>X (Twitter)</span>
                           </a>
                         )}
-                        {data.presencaDigital.redesSociais.youtube && (
+                        {mergedData.presencaDigital.redesSociais.youtube && (
                           <a
-                            href={data.presencaDigital.redesSociais.youtube.url}
+                            href={mergedData.presencaDigital.redesSociais.youtube.url}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-2 text-sm hover:text-primary transition-colors"
@@ -382,13 +513,13 @@ export function PreviewModal({
                   )}
 
                   {/* Marketplaces */}
-                  {data.presencaDigital?.marketplaces && data.presencaDigital.marketplaces.length > 0 && (
+                  {mergedData.presencaDigital?.marketplaces && mergedData.presencaDigital.marketplaces.length > 0 && (
                     <div className="pt-3 border-t">
                       <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2">
-                        🛒 Marketplaces e E-commerce ({data.presencaDigital.marketplaces.length})
+                        🛒 Marketplaces e E-commerce ({mergedData.presencaDigital.marketplaces.length})
                       </p>
                       <ul className="space-y-1.5">
-                        {data.presencaDigital.marketplaces.map((mp: any, idx: number) => (
+                        {mergedData.presencaDigital.marketplaces.map((mp: any, idx: number) => (
                           <li key={idx} className="flex items-start gap-2">
                             <Badge variant="outline" className="text-xs">
                               {mp.plataforma}
@@ -408,14 +539,14 @@ export function PreviewModal({
                   )}
 
                   {/* Jusbrasil */}
-                  {data.presencaDigital?.jusbrasil && (
+                  {mergedData.presencaDigital?.jusbrasil && (
                     <div className="pt-3 border-t">
                       <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2">
                         ⚖️ Jusbrasil - Histórico Jurídico
                       </p>
                       <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-3">
                         <a
-                          href={data.presencaDigital.jusbrasil.url}
+                          href={mergedData.presencaDigital.jusbrasil.url}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-sm font-semibold text-primary hover:underline block mb-2"
@@ -423,26 +554,26 @@ export function PreviewModal({
                           Ver perfil completo no Jusbrasil →
                         </a>
                         <div className="grid grid-cols-2 gap-3 text-xs">
-                          {data.presencaDigital.jusbrasil.processos && (
+                          {mergedData.presencaDigital.jusbrasil.processos && (
                             <div className="flex items-center gap-2">
                               <span className="text-slate-500">📋 Processos:</span>
                               <Badge variant="secondary" className="text-xs">
-                                {data.presencaDigital.jusbrasil.processos}
+                                {mergedData.presencaDigital.jusbrasil.processos}
                               </Badge>
                             </div>
                           )}
-                          {data.presencaDigital.jusbrasil.socios && (
+                          {mergedData.presencaDigital.jusbrasil.socios && (
                             <div className="flex items-center gap-2">
                               <span className="text-slate-500">👥 Sócios:</span>
                               <Badge variant="secondary" className="text-xs">
-                                {data.presencaDigital.jusbrasil.socios}
+                                {mergedData.presencaDigital.jusbrasil.socios}
                               </Badge>
                             </div>
                           )}
                         </div>
-                        {data.presencaDigital.jusbrasil.ultimaAtualizacao && (
+                        {mergedData.presencaDigital.jusbrasil.ultimaAtualizacao && (
                           <p className="text-xs text-slate-500 mt-2">
-                            Última atualização: {new Date(data.presencaDigital.jusbrasil.ultimaAtualizacao).toLocaleDateString('pt-BR')}
+                            Última atualização: {new Date(mergedData.presencaDigital.jusbrasil.ultimaAtualizacao).toLocaleDateString('pt-BR')}
                           </p>
                         )}
                       </div>
@@ -450,13 +581,13 @@ export function PreviewModal({
                   )}
 
                   {/* Outros Links */}
-                  {data.presencaDigital?.outrosLinks && data.presencaDigital.outrosLinks.length > 0 && (
+                  {mergedData.presencaDigital?.outrosLinks && mergedData.presencaDigital.outrosLinks.length > 0 && (
                     <div className="pt-3 border-t">
                       <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2">
-                        🔗 Outros Links Relevantes ({data.presencaDigital.outrosLinks.length})
+                        🔗 Outros Links Relevantes ({mergedData.presencaDigital.outrosLinks.length})
                       </p>
                       <ul className="space-y-1.5">
-                        {data.presencaDigital.outrosLinks.map((link: any, idx: number) => (
+                        {mergedData.presencaDigital.outrosLinks.map((link: any, idx: number) => (
                           <li key={idx}>
                             <div className="flex items-start gap-2">
                               <Badge variant="secondary" className="text-xs">
@@ -478,14 +609,14 @@ export function PreviewModal({
                   )}
 
                   {/* Notícias */}
-                  {(data.presencaDigital?.noticias || data.enrichment?.news) && 
-                   (data.presencaDigital?.noticias?.length > 0 || data.enrichment?.news?.length > 0) && (
+                  {(mergedData.presencaDigital?.noticias || mergedData.enrichment?.news) && 
+                   (mergedData.presencaDigital?.noticias?.length > 0 || mergedData.enrichment?.news?.length > 0) && (
                     <div className="pt-3 border-t">
                       <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2">
-                        📰 Notícias Recentes ({(data.presencaDigital?.noticias || data.enrichment?.news)?.length})
+                        📰 Notícias Recentes ({(mergedData.presencaDigital?.noticias || mergedData.enrichment?.news)?.length})
                       </p>
                       <ul className="space-y-2">
-                        {(data.presencaDigital?.noticias || data.enrichment?.news || []).map((news: any, index: number) => (
+                        {(mergedData.presencaDigital?.noticias || mergedData.enrichment?.news || []).map((news: any, index: number) => (
                           <li key={index} className="border-l-2 border-primary pl-3 py-1">
                             <a
                               href={news.url || news.link}
@@ -508,13 +639,13 @@ export function PreviewModal({
                   )}
                   
                   {/* Mensagem de vazio */}
-                  {!data.presencaDigital?.website && 
-                   !data.enrichment?.website && 
-                   Object.keys(data.presencaDigital?.redesSociais || {}).length === 0 &&
-                   (data.presencaDigital?.marketplaces?.length || 0) === 0 &&
-                   !data.presencaDigital?.jusbrasil &&
-                   (data.presencaDigital?.noticias?.length || 0) === 0 &&
-                   (data.enrichment?.news?.length || 0) === 0 && (
+                  {!mergedData.presencaDigital?.website && 
+                   !mergedData.enrichment?.website && 
+                   Object.keys(mergedData.presencaDigital?.redesSociais || {}).length === 0 &&
+                   (mergedData.presencaDigital?.marketplaces?.length || 0) === 0 &&
+                   !mergedData.presencaDigital?.jusbrasil &&
+                   (mergedData.presencaDigital?.noticias?.length || 0) === 0 &&
+                   (mergedData.enrichment?.news?.length || 0) === 0 && (
                     <p className="text-sm text-slate-500 italic">
                       ⚠️ Nenhuma presença digital encontrada. A empresa pode não ter canais online ativos.
                     </p>
@@ -524,7 +655,7 @@ export function PreviewModal({
             )}
 
             {/* 8. Análise IA (se disponível) */}
-            {data.ai && (
+            {mergedData.ai && (
               <section className="break-inside-avoid">
                 <h2 className="text-lg font-bold mb-3 flex items-center gap-2 border-b pb-2">
                   <TrendingUp className="h-5 w-5 text-primary" />
@@ -534,25 +665,25 @@ export function PreviewModal({
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Score de Propensão</p>
-                      <p className="text-4xl font-bold text-primary">{data.ai.score}<span className="text-xl text-slate-400">/100</span></p>
+                      <p className="text-4xl font-bold text-primary">{mergedData.ai.score}<span className="text-xl text-slate-400">/100</span></p>
                     </div>
-                    <Badge variant={data.ai.score >= 70 ? 'default' : 'secondary'} className="text-lg px-4 py-2">
-                      {data.ai.score >= 80 ? 'Alto Potencial' : data.ai.score >= 60 ? 'Bom Potencial' : 'Potencial Moderado'}
+                    <Badge variant={mergedData.ai.score >= 70 ? 'default' : 'secondary'} className="text-lg px-4 py-2">
+                      {mergedData.ai.score >= 80 ? 'Alto Potencial' : mergedData.ai.score >= 60 ? 'Bom Potencial' : 'Potencial Moderado'}
                     </Badge>
                   </div>
                   
-                  {data.ai.summary && (
+                  {mergedData.ai.summary && (
                     <div className="pt-3 border-t">
                       <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2">Resumo Executivo</p>
-                      <p className="text-sm">{data.ai.summary}</p>
+                      <p className="text-sm">{mergedData.ai.summary}</p>
                     </div>
                   )}
 
-                  {data.ai.insights && data.ai.insights.length > 0 && (
+                  {mergedData.ai.insights && mergedData.ai.insights.length > 0 && (
                     <div className="pt-3 border-t">
                       <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2">Insights Estratégicos</p>
                       <ul className="space-y-1">
-                        {data.ai.insights.map((insight: string, idx: number) => (
+                        {mergedData.ai.insights.map((insight: string, idx: number) => (
                           <li key={idx} className="flex items-start gap-2 text-sm">
                             <span className="text-primary font-bold">•</span>
                             <span>{insight}</span>
@@ -562,14 +693,14 @@ export function PreviewModal({
                     </div>
                   )}
 
-                  {data.ai.redFlags && data.ai.redFlags.length > 0 && (
+                  {mergedData.ai.redFlags && mergedData.ai.redFlags.length > 0 && (
                     <div className="pt-3 border-t">
                       <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2 flex items-center gap-1">
                         <AlertTriangle className="h-3 w-3 text-red-600" />
                         Pontos de Atenção
                       </p>
                       <ul className="space-y-1">
-                        {data.ai.redFlags.map((flag: string, idx: number) => (
+                        {mergedData.ai.redFlags.map((flag: string, idx: number) => (
                           <li key={idx} className="flex items-start gap-2 text-sm text-red-600">
                             <span className="font-bold">⚠</span>
                             <span>{flag}</span>
