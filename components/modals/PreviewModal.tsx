@@ -286,34 +286,164 @@ export function PreviewModal({
               </div>
             </section>
 
-            {/* 7. Website e Presença Digital */}
-            {data.enrichment && (data.enrichment.website || data.enrichment.news.length > 0) && (
+            {/* 7. Presença Digital Completa (EXPANDIDO!) */}
+            {(data.presencaDigital || data.enrichment) && (
               <section className="break-inside-avoid">
                 <h2 className="text-lg font-bold mb-3 flex items-center gap-2 border-b pb-2">
-                  🌐 7. Presença Digital
+                  🌐 7. Presença Digital e Canais de Venda
                 </h2>
                 <div className="space-y-4 bg-slate-50 dark:bg-slate-900 rounded-lg p-4 print:bg-white print:border">
-                  {data.enrichment.website && (
+                  {/* Website Oficial */}
+                  {(data.presencaDigital?.website || data.enrichment?.website) && (
                     <div>
-                      <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-1">Website Oficial</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2 flex items-center gap-2">
+                        🏠 Website Oficial
+                        {data.presencaDigital?.website?.status && (
+                          <Badge variant={data.presencaDigital.website.status === 'ativo' ? 'default' : 'secondary'} className="text-xs">
+                            {data.presencaDigital.website.status}
+                          </Badge>
+                        )}
+                      </p>
                       <a
-                        href={data.enrichment.website.url}
+                        href={(data.presencaDigital?.website || data.enrichment?.website)?.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-primary hover:underline font-semibold text-sm break-all"
+                        className="text-primary hover:underline font-semibold text-sm break-all block"
                       >
-                        {data.enrichment.website.title || data.enrichment.website.url}
+                        {(data.presencaDigital?.website || data.enrichment?.website)?.title || (data.presencaDigital?.website || data.enrichment?.website)?.url}
                       </a>
                     </div>
                   )}
-                  
-                  {data.enrichment.news && data.enrichment.news.length > 0 && (
+
+                  {/* Redes Sociais */}
+                  {data.presencaDigital?.redesSociais && Object.keys(data.presencaDigital.redesSociais).length > 0 && (
+                    <div className="pt-3 border-t">
+                      <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-3">
+                        📱 Redes Sociais ({Object.keys(data.presencaDigital.redesSociais).length})
+                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {data.presencaDigital.redesSociais.instagram && (
+                          <a
+                            href={data.presencaDigital.redesSociais.instagram.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-sm hover:text-primary transition-colors"
+                          >
+                            <span className="text-pink-600">📷</span>
+                            <span>Instagram</span>
+                          </a>
+                        )}
+                        {data.presencaDigital.redesSociais.linkedin && (
+                          <a
+                            href={data.presencaDigital.redesSociais.linkedin.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-sm hover:text-primary transition-colors"
+                          >
+                            <span className="text-blue-600">💼</span>
+                            <span>LinkedIn</span>
+                          </a>
+                        )}
+                        {data.presencaDigital.redesSociais.facebook && (
+                          <a
+                            href={data.presencaDigital.redesSociais.facebook.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-sm hover:text-primary transition-colors"
+                          >
+                            <span className="text-blue-700">📘</span>
+                            <span>Facebook</span>
+                          </a>
+                        )}
+                        {data.presencaDigital.redesSociais.twitter && (
+                          <a
+                            href={data.presencaDigital.redesSociais.twitter.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-sm hover:text-primary transition-colors"
+                          >
+                            <span className="text-sky-500">🐦</span>
+                            <span>X (Twitter)</span>
+                          </a>
+                        )}
+                        {data.presencaDigital.redesSociais.youtube && (
+                          <a
+                            href={data.presencaDigital.redesSociais.youtube.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-sm hover:text-primary transition-colors"
+                          >
+                            <span className="text-red-600">▶️</span>
+                            <span>YouTube</span>
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Marketplaces */}
+                  {data.presencaDigital?.marketplaces && data.presencaDigital.marketplaces.length > 0 && (
                     <div className="pt-3 border-t">
                       <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2">
-                        Notícias Recentes ({data.enrichment.news.length})
+                        🛒 Marketplaces e E-commerce ({data.presencaDigital.marketplaces.length})
+                      </p>
+                      <ul className="space-y-1.5">
+                        {data.presencaDigital.marketplaces.map((mp: any, idx: number) => (
+                          <li key={idx} className="flex items-start gap-2">
+                            <Badge variant="outline" className="text-xs">
+                              {mp.plataforma}
+                            </Badge>
+                            <a
+                              href={mp.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-primary hover:underline flex-1"
+                            >
+                              {mp.loja}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Outros Links */}
+                  {data.presencaDigital?.outrosLinks && data.presencaDigital.outrosLinks.length > 0 && (
+                    <div className="pt-3 border-t">
+                      <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2">
+                        🔗 Outros Links Relevantes ({data.presencaDigital.outrosLinks.length})
+                      </p>
+                      <ul className="space-y-1.5">
+                        {data.presencaDigital.outrosLinks.map((link: any, idx: number) => (
+                          <li key={idx}>
+                            <div className="flex items-start gap-2">
+                              <Badge variant="secondary" className="text-xs">
+                                {link.tipo}
+                              </Badge>
+                              <a
+                                href={link.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-primary hover:underline flex-1"
+                              >
+                                {link.titulo}
+                              </a>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Notícias */}
+                  {(data.presencaDigital?.noticias || data.enrichment?.news) && 
+                   (data.presencaDigital?.noticias?.length > 0 || data.enrichment?.news?.length > 0) && (
+                    <div className="pt-3 border-t">
+                      <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2">
+                        📰 Notícias Recentes ({(data.presencaDigital?.noticias || data.enrichment?.news)?.length})
                       </p>
                       <ul className="space-y-2">
-                        {data.enrichment.news.map((news: any, index: number) => (
+                        {(data.presencaDigital?.noticias || data.enrichment?.news || []).map((news: any, index: number) => (
                           <li key={index} className="border-l-2 border-primary pl-3 py-1">
                             <a
                               href={news.url || news.link}
@@ -335,9 +465,15 @@ export function PreviewModal({
                     </div>
                   )}
                   
-                  {!data.enrichment.website && data.enrichment.news.length === 0 && (
+                  {/* Mensagem de vazio */}
+                  {!data.presencaDigital?.website && 
+                   !data.enrichment?.website && 
+                   Object.keys(data.presencaDigital?.redesSociais || {}).length === 0 &&
+                   (data.presencaDigital?.marketplaces?.length || 0) === 0 &&
+                   (data.presencaDigital?.noticias?.length || 0) === 0 &&
+                   (data.enrichment?.news?.length || 0) === 0 && (
                     <p className="text-sm text-slate-500 italic">
-                      Nenhuma informação digital encontrada para esta empresa
+                      ⚠️ Nenhuma presença digital encontrada. A empresa pode não ter canais online ativos.
                     </p>
                   )}
                 </div>

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { normalizeCnpj, isValidCnpj, normalizeDomain } from '@/lib/utils/cnpj'
 import { fetchReceitaWS } from '@/lib/services/receita-ws'
 import { fetchGoogleCSE } from '@/lib/services/google-cse'
+import { fetchDigitalPresence } from '@/lib/services/digital-presence'
 import { analyzeWithOpenAI } from '@/lib/services/openai-analysis'
 
 /**
@@ -48,8 +49,16 @@ export async function POST(req: Request) {
     console.log('[API /preview] 📊 Buscando ReceitaWS...')
     const receitaData = await fetchReceitaWS(resolvedCnpj)
 
-    // 2. Buscar website e notícias - passar CNPJ para busca específica
-    console.log('[API /preview] 🔍 Buscando Google CSE...')
+    // 2. Buscar presença digital completa (website + redes sociais + marketplaces)
+    console.log('[API /preview] 🔍 Buscando presença digital completa...')
+    const digitalPresence = await fetchDigitalPresence(
+      receitaData.nome || '',
+      resolvedCnpj,
+      receitaData.fantasia
+    )
+
+    // 2b. Buscar notícias (mantém busca separada para controle)
+    console.log('[API /preview] 📰 Buscando notícias...')
     const googleData = await fetchGoogleCSE(
       receitaData.nome || receitaData.fantasia || resolvedCnpj,
       resolvedCnpj
@@ -123,9 +132,18 @@ export async function POST(req: Request) {
         },
       },
       // Website e notícias
+      // Presença Digital Completa (NOVO!)
+      presencaDigital: {
+        website: digitalPresence.website,
+        redesSociais: digitalPresence.redesSociais,
+        marketplaces: digitalPresence.marketplaces,
+        outrosLinks: digitalPresence.outrosLinks,
+        noticias: googleData.news.slice(0, 3),
+      },
+      // Mantém enrichment para compatibilidade
       enrichment: {
-        website: googleData.website,
-        news: googleData.news.slice(0, 3), // Apenas 3 notícias
+        website: digitalPresence.website || googleData.website,
+        news: googleData.news.slice(0, 3),
       },
       // IA (opcional)
       ai: aiAnalysis ? {
