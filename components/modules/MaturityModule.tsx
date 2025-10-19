@@ -215,35 +215,36 @@ export function MaturityModule({ companyId, companyName }: MaturityModuleProps) 
             culture: { name: 'Cultura', icon: Zap, description: 'Inovação e transformação' }
           }
           const info = dimensionInfo[key as keyof typeof dimensionInfo] || { name: key, icon: Info, description: '' }
+          const Icon = info.icon
           return (
           <Card key={idx} className="bg-slate-800/50 border-slate-700/50 hover:bg-slate-800/70 transition-all">
             <CardHeader>
               <div className="flex justify-between items-start">
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 rounded-lg bg-indigo-900/30 border border-indigo-700/30 flex items-center justify-center text-indigo-400">
-                    {getDimensionIcon(dimension.name)}
+                    <Icon className="h-5 w-5" />
                   </div>
                   <div className="flex-1">
                     <CardTitle className="text-lg text-white flex items-center gap-2">
-                      {dimension.name}
+                      {info.name}
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger>
                             <Info className="h-4 w-4 text-slate-400" />
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs">
-                            <p className="text-sm">{dimension.description}</p>
+                            <p className="text-sm">{info.description}</p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
                     </CardTitle>
-                    <p className="text-sm text-slate-400 mt-1">{dimension.description}</p>
+                    <p className="text-sm text-slate-400 mt-1">{info.description}</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  {getStatusIcon(dimension.score)}
-                  <div className={`text-2xl font-bold ${getScoreColor(dimension.score)} mt-1`}>
-                    {dimension.score}
+                  {getStatusIcon(score)}
+                  <div className={`text-2xl font-bold ${getScoreColor(score)} mt-1`}>
+                    {score}
                   </div>
                 </div>
               </div>
@@ -253,40 +254,34 @@ export function MaturityModule({ companyId, companyName }: MaturityModuleProps) 
               <div>
                 <div className="flex justify-between text-xs text-slate-400 mb-1">
                   <span>Score</span>
-                  <span>{dimension.score}/100</span>
+                  <span>{score}/100</span>
                 </div>
-                <Progress value={dimension.score} />
+                <Progress value={score} />
               </div>
 
               {/* Status */}
               <div>
                 <Badge className={`${
-                  dimension.status === "Excelente" ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" :
-                  dimension.status === "Muito Bom" ? "bg-blue-500/20 text-blue-400 border-blue-500/30" :
-                  dimension.status === "Bom" ? "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" :
+                  score >= 85 ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" :
+                  score >= 70 ? "bg-blue-500/20 text-blue-400 border-blue-500/30" :
+                  score >= 55 ? "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" :
                   "bg-orange-500/20 text-orange-400 border-orange-500/30"
                 } border`}>
-                  {dimension.status}
+                  {score >= 85 ? 'Excelente' : score >= 70 ? 'Muito Bom' : score >= 55 ? 'Bom' : 'Em Desenvolvimento'}
                 </Badge>
               </div>
 
-              {/* Recomendações */}
-              {dimension.recommendations.length > 0 && (
-                <div className="bg-blue-900/20 border border-blue-700/30 rounded-lg p-3">
-                  <p className="text-xs font-semibold text-blue-400 mb-2">Recomendações:</p>
-                  <ul className="text-xs text-slate-300 space-y-1">
-                    {dimension.recommendations.map((rec, recIdx) => (
-                      <li key={recIdx} className="flex items-start gap-1">
-                        <span className="text-blue-400">•</span>
-                        {rec}
-                      </li>
-                    ))}
-                  </ul>
+              {/* Empty State */}
+              {score === 0 && (
+                <div className="bg-slate-700/30 border border-slate-600/30 rounded-lg p-3">
+                  <p className="text-xs text-slate-400 italic text-center">
+                    Aguardando análise completa da empresa
+                  </p>
                 </div>
               )}
             </CardContent>
           </Card>
-        ))}
+        })}
       </div>
 
       {/* Insights de IA e Roadmap */}
