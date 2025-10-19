@@ -8,8 +8,9 @@ import { GaugeBar } from '@/components/ui/gauge-bar'
 import { GaugePointer } from '@/components/ui/gauge-pointer'
 import { SmartTooltip } from '@/components/ui/smart-tooltip'
 import { EvidenceButton } from '@/components/ui/evidence-button'
+import { OpportunitiesModal } from '@/components/modals/OpportunitiesModal'
 import { createTotvsScanEvidence, Evidence } from '@/lib/types/evidence'
-import { Loader2, RefreshCw, Target, TrendingUp, AlertCircle } from 'lucide-react'
+import { Loader2, RefreshCw, Target, TrendingUp, AlertCircle, Sparkles } from 'lucide-react'
 
 interface TotvsLiteResult {
   totvs_detected: boolean
@@ -41,6 +42,7 @@ export function FitTotvsModule({ companyId, companyName }: FitTotvsModuleProps) 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [lastFetchedId, setLastFetchedId] = useState<string | null>(null)
+  const [showOpportunities, setShowOpportunities] = useState(false)
 
   const fetchTotvsData = async () => {
     if (!companyId) return
@@ -331,7 +333,32 @@ export function FitTotvsModule({ companyId, companyName }: FitTotvsModuleProps) 
               <p>Última análise: {new Date(result.last_scanned_at).toLocaleString('pt-BR')}</p>
               <p>Evidências analisadas: {result.evidences.length}</p>
             </div>
+
+            {/* Ação: Analisar Oportunidades */}
+            {result.totvs_detected && (
+              <div className="pt-4 border-t">
+                <Button 
+                  onClick={() => setShowOpportunities(true)} 
+                  className="w-full bg-purple-600 hover:bg-purple-700"
+                  size="lg"
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Analisar Oportunidades TOTVS
+                </Button>
+              </div>
+            )}
           </div>
+        )}
+
+        {/* Modal de Oportunidades */}
+        {companyId && (
+          <OpportunitiesModal
+            isOpen={showOpportunities}
+            onClose={() => setShowOpportunities(false)}
+            companyId={companyId}
+            companyName={companyName || 'Empresa'}
+            vendor="TOTVS"
+          />
         )}
 
         {!result && !loading && !error && (
