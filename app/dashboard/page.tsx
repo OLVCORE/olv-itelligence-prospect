@@ -595,7 +595,10 @@ function DashboardContent() {
               </TabsContent>
 
               <TabsContent value="playbooks">
-                <PlaybooksModule data={mockPlaybooks} />
+                <PlaybooksModule 
+                  companyId={selectedCompany?.id}
+                  companyName={selectedCompany?.tradeName || selectedCompany?.name}
+                />
               </TabsContent>
 
               <TabsContent value="canvas">
@@ -607,7 +610,10 @@ function DashboardContent() {
               </TabsContent>
 
               <TabsContent value="alertas">
-                <AlertsModule data={mockAlerts} />
+                <AlertsModule 
+                  companyId={selectedCompany?.id}
+                  companyName={selectedCompany?.tradeName || selectedCompany?.name}
+                />
               </TabsContent>
             </Tabs>
           </div>
