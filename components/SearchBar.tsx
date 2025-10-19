@@ -121,7 +121,7 @@ export function SearchBar({ onSuccess }: SearchBarProps) {
       const response = await fetch('/api/companies/preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cnpj, useAI: true }),
+        body: JSON.stringify({ cnpj, useAI: true, forceRefresh: true }), // SEMPRE buscar dados novos
       })
 
       const data = await response.json()

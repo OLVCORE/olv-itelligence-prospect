@@ -61,34 +61,38 @@ export async function POST(req: Request) {
 
     // ====== VERIFICAR CACHE PRIMEIRO (Economia de Quota Google) ======
     
-    console.log('[API /preview] 🔍 Verificando cache...')
-    try {
-      const { data: cachedData, error: cacheError } = await supabaseAdmin
-        .from('preview_cache')
-        .select('*')
-        .eq('cnpj', resolvedCnpj)
-        .gte('expires_at', new Date().toISOString()) // Não expirado
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single()
-      
-      if (cachedData && !cacheError) {
-        const cacheAge = Math.floor((Date.now() - new Date(cachedData.created_at).getTime()) / 1000 / 60) // minutos
-        console.log(`[API /preview] ✅ CACHE HIT! Idade: ${cacheAge} minutos`)
-        console.log(`[API /preview] 💾 Reutilizando dados sem consumir quota do Google`)
+    if (!forceRefresh) {
+      console.log('[API /preview] 🔍 Verificando cache...')
+      try {
+        const { data: cachedData, error: cacheError } = await supabaseAdmin
+          .from('preview_cache')
+          .select('*')
+          .eq('cnpj', resolvedCnpj)
+          .gte('expires_at', new Date().toISOString()) // Não expirado
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single()
         
-        return NextResponse.json({
-          status: 'success',
-          message: `Dados do cache (atualizados há ${cacheAge} min)`,
-          fromCache: true,
-          cacheAge: cacheAge,
-          data: cachedData.data,
-        })
-      } else {
-        console.log('[API /preview] ⚠️ Cache miss ou expirado. Buscando dados frescos...')
+        if (cachedData && !cacheError) {
+          const cacheAge = Math.floor((Date.now() - new Date(cachedData.created_at).getTime()) / 1000 / 60) // minutos
+          console.log(`[API /preview] ✅ CACHE HIT! Idade: ${cacheAge} minutos`)
+          console.log(`[API /preview] 💾 Reutilizando dados sem consumir quota do Google`)
+          
+          return NextResponse.json({
+            status: 'success',
+            message: `Dados do cache (atualizados há ${cacheAge} min)`,
+            fromCache: true,
+            cacheAge: cacheAge,
+            data: cachedData.data,
+          })
+        } else {
+          console.log('[API /preview] ⚠️ Cache miss ou expirado. Buscando dados frescos...')
+        }
+      } catch (error: any) {
+        console.warn('[API /preview] ⚠️ Erro ao verificar cache (continuando):', error.message)
       }
-    } catch (error: any) {
-      console.warn('[API /preview] ⚠️ Erro ao verificar cache (continuando):', error.message)
+    } else {
+      console.log('[API /preview] 🔄 FORCE REFRESH ativado - ignorando cache')
     }
 
     // ====== BUSCA COMPLETA OTIMIZADA (< 30s) ======
