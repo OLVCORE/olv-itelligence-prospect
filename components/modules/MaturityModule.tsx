@@ -33,10 +33,18 @@ interface MaturityDimension {
 
 interface MaturityData {
   overall: number
-  dimensions: MaturityDimension[]
-  aiInsights: string
-  evolutionTrend: string
-  industryComparison: string
+  dimensions: {
+    governance: number
+    processes: number
+    technology: number
+    people: number
+    data: number
+    culture: number
+  }
+  recommendations?: string[]
+  aiInsights?: string
+  evolutionTrend?: string
+  industryComparison?: string
 }
 
 interface MaturityModuleProps {
@@ -48,15 +56,10 @@ export function MaturityModule({ companyId, companyName }: MaturityModuleProps) 
   // TODO: Calcular maturidade real baseado em análise da empresa - Sprint 2
   const data: MaturityData = {
     overall: 0,
-    dimensions: {
-      governance: 0,
-      processes: 0,
-      technology: 0,
-      people: 0,
-      data: 0,
-      culture: 0
-    },
-    recommendations: []
+    dimensions: [],  // Array vazio até engine estar pronta
+    aiInsights: '',
+    evolutionTrend: '',
+    industryComparison: ''
   }
   const getScoreColor = (score: number) => {
     if (score >= 85) return "text-emerald-500"
@@ -202,7 +205,17 @@ export function MaturityModule({ companyId, companyName }: MaturityModuleProps) 
 
       {/* 6 Dimensões da Maturidade */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {data.dimensions.map((dimension, idx) => (
+        {Object.entries(data.dimensions || {}).map(([key, score], idx) => {
+          const dimensionInfo = {
+            governance: { name: 'Governança', icon: Shield, description: 'Gestão e controles' },
+            processes: { name: 'Processos', icon: Cpu, description: 'Automação e eficiência' },
+            technology: { name: 'Tecnologia', icon: Cloud, description: 'Stack e infraestrutura' },
+            people: { name: 'Pessoas', icon: Users, description: 'Capacitação da equipe' },
+            data: { name: 'Dados', icon: Database, description: 'Qualidade e governança' },
+            culture: { name: 'Cultura', icon: Zap, description: 'Inovação e transformação' }
+          }
+          const info = dimensionInfo[key as keyof typeof dimensionInfo] || { name: key, icon: Info, description: '' }
+          return (
           <Card key={idx} className="bg-slate-800/50 border-slate-700/50 hover:bg-slate-800/70 transition-all">
             <CardHeader>
               <div className="flex justify-between items-start">
