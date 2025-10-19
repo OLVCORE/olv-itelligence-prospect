@@ -1,8 +1,10 @@
 /**
  * Serviço de análise com OpenAI
+ * Agora com scoring híbrido (IA + Engine de Regras)
  */
 
 import OpenAI from 'openai'
+import { calculatePropensityScore, type ScoringInput, type ScoringOutput } from '@/lib/scoring/scoring-engine'
 
 interface AnalysisInput {
   company: {
@@ -13,6 +15,7 @@ interface AnalysisInput {
     capital_social?: string
     porte?: string
     atividade_principal?: Array<{ text: string }>
+    simples?: { optante?: boolean }
   }
   website: string | null
   news: Array<{
@@ -23,18 +26,53 @@ interface AnalysisInput {
 }
 
 interface AnalysisOutput {
-  score: number
+  score: number // Score híbrido final
+  scoreIA: number // Score apenas da IA
+  scoreRegras: number // Score do engine de regras
+  breakdown: ScoringOutput['breakdown'] // Detalhamento por pilar
   insights: string[]
   redFlags: string[]
   justification: string
+  classificacao: string
 }
 
 export async function analyzeWithOpenAI(input: AnalysisInput): Promise<AnalysisOutput> {
   const apiKey = process.env.OPENAI_API_KEY
 
+  // SEMPRE calcular score baseado em regras (robusto e auditável)
+  const scoringInput: ScoringInput = {
+    situacao: input.company.situacao || 'DESCONHECIDA',
+    abertura: input.company.abertura || '01/01/2000',
+    capitalSocial: parseFloat((input.company.capital_social || '0').replace(/\D/g, '')) || 0,
+    porte: input.company.porte || 'NÃO INFORMADO',
+    simplesOptante: input.company.simples?.optante ?? false,
+    meiOptante: false, // TODO: adicionar campo MEI
+    temWebsite: !!input.website,
+    temNoticias: input.news.length > 0,
+    noticiasRecentes: input.news.filter(n => {
+      if (!n.date) return false
+      const newsDate = new Date(n.date)
+      const threeMonthsAgo = new Date()
+      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
+      return newsDate >= threeMonthsAgo
+    }).length,
+    atividadePrincipal: input.company.atividade_principal?.[0]?.text || 'Não informado',
+  }
+
+  const scoringResult = calculatePropensityScore(scoringInput)
+
   if (!apiKey) {
-    console.warn('[OpenAI] ⚠️ API Key não configurada, retornando análise básica')
-    return generateBasicAnalysis(input)
+    console.warn('[OpenAI] ⚠️ API Key não configurada, usando apenas score de regras')
+    return {
+      score: scoringResult.scoreTotal,
+      scoreIA: 0,
+      scoreRegras: scoringResult.scoreTotal,
+      breakdown: scoringResult.breakdown,
+      insights: generateBasicInsights(input),
+      redFlags: generateBasicRedFlags(input),
+      justification: scoringResult.justificativa,
+      classificacao: scoringResult.classificacao,
+    }
   }
 
   try {
@@ -94,47 +132,122 @@ Produza uma análise em JSON com:
     })
 
     const result = JSON.parse(completion.choices[0].message.content || '{}')
+    const scoreIA = result.score ?? 50
 
-    console.log('[OpenAI] ✅ Análise concluída. Score:', result.score)
+    console.log('[OpenAI] ✅ Score IA:', scoreIA)
+    console.log('[OpenAI] ✅ Score Regras:', scoringResult.scoreTotal)
+
+    // Score híbrido: 70% IA + 30% Regras (balanceado e auditável)
+    const scoreHibrido = Math.round((scoreIA * 0.7) + (scoringResult.scoreTotal * 0.3))
+
+    console.log('[OpenAI] ✅ Score Híbrido Final:', scoreHibrido)
+
+    // Adicionar score das regras ao breakdown para referência futura
+    scoringInput.scoreIA = scoreIA
+    const finalScoring = calculatePropensityScore(scoringInput)
 
     return {
-      score: result.score ?? 50,
+      score: scoreHibrido, // Score híbrido (70% IA + 30% Regras)
+      scoreIA, // Score puro da IA
+      scoreRegras: scoringResult.scoreTotal, // Score puro das regras
+      breakdown: finalScoring.breakdown, // Detalhamento por pilar
       insights: Array.isArray(result.insights) ? result.insights : [],
       redFlags: Array.isArray(result.redFlags) ? result.redFlags : [],
-      justification: result.justification || 'Análise gerada automaticamente'
+      justification: result.justification || scoringResult.justificativa,
+      classificacao: scoreHibrido >= 80 ? 'Alto Potencial' : 
+                     scoreHibrido >= 60 ? 'Bom Potencial' : 
+                     scoreHibrido >= 40 ? 'Potencial Moderado' : 'Baixo Potencial',
     }
   } catch (error: any) {
     console.error('[OpenAI] ❌ Erro na análise:', error.message)
-    return generateBasicAnalysis(input)
+    
+    // Fallback: retornar apenas score de regras
+    return {
+      score: scoringResult.scoreTotal,
+      scoreIA: 0,
+      scoreRegras: scoringResult.scoreTotal,
+      breakdown: scoringResult.breakdown,
+      insights: generateBasicInsights(input),
+      redFlags: generateBasicRedFlags(input),
+      justification: scoringResult.justificativa,
+      classificacao: scoringResult.classificacao,
+    }
   }
 }
 
-function generateBasicAnalysis(input: AnalysisInput): AnalysisOutput {
-  // Análise básica sem IA (fallback)
-  let score = 50
+// ==================== HELPERS ====================
 
-  // Ajustar score baseado em dados básicos
-  if (input.company.situacao === 'ATIVA') score += 20
-  if (input.company.capital_social && parseFloat(input.company.capital_social.replace(/\D/g, '')) > 100000) score += 10
-  if (input.website) score += 10
-  if (input.news.length > 0) score += 10
+function generateBasicInsights(input: AnalysisInput): string[] {
+  const insights: string[] = []
+  
+  if (input.company.situacao === 'ATIVA') {
+    insights.push(`Empresa ativa desde ${input.company.abertura || 'data desconhecida'}`)
+  }
+  
+  if (input.website) {
+    insights.push('Presença digital detectada - empresa acessível online')
+  }
+  
+  if (input.news.length > 0) {
+    insights.push(`${input.news.length} notícia(s) recente(s) - empresa com visibilidade`)
+  }
+  
+  const capital = parseFloat((input.company.capital_social || '0').replace(/\D/g, ''))
+  if (capital > 100000) {
+    insights.push('Capital social adequado para operações de médio porte')
+  }
 
+  return insights.length > 0 ? insights : ['Dados limitados para análise detalhada']
+}
+
+function generateBasicRedFlags(input: AnalysisInput): string[] {
   const redFlags: string[] = []
-  if (input.company.situacao !== 'ATIVA') redFlags.push('Empresa não está ativa')
-  if (!input.website) redFlags.push('Sem presença digital detectada')
-  if (!input.company.capital_social) redFlags.push('Capital social não informado')
+  
+  if (input.company.situacao !== 'ATIVA') {
+    redFlags.push('⚠️ Empresa não está ativa no cadastro da Receita')
+  }
+  
+  if (!input.website) {
+    redFlags.push('⚠️ Sem presença digital detectada')
+  }
+  
+  if (!input.company.capital_social || parseFloat(input.company.capital_social.replace(/\D/g, '')) < 5000) {
+    redFlags.push('⚠️ Capital social muito baixo ou não informado')
+  }
 
-  const insights: string[] = [
-    `Empresa ${input.company.situacao === 'ATIVA' ? 'ativa' : 'inativa'} desde ${input.company.abertura || 'data desconhecida'}`,
-    `Presença digital: ${input.website ? 'Detectada' : 'Não encontrada'}`,
-    `Notícias encontradas: ${input.news.length} nos últimos meses`
-  ]
+  if (input.news.length === 0) {
+    redFlags.push('ℹ️ Sem notícias recentes - empresa com baixa visibilidade')
+  }
+
+  return redFlags
+}
+
+function generateBasicAnalysis(input: AnalysisInput): AnalysisOutput {
+  // Esta função não é mais usada, mas mantemos para compatibilidade
+  const scoringInput: ScoringInput = {
+    situacao: input.company.situacao || 'DESCONHECIDA',
+    abertura: input.company.abertura || '01/01/2000',
+    capitalSocial: parseFloat((input.company.capital_social || '0').replace(/\D/g, '')) || 0,
+    porte: input.company.porte || 'NÃO INFORMADO',
+    simplesOptante: input.company.simples?.optante ?? false,
+    meiOptante: false,
+    temWebsite: !!input.website,
+    temNoticias: input.news.length > 0,
+    noticiasRecentes: 0,
+    atividadePrincipal: input.company.atividade_principal?.[0]?.text || 'Não informado',
+  }
+
+  const scoringResult = calculatePropensityScore(scoringInput)
 
   return {
-    score: Math.min(100, Math.max(0, score)),
-    insights,
-    redFlags,
-    justification: 'Análise básica baseada em dados cadastrais (OpenAI não disponível)'
+    score: scoringResult.scoreTotal,
+    scoreIA: 0,
+    scoreRegras: scoringResult.scoreTotal,
+    breakdown: scoringResult.breakdown,
+    insights: generateBasicInsights(input),
+    redFlags: generateBasicRedFlags(input),
+    justification: scoringResult.justificativa,
+    classificacao: scoringResult.classificacao,
   }
 }
 
