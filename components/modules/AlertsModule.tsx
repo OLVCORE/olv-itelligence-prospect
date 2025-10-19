@@ -145,7 +145,7 @@ export function AlertsModule({ companyId, companyName }: AlertsModuleProps) {
 
       {/* Lista de Alertas */}
       <div className="space-y-3">
-        {data.map((alert) => (
+        {data?.map((alert) => (
           <Card 
             key={alert.id} 
             className={`bg-slate-800/50 border-slate-700/50 hover:bg-slate-800/70 transition-all ${
@@ -202,7 +202,7 @@ export function AlertsModule({ companyId, companyName }: AlertsModuleProps) {
                         Ações Sugeridas pela IA:
                       </p>
                       <ul className="text-xs text-slate-300 space-y-1">
-                        {alert.suggestedActions.map((action, idx) => (
+                        {alert.suggestedActions?.map((action, idx) => (
                           <li key={idx} className="flex items-start gap-2">
                             <span className="text-blue-400">→</span>
                             {action}

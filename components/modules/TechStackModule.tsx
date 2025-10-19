@@ -35,13 +35,14 @@ interface TechStackItem {
 }
 
 interface TechStackModuleProps {
-  company?: any
-  data: TechStackItem[]
+  companyId?: string
   companyName?: string
+  company?: any
+  data?: TechStackItem[]
   isLoading?: boolean
 }
 
-export function TechStackModule({ company, data, companyName = "Empresa", isLoading = false }: TechStackModuleProps) {
+export function TechStackModule({ companyId, company, data = [], companyName = "Empresa", isLoading = false }: TechStackModuleProps) {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "Confirmado": return <CheckCircle className="h-5 w-5 text-emerald-500" />
@@ -72,8 +73,8 @@ export function TechStackModule({ company, data, companyName = "Empresa", isLoad
     <div className="space-y-6">
       {/* FIT TOTVS Module */}
       <FitTotvsModule 
-        companyId={company?.id} 
-        companyName={company?.name || company?.tradeName} 
+        companyId={companyId || company?.id} 
+        companyName={companyName || company?.name || company?.tradeName} 
       />
 
       {/* Header com Explicação */}
@@ -140,7 +141,7 @@ export function TechStackModule({ company, data, companyName = "Empresa", isLoad
 
       {/* Lista de Tecnologias */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {data.map((tech) => (
+        {data?.map((tech) => (
           <Card key={tech.id} className="bg-slate-800/50 border-slate-700/50 hover:bg-slate-800/70 transition-all">
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
@@ -201,7 +202,7 @@ export function TechStackModule({ company, data, companyName = "Empresa", isLoad
                     </TooltipProvider>
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {tech.evidence.map((ev, idx) => (
+                    {tech.evidence?.map((ev, idx) => (
                       <Badge key={idx} variant="outline" className="border-slate-600 text-slate-300 text-xs">
                         {ev}
                       </Badge>
@@ -240,7 +241,7 @@ export function TechStackModule({ company, data, companyName = "Empresa", isLoad
                       Recomendações
                     </p>
                     <ul className="text-xs text-slate-300 space-y-1">
-                      {tech.recommendations.map((rec, idx) => (
+                      {tech.recommendations?.map((rec, idx) => (
                         <li key={idx} className="flex items-start gap-1">
                           <span className="text-emerald-400">•</span>
                           {rec}

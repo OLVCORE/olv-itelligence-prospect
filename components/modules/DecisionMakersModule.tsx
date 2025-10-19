@@ -123,13 +123,13 @@ export function DecisionMakersModule({ companyId, companyName }: DecisionMakersM
 
       {/* Lista de Decisores */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {data.map((dm) => (
+        {data?.map((dm) => (
           <Card key={dm.id} className="bg-slate-800/50 border-slate-700/50 hover:bg-slate-800/70 transition-all">
             <CardHeader>
               <div className="flex justify-between items-start mb-3">
                 <div className="flex items-start gap-3">
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
-                    {dm.name.split(' ').map(n => n[0]).slice(0, 2).join('')}
+                    {dm.name?.split(' ').map(n => n[0]).slice(0, 2).join('')}
                   </div>
                   <div>
                     <CardTitle className="text-lg text-white">{dm.name}</CardTitle>
@@ -229,7 +229,7 @@ export function DecisionMakersModule({ companyId, companyName }: DecisionMakersM
                     </TooltipProvider>
                   </p>
                   <ul className="text-xs text-slate-300 space-y-1.5">
-                    {dm.engagementStrategy.map((strategy, idx) => (
+                    {dm.engagementStrategy?.map((strategy, idx) => (
                       <li key={idx} className="flex items-start gap-2">
                         <span className="text-emerald-400 mt-0.5">✓</span>
                         <span>{strategy}</span>
