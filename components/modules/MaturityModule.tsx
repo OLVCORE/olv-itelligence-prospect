@@ -56,7 +56,15 @@ export function MaturityModule({ companyId, companyName }: MaturityModuleProps) 
   // TODO: Calcular maturidade real baseado em análise da empresa - Sprint 2
   const data: MaturityData = {
     overall: 0,
-    dimensions: [],  // Array vazio até engine estar pronta
+    dimensions: {
+      governance: 0,
+      processes: 0,
+      technology: 0,
+      people: 0,
+      data: 0,
+      culture: 0
+    },
+    recommendations: [],
     aiInsights: '',
     evolutionTrend: '',
     industryComparison: ''
