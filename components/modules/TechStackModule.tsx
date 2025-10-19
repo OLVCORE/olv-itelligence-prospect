@@ -127,11 +127,11 @@ export function TechStackModule({ company, data, companyName = "Empresa", isLoad
             <div className="flex gap-2">
               <Badge variant="outline" className="border-emerald-500 text-emerald-400 bg-emerald-500/10">
                 <Shield className="h-3 w-3 mr-1" />
-                {data.filter(t => t.status === "Confirmado").length} Confirmadas
+                {data?.filter(t => t.status === "Confirmado").length || 0} Confirmadas
               </Badge>
               <Badge variant="outline" className="border-yellow-500 text-yellow-400 bg-yellow-500/10">
                 <Clock className="h-3 w-3 mr-1" />
-                {data.filter(t => t.status === "Em Avaliação").length} Em Avaliação
+                {data?.filter(t => t.status === "Em Avaliação").length || 0} Em Avaliação
               </Badge>
             </div>
           </div>

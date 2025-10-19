@@ -132,11 +132,11 @@ export function AlertsModule({ companyId, companyName }: AlertsModuleProps) {
             <div className="flex gap-2">
               <Badge variant="outline" className="border-red-500 text-red-400 bg-red-500/10">
                 <AlertTriangle className="h-3 w-3 mr-1" />
-                {data.filter(a => a.status === "pending").length} Pendentes
+                {data?.filter(a => a.status === "pending").length || 0} Pendentes
               </Badge>
               <Badge variant="outline" className="border-emerald-500 text-emerald-400 bg-emerald-500/10">
                 <Zap className="h-3 w-3 mr-1" />
-                {data.filter(a => a.aiGenerated).length} IA
+                {data?.filter(a => a.aiGenerated).length || 0} IA
               </Badge>
             </div>
           </div>
@@ -269,7 +269,7 @@ export function AlertsModule({ companyId, companyName }: AlertsModuleProps) {
               <div>
                 <p className="text-sm text-slate-400 mb-1">Pendentes</p>
                 <p className="text-2xl font-bold text-red-400">
-                  {data.filter(a => a.status === "pending").length}
+                  {data?.filter(a => a.status === "pending").length || 0}
                 </p>
               </div>
               <AlertTriangle className="h-8 w-8 text-red-400" />
@@ -283,7 +283,7 @@ export function AlertsModule({ companyId, companyName }: AlertsModuleProps) {
               <div>
                 <p className="text-sm text-slate-400 mb-1">Resolvidos</p>
                 <p className="text-2xl font-bold text-emerald-400">
-                  {data.filter(a => a.status === "resolved").length}
+                  {data?.filter(a => a.status === "resolved").length || 0}
                 </p>
               </div>
               <CheckCircle2 className="h-8 w-8 text-emerald-400" />
@@ -297,7 +297,7 @@ export function AlertsModule({ companyId, companyName }: AlertsModuleProps) {
               <div>
                 <p className="text-sm text-slate-400 mb-1">Gerados por IA</p>
                 <p className="text-2xl font-bold text-purple-400">
-                  {data.filter(a => a.aiGenerated).length}
+                  {data?.filter(a => a.aiGenerated).length || 0}
                 </p>
               </div>
               <Zap className="h-8 w-8 text-purple-400" />

@@ -111,11 +111,11 @@ export function BenchmarkModule({ companyId, companyName }: BenchmarkModuleProps
             <div className="flex gap-2">
               <Badge variant="outline" className="border-emerald-500 text-emerald-400 bg-emerald-500/10">
                 <ArrowUpRight className="h-3 w-3 mr-1" />
-                {data.filter(d => d.percentile >= 75).length} Acima da Média
+                {data?.filter(d => d.percentile >= 75).length || 0} Acima da Média
               </Badge>
               <Badge variant="outline" className="border-orange-500 text-orange-400 bg-orange-500/10">
                 <ArrowDownRight className="h-3 w-3 mr-1" />
-                {data.filter(d => d.percentile < 50).length} Gaps Identificados
+                {data?.filter(d => d.percentile < 50).length || 0} Gaps Identificados
               </Badge>
             </div>
           </div>
@@ -234,7 +234,7 @@ export function BenchmarkModule({ companyId, companyName }: BenchmarkModuleProps
             </p>
             <div className="bg-emerald-900/20 border border-emerald-700/30 rounded-lg p-3">
               <ul className="text-sm text-slate-300 space-y-1">
-                {data.filter(d => d.percentile >= 50).map((item, idx) => (
+                {data?.filter(d => d.percentile >= 50).map((item, idx) => (
                   <li key={idx} className="flex items-start gap-2">
                     <span className="text-emerald-400">✓</span>
                     <span>
@@ -258,7 +258,7 @@ export function BenchmarkModule({ companyId, companyName }: BenchmarkModuleProps
               </p>
               <div className="bg-orange-900/20 border border-orange-700/30 rounded-lg p-3">
                 <ul className="text-sm text-slate-300 space-y-1">
-                  {data.filter(d => d.percentile < 50).map((item, idx) => (
+                  {data?.filter(d => d.percentile < 50).map((item, idx) => (
                     <li key={idx} className="flex items-start gap-2">
                       <span className="text-orange-400">⚠</span>
                       <span>

@@ -110,7 +110,7 @@ export function DecisionMakersModule({ companyId, companyName }: DecisionMakersM
             <div className="flex gap-2">
               <Badge variant="outline" className="border-red-500 text-red-400 bg-red-500/10">
                 <Award className="h-3 w-3 mr-1" />
-                {data.filter(d => d.influenceLevel === "Alto").length} Alto Impacto
+                {data?.filter(d => d.influenceLevel === "Alto").length || 0} Alto Impacto
               </Badge>
               <Badge variant="outline" className="border-blue-500 text-blue-400 bg-blue-500/10">
                 <User className="h-3 w-3 mr-1" />
@@ -288,9 +288,9 @@ export function DecisionMakersModule({ companyId, companyName }: DecisionMakersM
                   Aprova orçamento e ROI
                 </p>
                 <div className="space-y-1">
-                  {data.filter(d => d.title.includes('CFO') || d.title.includes('Financ')).map(d => (
+                  {data?.filter(d => d.title.includes('CFO') || d.title.includes('Financ')).map(d => (
                     <p key={d.id} className="text-xs text-slate-400">• {d.name}</p>
-                  ))}
+                  )) || <p className="text-xs text-slate-500 italic">Nenhum decisor financeiro identificado</p>}
                 </div>
               </div>
 
@@ -304,9 +304,9 @@ export function DecisionMakersModule({ companyId, companyName }: DecisionMakersM
                   Valida solução e integração
                 </p>
                 <div className="space-y-1">
-                  {data.filter(d => d.title.includes('CTO') || d.title.includes('TI') || d.title.includes('Tecnologia')).map(d => (
+                  {data?.filter(d => d.title.includes('CTO') || d.title.includes('TI') || d.title.includes('Tecnologia')).map(d => (
                     <p key={d.id} className="text-xs text-slate-400">• {d.name}</p>
-                  ))}
+                  )) || <p className="text-xs text-slate-500 italic">Nenhum decisor de TI identificado</p>}
                 </div>
               </div>
 
@@ -320,9 +320,9 @@ export function DecisionMakersModule({ companyId, companyName }: DecisionMakersM
                   Aceleram ou bloqueiam
                 </p>
                 <div className="space-y-1">
-                  {data.filter(d => d.influenceLevel === "Médio").map(d => (
+                  {data?.filter(d => d.influenceLevel === "Médio").map(d => (
                     <p key={d.id} className="text-xs text-slate-400">• {d.name}</p>
-                  ))}
+                  )) || <p className="text-xs text-slate-500 italic">Nenhum outro decisor identificado</p>}
                 </div>
               </div>
             </div>
