@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Limpar Sistema - OLV Intelligence</title>
+    <style>
+        body { 
+            font-family: monospace; 
+            padding: 40px; 
+            background: #1a1a1a; 
+            color: #00ff00; 
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .log { margin: 10px 0; }
+        .success { color: #00ff00; }
+        .error { color: #ff0000; }
+        .info { color: #00aaff; }
+        .warning { color: #ffaa00; }
+        button { 
+            padding: 20px 40px; 
+            font-size: 18px; 
+            cursor: pointer; 
+            background: #ff0000; 
+            border: none; 
+            color: #fff; 
+            font-weight: bold;
+            margin: 10px 5px;
+        }
+        button.secondary {
+            background: #00ff00;
+            color: #000;
+        }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .warning-box {
+            background: #ffaa00;
+            color: #000;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>🗑️ LIMPAR SISTEMA - OLV INTELLIGENCE</h1>
+    
+    <div class="warning-box">
+        ⚠️ ATENÇÃO: Esta ação vai DELETAR TODAS AS EMPRESAS e ANÁLISES do banco de dados!<br>
+        Use apenas para começar com cache limpo.
+    </div>
+
+    <button id="deleteBtn" onclick="deleteAll()">🗑️ LIMPAR TUDO</button>
+    <button class="secondary" onclick="window.location.href='/activate.html'">✅ IR PARA ATIVAÇÃO</button>
+    
+    <div id="logs"></div>
+
+    <script>
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `log ${type}`;
+            div.textContent = message;
+            document.getElementById('logs').appendChild(div);
+        }
+
+        async function deleteAll() {
+            const btn = document.getElementById('deleteBtn');
+            
+            // Confirmar ação
+            if (!confirm('🚨 TEM CERTEZA? Isso vai DELETAR TODAS as empresas e análises!')) {
+                return;
+            }
+            
+            if (!confirm('🚨 ÚLTIMA CONFIRMAÇÃO: DELETAR TUDO?')) {
+                return;
+            }
+            
+            btn.disabled = true;
+            
+            log('🗑️ INICIANDO LIMPEZA COMPLETA...', 'warning');
+            log('', 'info');
+
+            try {
+                const response = await fetch('/api/companies/delete-all', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    log('', 'info');
+                    log('✅ LIMPEZA COMPLETA!', 'success');
+                    log(`   Empresas deletadas: ${result.deleted.companies}`, 'success');
+                    log(`   Análises deletadas: ${result.deleted.analyses}`, 'success');
+                    log('', 'info');
+                    log('🎯 Sistema está LIMPO e pronto para novas empresas!', 'success');
+                    log('', 'info');
+                    log('📌 Próximo passo:', 'info');
+                    log('   1. Clique em "IR PARA ATIVAÇÃO"', 'info');
+                    log('   2. OU volte ao Dashboard e busque novas empresas', 'info');
+                } else {
+                    log(`❌ ERRO: ${result.message}`, 'error');
+                }
+
+            } catch (error) {
+                log(`❌ ERRO FATAL: ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
+
