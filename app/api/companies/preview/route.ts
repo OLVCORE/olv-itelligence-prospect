@@ -4,6 +4,7 @@ import { fetchReceitaWS } from '@/lib/services/receita-ws'
 import { fetchGoogleCSE } from '@/lib/services/google-cse'
 import { fetchDigitalPresence } from '@/lib/services/digital-presence'
 import { analyzeWithOpenAI } from '@/lib/services/openai-analysis'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 
 /**
  * POST /api/companies/preview
@@ -53,7 +54,39 @@ export async function POST(req: Request) {
 
     console.log('[API /preview] ✅ CNPJ validado:', resolvedCnpj)
 
-    // ====== BUSCA COMPLETA OTIMIZADA (< 10s) ======
+    // ====== VERIFICAR CACHE PRIMEIRO (Economia de Quota Google) ======
+    
+    console.log('[API /preview] 🔍 Verificando cache...')
+    try {
+      const { data: cachedData, error: cacheError } = await supabaseAdmin
+        .from('preview_cache')
+        .select('*')
+        .eq('cnpj', resolvedCnpj)
+        .gte('expires_at', new Date().toISOString()) // Não expirado
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
+      
+      if (cachedData && !cacheError) {
+        const cacheAge = Math.floor((Date.now() - new Date(cachedData.created_at).getTime()) / 1000 / 60) // minutos
+        console.log(`[API /preview] ✅ CACHE HIT! Idade: ${cacheAge} minutos`)
+        console.log(`[API /preview] 💾 Reutilizando dados sem consumir quota do Google`)
+        
+        return NextResponse.json({
+          status: 'success',
+          message: `Dados do cache (atualizados há ${cacheAge} min)`,
+          fromCache: true,
+          cacheAge: cacheAge,
+          data: cachedData.data,
+        })
+      } else {
+        console.log('[API /preview] ⚠️ Cache miss ou expirado. Buscando dados frescos...')
+      }
+    } catch (error: any) {
+      console.warn('[API /preview] ⚠️ Erro ao verificar cache (continuando):', error.message)
+    }
+
+    // ====== BUSCA COMPLETA OTIMIZADA (< 30s) ======
 
     // 1. Buscar dados da ReceitaWS (geralmente < 2s)
     console.log('[API /preview] 📊 Buscando ReceitaWS...')
@@ -88,6 +121,13 @@ export async function POST(req: Request) {
     } catch (error: any) {
       console.error('[API /preview] ❌ ERRO na busca de presença digital:', error.message)
       console.error('[API /preview] ❌ Stack trace:', error.stack)
+      
+      // Verificar se é erro 429 (quota excedida)
+      if (error.message?.includes('429') || error.message?.includes('quota')) {
+        console.error('[API /preview] 🚫 QUOTA DO GOOGLE EXCEDIDA! Retornando dados parciais.')
+        console.error('[API /preview] 💡 Solução: Cache vai reutilizar dados ou aguardar reset (00:00 UTC)')
+      }
+      
       digitalPresence = {
         website: null,
         redesSociais: {},
@@ -111,6 +151,12 @@ export async function POST(req: Request) {
       console.log(`[API /preview] 📰 NOTÍCIAS encontradas:`, googleData.news?.length || 0)
     } catch (error: any) {
       console.error('[API /preview] ❌ ERRO na busca de notícias:', error.message)
+      
+      // Verificar se é erro 429 (quota excedida)
+      if (error.message?.includes('429') || error.message?.includes('quota')) {
+        console.error('[API /preview] 🚫 QUOTA DO GOOGLE EXCEDIDA para notícias!')
+      }
+      
       googleData = { website: null, news: [] }
     }
 
@@ -206,9 +252,27 @@ export async function POST(req: Request) {
     const totalTime = Date.now() - startTime
     console.log(`[API /preview] ✅ Preview COMPLETO gerado em ${totalTime}ms`)
 
+    // ====== SALVAR NO CACHE (Reutilizar em buscas futuras) ======
+    
+    try {
+      console.log('[API /preview] 💾 Salvando no cache...')
+      await supabaseAdmin.from('preview_cache').upsert({
+        job_id: `cnpj-${resolvedCnpj}-${Date.now()}`,
+        cnpj: resolvedCnpj,
+        status: 'completed',
+        data: preview,
+        created_at: new Date().toISOString(),
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 dias TTL
+      })
+      console.log('[API /preview] ✅ Dados salvos no cache (TTL: 7 dias)')
+    } catch (error: any) {
+      console.warn('[API /preview] ⚠️ Erro ao salvar cache (não bloqueante):', error.message)
+    }
+
     return NextResponse.json({
       status: 'success',
       message: 'Preview gerado com sucesso',
+      fromCache: false,
       data: preview,
       durationMs: totalTime,
     })
