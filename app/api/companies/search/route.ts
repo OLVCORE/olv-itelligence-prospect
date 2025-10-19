@@ -58,13 +58,16 @@ export async function POST(req: Request) {
     // 1. ReceitaWS
     const receitaData = await fetchReceitaWS(resolvedCnpj)
 
-    // 2. Google CSE (site + notícias)
-    const googleData = await fetchGoogleCSE(receitaData.nome || receitaData.fantasia || resolvedCnpj)
+    // 2. Google CSE (site + notícias) - passar CNPJ para busca mais específica
+    const googleData = await fetchGoogleCSE(
+      receitaData.nome || receitaData.fantasia || resolvedCnpj,
+      resolvedCnpj
+    )
 
     // 3. OpenAI (análise)
     const aiAnalysis = await analyzeWithOpenAI({
       company: receitaData,
-      website: googleData.website,
+      website: googleData.website?.url || null,
       news: googleData.news
     })
 

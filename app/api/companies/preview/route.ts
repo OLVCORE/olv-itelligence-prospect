@@ -48,9 +48,12 @@ export async function POST(req: Request) {
     console.log('[API /preview] 📊 Buscando ReceitaWS...')
     const receitaData = await fetchReceitaWS(resolvedCnpj)
 
-    // 2. Buscar website e notícias
+    // 2. Buscar website e notícias - passar CNPJ para busca específica
     console.log('[API /preview] 🔍 Buscando Google CSE...')
-    const googleData = await fetchGoogleCSE(receitaData.nome || receitaData.fantasia || resolvedCnpj)
+    const googleData = await fetchGoogleCSE(
+      receitaData.nome || receitaData.fantasia || resolvedCnpj,
+      resolvedCnpj
+    )
 
     // 3. Análise OpenAI (opcional)
     let aiAnalysis = null
@@ -58,7 +61,7 @@ export async function POST(req: Request) {
       console.log('[API /preview] 🧠 Gerando análise preliminar...')
       aiAnalysis = await analyzeWithOpenAI({
         company: receitaData,
-        website: googleData.website,
+        website: googleData.website?.url || null,
         news: googleData.news,
       })
     }
