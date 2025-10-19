@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { normalizeCnpj, isValidCnpj, normalizeDomain } from '@/lib/utils/cnpj'
 import { fetchReceitaWS } from '@/lib/services/receita-ws'
 import { fetchGoogleCSE } from '@/lib/services/google-cse'
+import { fetchDigitalPresence } from '@/lib/services/digital-presence'
 import { analyzeWithOpenAI } from '@/lib/services/openai-analysis'
 
 /**
@@ -63,7 +64,6 @@ export async function POST(req: Request) {
 
     // 2. Buscar presença digital COMPLETA (otimizada com FAST_MODE)
     console.log('[API /preview] 🔍 Buscando presença digital completa (modo otimizado)...')
-    const { fetchDigitalPresence } = await import('@/lib/services/digital-presence')
     const digitalPresence = await fetchDigitalPresence(
       receitaData.nome || '',
       resolvedCnpj,
