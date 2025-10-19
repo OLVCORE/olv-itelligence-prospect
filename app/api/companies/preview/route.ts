@@ -213,11 +213,27 @@ export async function POST(req: Request) {
       console.error('[API /preview] ⚠️ Erro no TOTVS scan (não bloqueante):', error.message)
     }
 
+    // Parse capital social (ReceitaWS retorna string tipo "5000.00")
+    const parseCapital = (cap: string | undefined): number => {
+      if (!cap) return 0
+      const clean = cap.replace(/[^\d,.-]/g, '')
+      if (clean.includes(',')) {
+        const parts = clean.split(',')
+        const int = parts[0].replace(/\./g, '')
+        const dec = parts[1] || '00'
+        return parseFloat(int + '.' + dec)
+      }
+      return parseFloat(clean) || 0
+    }
+    
+    const capitalNumerico = parseCapital(receitaData.capital_social)
+    console.log('[API /preview] 💰 Capital parseado:', receitaData.capital_social, '→', capitalNumerico)
+    
     // 4.6 Score de Propensão (MÓDULO A - Seção 6)
     console.log('[API /preview] 📊 Calculando score de propensão...')
     const propensityScore = calculatePropensityScore({
       receita: {
-        capital: { valor: receitaData.capital_social },
+        capital: { valor: capitalNumerico },
         identificacao: { porte: receitaData.porte },
         funcionarios: undefined, // TODO: Adicionar quando disponível
       },
