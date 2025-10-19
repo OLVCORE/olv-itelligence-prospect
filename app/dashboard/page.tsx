@@ -34,6 +34,8 @@ import { AlertsModule } from "@/components/modules/AlertsModule"
 import { CompanySearchModule } from "@/components/modules/CompanySearchModule"
 import { CompanyCard } from "@/components/CompanyCard"
 import { SearchBar } from "@/components/SearchBar"
+import { BenchmarkComparisonModal } from "@/components/modals/BenchmarkComparisonModal"
+import { useMultiSelect } from "@/hooks/useMultiSelect"
 import {
   mockTechStack,
   mockDecisionMakers,
@@ -152,6 +154,10 @@ function DashboardContent() {
   const router = useRouter()
   const { selectedCompany, analysisData, isLoading, selectCompany, triggerAnalysis, refreshData } = useModuleContext()
   const [activeTab, setActiveTab] = useState("dashboard")
+  
+  // Multi-select para benchmark comparativo
+  const multiSelect = useMultiSelect()
+  const [showComparisonModal, setShowComparisonModal] = useState(false)
   
   // Estados para empresas do Supabase
   const [companies, setCompanies] = useState<Company[]>([])
@@ -419,6 +425,28 @@ function DashboardContent() {
                     </p>
                   </div>
                   <div className="flex gap-2">
+                    {/* Contador de empresas selecionadas */}
+                    {multiSelect.getSelectedCount() > 0 && (
+                      <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="bg-blue-600 text-white px-2 py-1 rounded-full text-xs font-medium">
+                          {multiSelect.getSelectedCount()}
+                        </div>
+                        <span className="text-sm text-blue-700">
+                          {multiSelect.getSelectedCount() === 1 ? 'empresa selecionada' : 'empresas selecionadas'}
+                        </span>
+                        {multiSelect.canCompare() && (
+                          <Button
+                            onClick={() => setShowComparisonModal(true)}
+                            size="sm"
+                            className="ml-2"
+                          >
+                            <BarChart3 className="h-4 w-4 mr-2" />
+                            Comparar
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                    
                     <Button
                       onClick={loadCompanies}
                       variant="outline"
@@ -446,22 +474,50 @@ function DashboardContent() {
                     {companies.map((company) => (
                       <Card
                         key={company.id}
-                        className="hover:shadow-lg transition-shadow cursor-pointer"
+                        className={`hover:shadow-lg transition-all ${
+                          multiSelect.isSelected(company.id) 
+                            ? 'ring-2 ring-blue-500 bg-blue-50' 
+                            : 'cursor-pointer'
+                        }`}
                         onClick={() => handleCompanyClick(company)}
                       >
                         <CardHeader>
                           <div className="flex justify-between items-start">
                             <div className="flex-1">
-                              <CardTitle className="text-lg line-clamp-1">
+                              <CardTitle className="text-lg line-clamp-1 flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={multiSelect.isSelected(company.id)}
+                                  onChange={(e) => {
+                                    e.stopPropagation()
+                                    multiSelect.toggleSelection({
+                                      id: company.id,
+                                      cnpj: company.cnpj,
+                                      name: company.name,
+                                      tradeName: company.tradeName,
+                                      status: company.status,
+                                      capital: company.capital,
+                                      analyses: company.analyses
+                                    })
+                                  }}
+                                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                />
                                 {company.tradeName || company.name}
                               </CardTitle>
                               <CardDescription className="text-sm mt-1">
                                 CNPJ: {company.cnpj}
                               </CardDescription>
                             </div>
-                            <Badge variant={company.status === 'ATIVA' ? 'default' : 'secondary'}>
-                              {company.status || 'N/D'}
-                            </Badge>
+                            <div className="flex flex-col items-end gap-2">
+                              <Badge variant={company.status === 'ATIVA' ? 'default' : 'secondary'}>
+                                {company.status || 'N/D'}
+                              </Badge>
+                              {multiSelect.isSelected(company.id) && (
+                                <div className="bg-blue-100 text-blue-700 border border-blue-300 px-2 py-1 rounded text-xs font-medium">
+                                  Selecionada
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </CardHeader>
                         <CardContent>
@@ -509,19 +565,19 @@ function DashboardContent() {
               </TabsContent>
 
               <TabsContent value="decisores">
-                <DecisionMakersModule company={selectedCompany} data={mockDecisionMakers} />
+                <DecisionMakersModule data={mockDecisionMakers} />
               </TabsContent>
 
               <TabsContent value="financeiro">
-                <FinancialModule company={selectedCompany} data={mockFinancialData} />
+                <FinancialModule data={mockFinancialData} />
               </TabsContent>
 
               <TabsContent value="maturidade">
-                <MaturityModule company={selectedCompany} data={mockMaturityData} />
+                <MaturityModule data={mockMaturityData} />
               </TabsContent>
 
               <TabsContent value="benchmark">
-                <BenchmarkModule company={selectedCompany} data={mockBenchmarkData} />
+                <BenchmarkModule data={mockBenchmarkData} />
               </TabsContent>
 
               <TabsContent value="fit">
@@ -532,7 +588,7 @@ function DashboardContent() {
               </TabsContent>
 
               <TabsContent value="playbooks">
-                <PlaybooksModule company={selectedCompany} data={mockPlaybooks} />
+                <PlaybooksModule data={mockPlaybooks} />
               </TabsContent>
 
               <TabsContent value="canvas">
@@ -587,6 +643,13 @@ function DashboardContent() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Modal de Comparação Benchmark */}
+      <BenchmarkComparisonModal
+        isOpen={showComparisonModal}
+        onClose={() => setShowComparisonModal(false)}
+        companies={multiSelect.getComparisonData()}
+      />
     </div>
   )
 }
