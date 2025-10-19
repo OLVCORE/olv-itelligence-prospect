@@ -370,6 +370,9 @@ async function findSocialMedia(
   fantasia?: string,
   domain?: string
 ): Promise<DigitalPresence['redesSociais']> {
+  console.log('[DigitalPresence] 📱 INICIANDO BUSCA DE REDES SOCIAIS')
+  console.log('[DigitalPresence] 📝 Params:', { companyName, cnpj, fantasia, domain })
+  
   const apiKey = process.env.GOOGLE_API_KEY!
   const cseId = process.env.GOOGLE_CSE_ID!
 
@@ -472,9 +475,12 @@ async function findSocialMedia(
           // VALIDAÇÃO ASSERTIVA - verificar se realmente pertence à empresa
           const validation = validateCompanyLink(itemUrl, title, snippet, companyName, cnpj, fantasia)
           
+          console.log(`[DigitalPresence] 🔍 ${platform.name} - Validação: ${validation.isValid ? 'VÁLIDO' : 'REJEITADO'}`)
+          console.log(`[DigitalPresence] 📊 ${platform.name} - Score: ${validation.confidence}% | Reason: ${validation.reason}`)
+          console.log(`[DigitalPresence] 🔗 ${platform.name} - URL: ${itemUrl}`)
+          
           if (validation.isValid) {
-            console.log(`[DigitalPresence] ✅ ${platform.name} VÁLIDO encontrado: ${itemUrl}`)
-            console.log(`[DigitalPresence] 📊 Confiança: ${validation.confidence}% - ${validation.reason}`)
+            console.log(`[DigitalPresence] ✅ ${platform.name} ACEITO: ${itemUrl}`)
             
             if (platform.name === 'instagram') {
               redesSociais.instagram = { url: itemUrl }
