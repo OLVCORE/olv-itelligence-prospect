@@ -23,7 +23,18 @@ export default function LoginPage() {
     setError("")
 
     try {
-      // Simular autenticação (para demo)
+      // 🔓 AUTENTICAÇÃO DESABILITADA TEMPORARIAMENTE - MVP EM DESENVOLVIMENTO
+      // Acesso automático como ADMIN sem validação de credenciais
+      localStorage.setItem("user", JSON.stringify({
+        email: "admin@olv.com",
+        role: "ADMIN",
+        name: "Administrador OLV"
+      }))
+      
+      // Redirecionar diretamente para dashboard
+      router.push("/dashboard")
+      
+      /* CÓDIGO ORIGINAL (reativar quando sistema estiver pronto):
       const validCredentials = [
         { email: "admin@olv.com", password: "admin123", role: "ADMIN" },
         { email: "editor@olv.com", password: "editor123", role: "EDITOR" },
@@ -35,19 +46,17 @@ export default function LoginPage() {
       )
 
       if (user) {
-        // Salvar no localStorage para demo
         localStorage.setItem("user", JSON.stringify({
           email: user.email,
           role: user.role,
           name: user.role === "ADMIN" ? "Administrador OLV" : 
                 user.role === "EDITOR" ? "Editor OLV" : "Visualizador OLV"
         }))
-        
-        // Redirecionar para dashboard
         router.push("/dashboard")
       } else {
         setError("Email ou senha inválidos")
       }
+      */
     } catch (error) {
       setError("Erro interno do servidor")
     } finally {
@@ -79,21 +88,20 @@ export default function LoginPage() {
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-slate-300">Email</Label>
+                  <Label htmlFor="email" className="text-slate-300">Email (opcional)</Label>
                   <Input
                     id="email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400"
-                    placeholder="seu@email.com"
+                    placeholder="Não precisa preencher - acesso livre"
                     autoComplete="username"
-                    required
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-slate-300">Senha</Label>
+                  <Label htmlFor="password" className="text-slate-300">Senha (opcional)</Label>
                   <div className="relative">
                     <Input
                       id="password"
@@ -101,9 +109,8 @@ export default function LoginPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 pr-10"
-                      placeholder="••••••••"
+                      placeholder="Não precisa preencher - acesso livre"
                       autoComplete="current-password"
-                      required
                     />
                     <Button
                       type="button"
@@ -145,7 +152,15 @@ export default function LoginPage() {
 
               {/* Demo Credentials */}
               <div className="mt-6 pt-6 border-t border-slate-700/50">
-                <h3 className="text-sm font-medium text-slate-300 mb-3">Credenciais de Demonstração:</h3>
+                <div className="mb-3 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                  <p className="text-xs text-yellow-400 font-medium">
+                    🔓 Autenticação temporariamente desabilitada - Acesso livre ao sistema
+                  </p>
+                  <p className="text-xs text-yellow-300 mt-1">
+                    Clique em "Entrar" (não precisa preencher nada)
+                  </p>
+                </div>
+                <h3 className="text-sm font-medium text-slate-300 mb-3 opacity-50">Credenciais de Demonstração (desabilitadas):</h3>
                 <div className="space-y-2">
                   {demoCredentials.map((cred) => (
                     <div key={cred.role} className="flex items-center justify-between text-xs">
