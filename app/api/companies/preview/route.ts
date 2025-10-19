@@ -160,16 +160,49 @@ export async function POST(req: Request) {
       googleData = { website: null, news: [] }
     }
 
-    // 4. Análise OpenAI (se solicitado)
+    // 4. Análise de Vendor Match (FIT TOTVS + OLV)
+    console.log('[API /preview] 🎯 Analisando fit comercial (OLV + TOTVS)...')
+    let vendorMatch = null
+    try {
+      const { analyzeVendorMatch } = await import('@/lib/services/vendor-match')
+      vendorMatch = await analyzeVendorMatch({
+        cnpj: resolvedCnpj,
+        name: receitaData.nome || '',
+        tradeName: receitaData.fantasia,
+        size: receitaData.porte,
+        capital: receitaData.capital_social,
+        mainActivity: receitaData.atividade_principal?.[0]?.text,
+        secondaryActivities: receitaData.atividades_secundarias?.map((a: any) => a.text) || [],
+        qsa: receitaData.qsa,
+        digitalPresence: {
+          website: digitalPresence.website,
+          socialMedia: digitalPresence.redesSociais,
+          marketplaces: digitalPresence.marketplaces,
+          jusbrasil: digitalPresence.jusbrasil,
+        },
+        news: googleData.news,
+      })
+      console.log('[API /preview] ✅ Vendor match:', {
+        overallScore: vendorMatch.overallScore,
+        buyingMoment: vendorMatch.buyingMoment,
+        topProduct: vendorMatch.topRecommendation?.product.name,
+      })
+    } catch (error: any) {
+      console.error('[API /preview] ⚠️ Erro no vendor match (não bloqueante):', error.message)
+    }
+
+    // 5. Análise OpenAI ENRIQUECIDA (se solicitado)
     let aiAnalysis = null
     if (useAI) {
-      console.log('[API /preview] 🧠 Gerando análise preliminar...')
+      console.log('[API /preview] 🧠 Gerando análise enriquecida com IA...')
       console.log('[API /preview] 🔑 OPENAI_API_KEY presente?', !!process.env.OPENAI_API_KEY)
       try {
         aiAnalysis = await analyzeWithOpenAI({
           company: receitaData,
           website: digitalPresence.website?.url || null,
           news: googleData.news || [],
+          digitalPresence: digitalPresence,
+          vendorMatch: vendorMatch, // Passa vendor match para IA
         })
         console.log('[API /preview] ✅ Análise de IA gerada. Score:', aiAnalysis?.score)
       } catch (error: any) {
@@ -180,7 +213,7 @@ export async function POST(req: Request) {
       console.log('[API /preview] ⏭️ Análise de IA não solicitada (useAI=false)')
     }
 
-    // 5. Normalizar dados COMPLETOS
+    // 6. Normalizar dados COMPLETOS (incluindo vendor match)
     const preview = {
       mode: 'preview',
       status: 'completed', // Dados completos
@@ -246,6 +279,15 @@ export async function POST(req: Request) {
         summary: aiAnalysis.insights?.slice(0, 2).join(' '),
         insights: aiAnalysis.insights || [],
         redFlags: aiAnalysis.redFlags || [],
+      } : null,
+      // Oportunidades comerciais (FIT TOTVS + OLV)
+      opportunities: vendorMatch ? {
+        overallScore: vendorMatch.overallScore,
+        buyingMoment: vendorMatch.buyingMoment,
+        topRecommendation: vendorMatch.topRecommendation,
+        allMatches: vendorMatch.matches.slice(0, 5), // Top 5
+        decisionMaker: vendorMatch.decisionMaker,
+        nextSteps: vendorMatch.nextSteps,
       } : null,
     }
 
