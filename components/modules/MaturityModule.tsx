@@ -82,18 +82,6 @@ export function MaturityModule({ companyId, companyName }: MaturityModuleProps) 
     return <AlertCircle className="h-5 w-5 text-yellow-500" />
   }
 
-  const getDimensionIcon = (name: string) => {
-    switch (name) {
-      case "Infraestrutura Tecnológica": return <Cloud />
-      case "Sistemas e Aplicações": return <Cpu />
-      case "Dados e Analytics": return <Database />
-      case "Segurança e Compliance": return <Shield />
-      case "Automação de Processos": return <Zap />
-      case "Cultura Digital": return <Users />
-      default: return <Gauge />
-    }
-  }
-
   return (
     <div className="space-y-6">
       {/* Header com Explicação */}
