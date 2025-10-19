@@ -126,11 +126,17 @@ export function SearchBar({ onSuccess }: SearchBarProps) {
 
       const data = await response.json()
 
-      if (data.status !== 'success') {
+      // MÓDULO 1: Aceitar tanto 'success' quanto 'partial' (resposta rápida)
+      if (data.status !== 'success' && data.status !== 'partial') {
         throw new Error(data.message || 'Erro ao gerar preview')
       }
 
-      console.log('[SearchBar] ✅ Preview gerado')
+      if (data.status === 'partial') {
+        console.log('[SearchBar] ⚡ Preview parcial carregado (deep-scan em andamento)')
+      } else {
+        console.log('[SearchBar] ✅ Preview completo gerado')
+      }
+      
       setPreviewData(data.data)
     } catch (e: any) {
       console.error('[SearchBar] ❌ Erro ao gerar preview:', e.message)
