@@ -211,3 +211,21 @@ model AuditLog {
 // Role: VIEWER | EDITOR | ADMIN
 // OrgRole: MEMBER | ADMIN | OWNER
 
+// ==========================================
+// MÓDULO 2: Preview Cache (Deep-Scan assíncrono)
+// ==========================================
+model PreviewCache {
+  id         String   @id @default(cuid())
+  jobId      String   @unique
+  cnpj       String
+  status     String   @default("pending") // pending | completed | error
+  data       String?  // JSON stringificado do resultado completo
+  error      String?  // Mensagem de erro se status='error'
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime // TTL de 24 horas
+  
+  @@index([jobId])
+  @@index([cnpj])
+  @@index([expiresAt])
+}
+
