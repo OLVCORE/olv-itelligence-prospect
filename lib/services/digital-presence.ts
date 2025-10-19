@@ -197,7 +197,7 @@ export async function fetchDigitalPresence(
   try {
     // BUSCA SEQUENCIAL COM TIMEOUT (evita 504)
     const startTime = Date.now()
-    const maxTime = 15000 // 15 segundos máximo (Vercel limite é 10s, mas vamos tentar)
+    const maxTime = 7000 // 7 segundos máximo (Vercel limite é 10s, deixar margem)
 
     // 1. Website oficial (PRIORIDADE - busca rápida)
     if (Date.now() - startTime < maxTime) {
@@ -214,41 +214,11 @@ export async function fetchDigitalPresence(
         }
       }
       
-      // FALLBACK: tentar construir domínio a partir do nome fantasia
+      // FALLBACK: construir domínio a partir do nome fantasia (SEM testar, para evitar timeout)
       if (!domain && fantasia) {
         const cleanName = fantasia.toLowerCase().replace(/[^a-z0-9]/g, '')
-        const possibleDomain = `${cleanName}.com.br`
-        console.log('[DigitalPresence] 🌐 Tentando domínio construído:', possibleDomain)
-        
-        // Verificar se existe (HEAD request rápido)
-        try {
-          const testUrl = `https://${possibleDomain}`
-          const controller = new AbortController()
-          const timeoutId = setTimeout(() => controller.abort(), 3000)
-          
-          const response = await fetch(testUrl, {
-            method: 'HEAD',
-            signal: controller.signal,
-          })
-          
-          clearTimeout(timeoutId)
-          
-          if (response.ok) {
-            domain = possibleDomain
-            console.log('[DigitalPresence] ✅ Domínio construído válido:', domain)
-            
-            // Atualizar results.website se estava vazio
-            if (!results.website) {
-              results.website = {
-                url: testUrl,
-                title: fantasia || companyName,
-                status: 'ativo',
-              }
-            }
-          }
-        } catch (e) {
-          console.warn('[DigitalPresence] ⚠️ Domínio construído não acessível:', possibleDomain)
-        }
+        domain = `${cleanName}.com.br`
+        console.log('[DigitalPresence] 🌐 Domínio construído (não testado):', domain)
       }
     }
 
