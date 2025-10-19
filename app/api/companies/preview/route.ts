@@ -311,12 +311,22 @@ export async function POST(req: Request) {
       console.warn('[API /preview] ⚠️ Erro ao salvar cache (não bloqueante):', error.message)
     }
 
+    // Verificar se houve problema de quota
+    const hasQuotaIssue = 
+      (!digitalPresence.website && !digitalPresence.redesSociais && !digitalPresence.marketplaces.length) ||
+      (googleData.news?.length === 0)
+    
     return NextResponse.json({
       status: 'success',
       message: 'Preview gerado com sucesso',
       fromCache: false,
       data: preview,
       durationMs: totalTime,
+      warnings: hasQuotaIssue ? {
+        type: 'quota_exceeded',
+        message: 'APIs de busca com quota excedida. Presença digital pode estar incompleta.',
+        action: 'Configure Bing ou Serper para obter dados completos'
+      } : null
     })
 
   } catch (error: any) {

@@ -230,6 +230,21 @@ export function PreviewModal({
           </div>
         )}
 
+        {/* Alerta de Quota (se aplicável) */}
+        {!loading && mergedData && (
+          <>
+            {/* Verificar se presença digital está vazia */}
+            {(!mergedData.presencaDigital?.website && 
+              !Object.keys(mergedData.presencaDigital?.redesSociais || {}).length &&
+              !mergedData.presencaDigital?.marketplaces?.length) && (
+              <QuotaWarningBanner 
+                message="Google CSE com quota excedida (100/dia)"
+                showConfigLinks={true}
+              />
+            )}
+          </>
+        )}
+
         {mergedData && !loading && (
           <div className="space-y-6 print:text-black">
             {/* Header do Relatório (Print) */}
