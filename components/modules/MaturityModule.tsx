@@ -277,6 +277,7 @@ export function MaturityModule({ companyId, companyName }: MaturityModuleProps) 
               )}
             </CardContent>
           </Card>
+          )
         })}
       </div>
 
