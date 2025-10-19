@@ -13,8 +13,9 @@ import { Badge } from "@/components/ui/badge"
 import { GaugeBar } from "@/components/ui/gauge-bar"
 import { GaugePointer } from "@/components/ui/gauge-pointer"
 import { SmartTooltip } from "@/components/ui/smart-tooltip"
-import { formatCurrency, formatCNPJ, formatDate, formatPhone, formatCEP } from "@/lib/utils/format"
-import { Loader2, Printer, Download, Save, Building2, MapPin, Phone, Mail, FileText, TrendingUp, AlertTriangle, Users, Briefcase, DollarSign, RefreshCw } from "lucide-react"
+import { formatCurrency, formatCNPJ, formatDate, formatPhone, formatCEP, formatPercent } from "@/lib/utils/format"
+import { EvidenceButton } from "@/components/ui/evidence-button"
+import { Loader2, Printer, Download, Save, Building2, MapPin, Phone, Mail, FileText, TrendingUp, AlertTriangle, Users, Briefcase, DollarSign, RefreshCw, Target, Sparkles, CheckSquare, XCircle, ArrowRight, Shield, BarChart3 } from "lucide-react"
 
 interface PreviewData {
   mode: string
@@ -737,12 +738,312 @@ export function PreviewModal({
               </section>
             )}
 
-            {/* 8. Análise IA (se disponível) */}
+            {/* 6. Score de Propensão (MÓDULO A - Seção 6) */}
+            {mergedData.propensityScore && (
+              <section className="break-inside-avoid">
+                <h2 className="text-lg font-bold mb-3 flex items-center gap-2 border-b pb-2">
+                  <Target className="h-5 w-5 text-purple-600" />
+                  6. Score de Propensão
+                </h2>
+                <div className="space-y-6 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950 dark:to-blue-950 rounded-lg p-6 print:bg-white print:border">
+                  {/* Score Principal */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <SmartTooltip 
+                        score={mergedData.propensityScore.overall} 
+                        type="propensao"
+                        customLabel="Score de Propensão"
+                        customDescription="Média ponderada de 6 critérios: Receita/Porte (25%), Presença Digital (20%), Notícias (15%), Stack/TOTVS (20%), Regulatórios (10%), Setor (10%)"
+                      >
+                        <GaugePointer 
+                          value={mergedData.propensityScore.overall} 
+                          label="Score Geral"
+                          size="lg"
+                        />
+                      </SmartTooltip>
+                    </div>
+                    <div className="flex flex-col justify-center">
+                      <div className="text-center mb-4">
+                        <div className="text-5xl font-bold text-purple-600">
+                          {mergedData.propensityScore.overall}
+                        </div>
+                        <p className="text-sm text-muted-foreground">de 100 pontos</p>
+                      </div>
+                      <Badge 
+                        className={`text-lg px-4 py-2 ${
+                          mergedData.propensityScore.overall >= 70 
+                            ? 'bg-green-600 text-white' 
+                            : mergedData.propensityScore.overall >= 40
+                            ? 'bg-yellow-600 text-white'
+                            : 'bg-red-600 text-white'
+                        }`}
+                      >
+                        {mergedData.propensityScore.overall >= 70 ? 'Alto Potencial' : mergedData.propensityScore.overall >= 40 ? 'Potencial Moderado' : 'Baixo Potencial'}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {/* Breakdown de Critérios */}
+                  <div className="pt-4 border-t">
+                    <p className="text-sm font-semibold mb-3 flex items-center gap-2">
+                      <BarChart3 className="h-4 w-4" />
+                      Breakdown por Critério
+                    </p>
+                    <div className="space-y-3">
+                      {Object.entries(mergedData.propensityScore.breakdown).map(([key, data]: [string, any]) => {
+                        const labels: Record<string, string> = {
+                          receita_porte: 'Receita/Porte',
+                          presenca_digital: 'Presença Digital',
+                          noticias: 'Notícias',
+                          stack_totvs: 'Stack/TOTVS',
+                          regulatorios: 'Regulatórios',
+                          setor_benchmark: 'Setor/Benchmark'
+                        }
+                        return (
+                          <div key={key} className="flex items-center gap-3">
+                            <div className="flex-1">
+                              <div className="flex justify-between text-xs mb-1">
+                                <span className="font-medium">{labels[key]}</span>
+                                <span className="text-muted-foreground">
+                                  Peso: {formatPercent(data.peso * 100, true)} • 
+                                  Valor: {data.valor}/100 • 
+                                  Contribui: {data.contribuicao.toFixed(1)}
+                                </span>
+                              </div>
+                              <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                                <div 
+                                  className="h-full bg-purple-600 transition-all" 
+                                  style={{ width: `${data.valor}%` }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Sinais Positivos e Negativos */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
+                    {/* Positivos */}
+                    <div>
+                      <p className="text-sm font-semibold mb-2 flex items-center gap-2 text-green-700 dark:text-green-400">
+                        <CheckSquare className="h-4 w-4" />
+                        Sinais Positivos ({mergedData.propensityScore.sinais.positivos.length})
+                      </p>
+                      <ul className="space-y-1">
+                        {mergedData.propensityScore.sinais.positivos.slice(0, 5).map((sinal: string, idx: number) => (
+                          <li key={idx} className="text-xs text-muted-foreground flex items-start gap-2">
+                            <span className="text-green-600 mt-0.5">✓</span>
+                            <span>{sinal}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    {/* Negativos */}
+                    <div>
+                      <p className="text-sm font-semibold mb-2 flex items-center gap-2 text-red-700 dark:text-red-400">
+                        <AlertTriangle className="h-4 w-4" />
+                        Pontos de Atenção ({mergedData.propensityScore.sinais.negativos.length})
+                      </p>
+                      <ul className="space-y-1">
+                        {mergedData.propensityScore.sinais.negativos.slice(0, 5).map((sinal: string, idx: number) => (
+                          <li key={idx} className="text-xs text-muted-foreground flex items-start gap-2">
+                            <span className="text-red-600 mt-0.5">✗</span>
+                            <span>{sinal}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* 7. Insights Executivos (MÓDULO A - Seção 7) */}
+            {mergedData.aiInsights && mergedData.aiInsights.insights && mergedData.aiInsights.insights.length > 0 && (
+              <section className="break-inside-avoid">
+                <h2 className="text-lg font-bold mb-3 flex items-center gap-2 border-b pb-2">
+                  <Sparkles className="h-5 w-5 text-blue-600" />
+                  7. Insights Executivos (IA)
+                </h2>
+                <div className="space-y-3 bg-blue-50 dark:bg-blue-950 rounded-lg p-4 print:bg-white print:border">
+                  {mergedData.aiInsights.insights.map((insight: any, idx: number) => (
+                    <div key={insight.id || idx} className="flex items-start gap-3 p-3 bg-white dark:bg-slate-800 rounded-lg border">
+                      <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-semibold flex-shrink-0">
+                        {idx + 1}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{insight.text}</p>
+                        {insight.evidence_ids && insight.evidence_ids.length > 0 && (
+                          <div className="mt-2 flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs">
+                              {insight.confidence === 'high' ? '🟢 Alta Confiança' : insight.confidence === 'medium' ? '🟡 Média' : '🔴 Baixa'}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {insight.evidence_ids.length} evidência(s)
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  <p className="text-xs text-muted-foreground italic pt-2 border-t">
+                    💡 Metodologia: {mergedData.aiInsights.methodology || 'Análise baseada em evidências com IA explicável'}
+                  </p>
+                </div>
+              </section>
+            )}
+
+            {/* 8. Pontos de Atenção Críticos (MÓDULO A - Seção 8) */}
+            {mergedData.attentionPoints && mergedData.attentionPoints.length > 0 && (
+              <section className="break-inside-avoid">
+                <h2 className="text-lg font-bold mb-3 flex items-center gap-2 border-b pb-2">
+                  <AlertTriangle className="h-5 w-5 text-orange-600" />
+                  8. Pontos de Atenção
+                </h2>
+                <div className="space-y-3">
+                  {mergedData.attentionPoints.map((point: any) => (
+                    <div 
+                      key={point.id} 
+                      className={`p-4 rounded-lg border-l-4 ${
+                        point.severity === 'alta' 
+                          ? 'bg-red-50 dark:bg-red-950 border-red-600' 
+                          : point.severity === 'media'
+                          ? 'bg-yellow-50 dark:bg-yellow-950 border-yellow-600'
+                          : 'bg-gray-50 dark:bg-gray-900 border-gray-600'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Badge className={`text-xs ${
+                            point.severity === 'alta' ? 'bg-red-600' : point.severity === 'media' ? 'bg-yellow-600' : 'bg-gray-600'
+                          }`}>
+                            {point.severity.toUpperCase()}
+                          </Badge>
+                        </div>
+                        <AlertTriangle className={`h-4 w-4 ${
+                          point.severity === 'alta' ? 'text-red-600' : point.severity === 'media' ? 'text-yellow-600' : 'text-gray-600'
+                        }`} />
+                      </div>
+                      <p className="text-sm font-semibold mb-2">{point.text}</p>
+                      <p className="text-xs text-muted-foreground flex items-start gap-2">
+                        <ArrowRight className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                        <span>{point.action}</span>
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* 9. Recomendação Executiva Go/No-Go (MÓDULO A - Seção 9) */}
+            {mergedData.recommendation && (
+              <section className="break-inside-avoid">
+                <h2 className="text-lg font-bold mb-3 flex items-center gap-2 border-b pb-2">
+                  <Shield className="h-5 w-5 text-indigo-600" />
+                  9. Recomendação Executiva
+                </h2>
+                <div className={`p-6 rounded-lg border-2 ${
+                  mergedData.recommendation.decision === 'GO' 
+                    ? 'bg-green-50 dark:bg-green-950 border-green-600' 
+                    : mergedData.recommendation.decision === 'NO-GO'
+                    ? 'bg-red-50 dark:bg-red-950 border-red-600'
+                    : 'bg-yellow-50 dark:bg-yellow-950 border-yellow-600'
+                }`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <Badge className={`text-2xl px-6 py-3 ${
+                      mergedData.recommendation.decision === 'GO' 
+                        ? 'bg-green-600' 
+                        : mergedData.recommendation.decision === 'NO-GO'
+                        ? 'bg-red-600'
+                        : 'bg-yellow-600'
+                    }`}>
+                      {mergedData.recommendation.decision === 'GO' && '✅ GO - PROSSEGUIR'}
+                      {mergedData.recommendation.decision === 'NO-GO' && '❌ NO-GO - NÃO PROSSEGUIR'}
+                      {mergedData.recommendation.decision === 'QUALIFICAR' && '⚡ QUALIFICAR MELHOR'}
+                    </Badge>
+                    <div className="text-right">
+                      <p className="text-xs text-muted-foreground mb-1">Confiança</p>
+                      <Badge variant="outline" className={`${
+                        mergedData.recommendation.confidence === 'high' ? 'bg-green-100 text-green-700' : 
+                        mergedData.recommendation.confidence === 'medium' ? 'bg-yellow-100 text-yellow-700' : 
+                        'bg-gray-100 text-gray-700'
+                      }`}>
+                        {mergedData.recommendation.confidence === 'high' ? 'Alta' : mergedData.recommendation.confidence === 'medium' ? 'Média' : 'Baixa'}
+                      </Badge>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Justificativa:</p>
+                      <p className="text-sm leading-relaxed font-medium">
+                        {mergedData.recommendation.justification}
+                      </p>
+                    </div>
+
+                    {mergedData.recommendation.evidence_ids && mergedData.recommendation.evidence_ids.length > 0 && (
+                      <div className="pt-3 border-t">
+                        <p className="text-xs text-muted-foreground mb-2">Baseado em {mergedData.recommendation.evidence_ids.length} evidência(s)</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* 10. Ações Sugeridas (MÓDULO A - Seção 10) */}
+            {mergedData.suggestedActions && mergedData.suggestedActions.length > 0 && (
+              <section className="break-inside-avoid">
+                <h2 className="text-lg font-bold mb-3 flex items-center gap-2 border-b pb-2">
+                  <CheckSquare className="h-5 w-5 text-green-600" />
+                  10. Próximos Passos Sugeridos
+                </h2>
+                <div className="space-y-3 bg-slate-50 dark:bg-slate-900 rounded-lg p-4 print:bg-white print:border">
+                  {mergedData.suggestedActions.map((action: any, idx: number) => (
+                    <div key={action.id} className="flex items-start gap-4 p-4 bg-white dark:bg-slate-800 rounded-lg border">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
+                        {idx + 1}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between mb-2">
+                          <p className="text-sm font-medium flex-1">{action.text}</p>
+                          <Badge className={`ml-2 text-xs ${
+                            action.priority === 'alta' ? 'bg-red-600' : 
+                            action.priority === 'media' ? 'bg-orange-600' : 
+                            'bg-gray-600'
+                          }`}>
+                            {action.priority.toUpperCase()}
+                          </Badge>
+                        </div>
+                        {action.actionable && action.handler && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="mt-2"
+                            onClick={() => {
+                              console.log('[PreviewModal] Executar ação:', action.handler)
+                              // TODO: Implementar handlers específicos
+                            }}
+                          >
+                            <ArrowRight className="h-3 w-3 mr-2" />
+                            Executar Ação
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* 11. Análise IA Complementar (se disponível - legado) */}
             {mergedData.ai && (
               <section className="break-inside-avoid">
                 <h2 className="text-lg font-bold mb-3 flex items-center gap-2 border-b pb-2">
                   <TrendingUp className="h-5 w-5 text-primary" />
-                  8. Análise Preliminar (Inteligência Artificial)
+                  11. Análise Complementar (Legado)
                 </h2>
                 <div className="space-y-4 bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg p-4 print:bg-white print:border">
                   {/* Scores com Gauges Visuais */}
