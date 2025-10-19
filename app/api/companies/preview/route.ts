@@ -27,9 +27,9 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json()
-    const { cnpj: rawCnpj, website: rawWebsite, useAI = false } = body
+    const { cnpj: rawCnpj, website: rawWebsite, useAI = false, forceRefresh = false } = body
 
-    console.log('[API /preview] 📥 Request:', { cnpj: rawCnpj, website: rawWebsite, useAI })
+    console.log('[API /preview] 📥 Request:', { cnpj: rawCnpj, website: rawWebsite, useAI, forceRefresh })
 
     let resolvedCnpj = normalizeCnpj(rawCnpj)
 
