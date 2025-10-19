@@ -96,24 +96,25 @@ async function searchGoogle(
  * 1. Vá em: https://portal.azure.com
  * 2. Crie "Bing Search v7"
  * 3. Copie a chave
- * 4. Adicione BING_SEARCH_API_KEY no Vercel
+ * 4. Adicione BING_API_KEY no Vercel
  */
 async function searchBing(
   query: string,
   maxResults: number = 10
 ): Promise<SearchResult[]> {
-  const apiKey = process.env.BING_SEARCH_API_KEY
+  const apiKey = process.env.BING_API_KEY
 
   if (!apiKey) {
     throw new Error('Bing Search não configurado')
   }
 
-  const url = `https://api.bing.microsoft.com/v7.0/search?q=${encodeURIComponent(query)}&count=${maxResults}`
+  const url = `https://bing-web-search1.p.rapidapi.com/search?q=${encodeURIComponent(query)}&count=${maxResults}`
   
-  console.log('[MultiSearch] 🟦 Buscando no Bing Search...')
+  console.log('[MultiSearch] 🟦 Buscando no Bing Search (RapidAPI)...')
   const response = await fetch(url, {
     headers: {
-      'Ocp-Apim-Subscription-Key': apiKey,
+      'X-RapidAPI-Key': apiKey,
+      'X-RapidAPI-Host': 'bing-web-search1.p.rapidapi.com',
     },
     next: { revalidate: 3600 },
     signal: AbortSignal.timeout(10000)

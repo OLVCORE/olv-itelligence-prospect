@@ -234,12 +234,13 @@ export function PreviewModal({
         {/* Alerta de Quota (se aplicável) */}
         {!loading && mergedData && (
           <>
-            {/* Verificar se presença digital está vazia */}
+            {/* Verificar se presença digital está vazia E não temos notícias */}
             {(!mergedData.presencaDigital?.website && 
               !Object.keys(mergedData.presencaDigital?.redesSociais || {}).length &&
-              !mergedData.presencaDigital?.marketplaces?.length) && (
+              !mergedData.presencaDigital?.marketplaces?.length &&
+              !mergedData.google?.news?.length) && (
               <QuotaWarningBanner 
-                message="Google CSE com quota excedida (100/dia)"
+                message="APIs de busca com quota excedida - Configure APIs alternativas"
                 showConfigLinks={true}
               />
             )}

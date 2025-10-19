@@ -6,6 +6,7 @@
 
 import { SEARCH_ASSERTIVE, FAST_MODE } from '@/lib/config/feature-flags'
 import { validateLink, validateJusbrasil as validateJusbr, validateMarketplaceB2B } from '@/lib/search/validators/link-validation'
+import { searchCompanyWebsite, searchCompanyNews } from './search/multi-search'
 
 interface DigitalPresence {
   website: {
@@ -269,34 +270,54 @@ async function findOfficialWebsite(
   cnpj: string,
   fantasia?: string
 ): Promise<DigitalPresence['website']> {
+  console.log('[DigitalPresence] 🌐 Buscando website via MULTI-SEARCH (Google + Bing + Serper)...')
+  
+  try {
+    // Usar o sistema multi-search que busca em 3 APIs simultaneamente
+    const websiteResult = await searchCompanyWebsite(companyName, cnpj)
+    
+    if (websiteResult) {
+      console.log(`[DigitalPresence] ✅ Website encontrado via multi-search: ${websiteResult.url}`)
+      
+      // Testar se está ativo
+      const status = await checkWebsiteStatus(websiteResult.url)
+      
+      return {
+        url: websiteResult.url,
+        title: websiteResult.title.replace(/\s*[-|].*$/, '').trim(),
+        status,
+      }
+    } else {
+      console.log('[DigitalPresence] ⚠️ Website não encontrado via multi-search')
+      return null
+    }
+  } catch (error: any) {
+    console.error('[DigitalPresence] ❌ Erro no multi-search:', error.message)
+    
+    // Se todas as APIs falharam, tentar busca direta no Google como fallback
+    console.log('[DigitalPresence] 🔄 Tentando fallback direto no Google...')
+    return await findOfficialWebsiteFallback(companyName, cnpj, fantasia)
+  }
+}
+
+async function findOfficialWebsiteFallback(
+  companyName: string,
+  cnpj: string,
+  fantasia?: string
+): Promise<DigitalPresence['website']> {
   const apiKey = process.env.GOOGLE_API_KEY!
   const cseId = process.env.GOOGLE_CSE_ID!
 
-  // MODO RÁPIDO: reduz estratégias para evitar timeout
-  const searchStrategies = FAST_MODE 
-    ? [
-        // Apenas 2 estratégias mais eficazes
-        fantasia ? `"${fantasia}" CNPJ ${cnpj}` : `"${companyName}" CNPJ ${cnpj}`,
-        fantasia ? `"${fantasia}" site oficial` : `"${companyName}" site oficial`,
-      ].filter(Boolean)
-    : [
-        // BUSCA PROFUNDA (10 estratégias - usar apenas quando FAST_MODE=false)
-        `"${companyName}" CNPJ ${cnpj}`,
-        fantasia ? `"${fantasia}" CNPJ ${cnpj}` : null,
-        `"${companyName}" site oficial`,
-        fantasia ? `"${fantasia}" site oficial` : null,
-        `"${companyName}" .com.br`,
-        fantasia ? `"${fantasia}" .com.br` : null,
-        `"${companyName}" website`,
-        fantasia ? `"${fantasia}" website` : null,
-        `"${companyName}" homepage`,
-        `${companyName} ${cnpj}`,
-      ].filter(Boolean)
+  // Estratégias de busca simplificadas para fallback
+  const searchStrategies = [
+    fantasia ? `"${fantasia}" CNPJ ${cnpj}` : `"${companyName}" CNPJ ${cnpj}`,
+    fantasia ? `"${fantasia}" site oficial` : `"${companyName}" site oficial`,
+  ].filter(Boolean)
 
-  console.log(`[DigitalPresence] 🔍 Executando ${searchStrategies.length} estratégias de busca para website`)
+  console.log(`[DigitalPresence] 🔄 Fallback: ${searchStrategies.length} estratégias no Google`)
 
   for (const query of searchStrategies) {
-    const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cseId}&q=${encodeURIComponent(query!)}&num=10`
+    const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cseId}&q=${encodeURIComponent(query!)}&num=5`
     
     try {
       const response = await fetch(url, { next: { revalidate: 3600 } })
@@ -305,27 +326,21 @@ async function findOfficialWebsite(
       const data = await response.json()
       const items = data.items || []
 
-      console.log(`[DigitalPresence] 📊 Estratégia "${query}" retornou ${items.length} resultados`)
-
       for (const item of items) {
         const itemUrl = item.link || ''
         const title = item.title || ''
         const snippet = item.snippet || ''
-        const text = `${title} ${snippet}`.toLowerCase()
 
-        // FILTROS MAIS PERMISSIVOS - apenas excluir óbvios
+        // FILTROS básicos
         const isObviousExclusion = /wikipedia|youtube\.com\/watch|facebook\.com\/watch|instagram\.com\/p\//i.test(itemUrl)
-        
         if (isObviousExclusion) continue
 
-        // VALIDAÇÃO ASSERTIVA - verificar se realmente pertence à empresa
-        const validation = validateCompanyLink(itemUrl, title, snippet, companyName, cnpj, fantasia, domain)
+        // VALIDAÇÃO simplificada
+        const validation = validateCompanyLink(itemUrl, title, snippet, companyName, cnpj, fantasia)
         
         if (validation.isValid) {
-          console.log(`[DigitalPresence] ✅ Website VÁLIDO encontrado: ${itemUrl}`)
-          console.log(`[DigitalPresence] 📊 Confiança: ${validation.confidence}% - ${validation.reason}`)
+          console.log(`[DigitalPresence] ✅ Website encontrado no fallback: ${itemUrl}`)
           
-          // Testar se está ativo
           const status = await checkWebsiteStatus(itemUrl)
           
           return {
@@ -333,17 +348,14 @@ async function findOfficialWebsite(
             title: title.replace(/\s*[-|].*$/, '').trim(),
             status,
           }
-        } else {
-          console.log(`[DigitalPresence] ❌ Website REJEITADO: ${itemUrl}`)
-          console.log(`[DigitalPresence] 📊 Confiança: ${validation.confidence}% - ${validation.reason}`)
         }
       }
     } catch (error) {
-      console.error(`[DigitalPresence] Erro na estratégia "${query}":`, error)
+      console.error(`[DigitalPresence] Erro no fallback "${query}":`, error)
     }
   }
 
-  console.log('[DigitalPresence] ⚠️ Website oficial não encontrado após todas as estratégias')
+  console.log('[DigitalPresence] ⚠️ Website não encontrado nem no fallback')
   return null
 }
 
