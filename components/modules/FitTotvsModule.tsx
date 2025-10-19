@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { GaugeBar } from '@/components/ui/gauge-bar'
 import { GaugePointer } from '@/components/ui/gauge-pointer'
 import { SmartTooltip } from '@/components/ui/smart-tooltip'
+import { EvidenceButton } from '@/components/ui/evidence-button'
+import { createTotvsScanEvidence, Evidence } from '@/lib/types/evidence'
 import { Loader2, RefreshCw, Target, TrendingUp, AlertCircle } from 'lucide-react'
 
 interface TotvsLiteResult {
@@ -233,7 +235,22 @@ export function FitTotvsModule({ companyId, companyName }: FitTotvsModuleProps) 
             {/* Evidências */}
             {result.evidences.length > 0 && (
               <div>
-                <h3 className="text-sm font-medium mb-3">Evidências Encontradas:</h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-medium">Evidências Encontradas:</h3>
+                  <EvidenceButton 
+                    evidences={result.evidences.map(e => 
+                      createTotvsScanEvidence({
+                        url: e.url,
+                        snippet: e.snippet || 'Evidência TOTVS detectada',
+                        strength: e.strength,
+                        source: e.source
+                      })
+                    )}
+                    label="Ver todas"
+                    variant="ghost"
+                    size="sm"
+                  />
+                </div>
                 <div className="space-y-2">
                   {result.evidences.slice(0, 3).map((evidence, index) => (
                     <div key={index} className="p-3 bg-gray-50 rounded-lg border">
