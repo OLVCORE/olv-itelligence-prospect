@@ -43,7 +43,7 @@ import { DigitalProfilingModal } from "@/components/modals/DigitalProfilingModal
 import { CompanyIntelligenceModal } from "@/components/modals/CompanyIntelligenceModal"
 import { Sidebar } from "@/components/layout/Sidebar"
 import { useMultiSelect } from "@/hooks/useMultiSelect"
-import { formatCurrency } from "@/lib/utils/format"
+import { formatCurrency, formatCNPJ, formatDate } from "@/lib/utils/format"
 import {
   Building2,
   Search,
@@ -363,7 +363,7 @@ export default function DashboardPage() {
               onChange={(e) => setIndividualSearchData(prev => ({ ...prev, marketplacesB2B: e.target.value }))}
               rows={2}
               className="text-sm"
-                />
+            />
                   </div>
 
           {/* Marketplaces B2C */}
@@ -468,7 +468,7 @@ export default function DashboardPage() {
                   </p>
                 </TooltipContent>
               </Tooltip>
-                      </div>
+            </div>
             <Textarea
               placeholder="Digite palavras-chave para busca de notícias (ex: empresa, produto, tecnologia, inovação)"
               value={individualSearchData.noticiasRecentes}
@@ -504,14 +504,14 @@ export default function DashboardPage() {
               rows={2}
               className="text-sm"
             />
-                  </div>
-                        </div>
+          </div>
+        </div>
 
         {/* Botão de Busca */}
         <div className="flex justify-end pt-3">
                           <Button
             onClick={handleIndividualSearch}
-                      disabled={loading}
+            disabled={loading}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 h-9"
           >
             {loading ? (
@@ -525,7 +525,7 @@ export default function DashboardPage() {
                 Analisar Empresa
               </>
             )}
-                    </Button>
+          </Button>
                       </div>
       </CardContent>
     </Card>
@@ -595,19 +595,19 @@ export default function DashboardPage() {
         <Card key={company.id} className="hover:shadow-lg transition-shadow dark:bg-slate-800 dark:border-slate-700">
           <CardContent className="p-4">
             <div className="flex items-start justify-between mb-3">
-              <div className="flex items-center gap-2">
-                                <input
-                                  type="checkbox"
-                  checked={selectedCompanies.includes(company.id)}
-                                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setSelectedCompanies(prev => [...prev, company.id])
-                    } else {
-                      setSelectedCompanies(prev => prev.filter(id => id !== company.id))
-                    }
-                  }}
-                  className="rounded"
-                />
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedCompanies.includes(company.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedCompanies(prev => [...prev, company.id])
+                      } else {
+                        setSelectedCompanies(prev => prev.filter(id => id !== company.id))
+                      }
+                    }}
+                    className="rounded"
+                  />
                 <Badge variant={company.status === 'ATIVA' || company.status === 'Ativo' ? 'default' : 'secondary'}>
                   {company.status || 'ATIVA'}
                 </Badge>
@@ -615,7 +615,7 @@ export default function DashboardPage() {
                 </div>
 
             <h3 className="font-semibold text-lg mb-2 line-clamp-2 dark:text-white">
-                                {company.tradeName || company.name}
+              {company.tradeName || company.name}
             </h3>
             
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
@@ -674,7 +674,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       ))}
-                            </div>
+    </div>
   )
 
   const renderCompanyList = () => (
@@ -684,10 +684,10 @@ export default function DashboardPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4 flex-1">
-                <input
-                  type="checkbox"
+                                <input
+                                  type="checkbox"
                   checked={selectedCompanies.includes(company.id)}
-                  onChange={(e) => {
+                                  onChange={(e) => {
                     if (e.target.checked) {
                       setSelectedCompanies(prev => [...prev, company.id])
                     } else {
@@ -702,24 +702,24 @@ export default function DashboardPage() {
                     <h3 className="font-semibold text-lg dark:text-white">{company.tradeName || company.name}</h3>
                     <Badge variant={company.status === 'ATIVA' || company.status === 'Ativo' ? 'default' : 'secondary'}>
                       {company.status || 'ATIVA'}
-                    </Badge>
-                  </div>
+                              </Badge>
+                                </div>
                   
                   <div className="grid grid-cols-3 gap-4 text-sm text-gray-600 dark:text-gray-400">
                     <div>
                       <span className="font-medium">CNPJ:</span> {formatCNPJ(company.cnpj)}
-                    </div>
+                            </div>
                     <div>
                       <span className="font-medium">Capital:</span> {company.capital ? formatCurrency(company.capital) : 'N/D'}
-                    </div>
+                          </div>
                     <div>
                       <span className="font-medium">Cadastrado:</span> {formatDate(company.createdAt)}
-                    </div>
-                  </div>
-                </div>
-              </div>
+                            </div>
+                            </div>
+                            </div>
+                          </div>
               
-              <Button
+                          <Button
                 onClick={() => {
                   setCurrentCompany(company)
                   setSearchTerm(company.cnpj)
@@ -736,12 +736,12 @@ export default function DashboardPage() {
                     Relatório
                   </>
                 )}
-              </Button>
+                          </Button>
             </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
   )
 
   return (

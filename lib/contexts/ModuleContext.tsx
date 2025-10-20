@@ -62,6 +62,8 @@ interface ModuleContextType {
   selectedCompany: CompanyData | null
   analysisData: AnalysisData | null
   isLoading: boolean
+  activeModule: string
+  setActiveModule: (module: string) => void
   
   // Ações
   selectCompany: (company: CompanyData) => void
@@ -81,6 +83,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
   const [selectedCompany, setSelectedCompany] = useState<CompanyData | null>(null)
   const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [activeModule, setActiveModule] = useState<string>('dashboard')
   const [subscribers, setSubscribers] = useState<Map<string, ((data: any) => void)[]>>(new Map())
 
   const selectCompany = (company: CompanyData) => {
@@ -202,6 +205,8 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
     selectedCompany,
     analysisData,
     isLoading,
+    activeModule,
+    setActiveModule,
     selectCompany,
     updateAnalysis,
     triggerAnalysis,
