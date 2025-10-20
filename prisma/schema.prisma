@@ -63,30 +63,42 @@ model Project {
 }
 
 model Company {
-  id           String      @id @default(cuid())
-  projectId     String?
-  name         String
-  tradeName    String?
-  cnpj         String?     @unique
-  domain       String?
-  cnae         String?
-  status       String?
-  openingDate  DateTime?
-  capital      Float?
-  financial    String?     // receita, porte, risco, faturamento (JSON as string)
-  industry     String?
-  size         String?     // pequeno, médio, grande
-  location     String?     // cidade, estado, país (JSON as string)
-  userId       String?
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-  project      Project?    @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  stacks       TechStack[]
-  contacts     Contact[]
-  benchmarks   Benchmark[]
-  reports      Report[]
-  analyses     Analysis[]
-  people       Person[]
+  id              String      @id @default(cuid())
+  projectId       String?
+  name            String
+  tradeName       String?
+  cnpj            String?     @unique
+  domain          String?
+  cnae            String?
+  status          String?
+  openingDate     DateTime?
+  capital         Float?
+  financial       String?     // receita, porte, risco, faturamento (JSON as string)
+  industry        String?
+  size            String?     // pequeno, médio, grande
+  location        String?     // cidade, estado, país (JSON as string)
+  userId          String?
+  // B2B Intelligence (Sales Navigator)
+  salesNavUrl     String?     // Sales Navigator company URL
+  linkedinUrl     String?     // LinkedIn company page
+  employeeCount   Int?        // Número de funcionários
+  specialties     String[]    // ["ERP", "Manufatura", "Distribuição"]
+  description     String?     // Company description
+  yearFounded     Int?
+  currentTechStack String?    // JSON: [{ category, product, vendor }]
+  competitorStack  String?    // JSON: { erp: "SAP", crm: "Salesforce" }
+  buyingSignals   String?     // JSON: [{ type, description, date, strength }]
+  lastEnrichment  DateTime?   // Última atualização Sales Navigator
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  project         Project?    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  stacks          TechStack[]
+  contacts        Contact[]
+  benchmarks      Benchmark[]
+  reports         Report[]
+  analyses        Analysis[]
+  people          Person[]
+  buyingSignalHistory BuyingSignal[]
 }
 
 model TechStack {
@@ -254,19 +266,31 @@ model Person {
   id              String            @id @default(cuid())
   companyId       String?
   name            String
-  role            String?
+  role            String?           // "Diretor de TI", "CFO", "COO"
+  seniority       String?           // "C-Level", "VP", "Director", "Manager"
+  department      String?           // "TI", "Financeiro", "Operações"
   email           String?
   phone           String?
+  whatsapp        String?
   linkedinUrl     String?
+  salesNavUrl     String?           // Sales Navigator URL
+  tenure          String?           // "2 anos e 3 meses"
+  background      String?           // Formação, experiência
+  skills          String[]          // ["ERP", "SAP", "Oracle"]
+  previousCompanies String?         // JSON: [{ company, role, duration }]
+  lastJobChange   DateTime?         // Útil para detectar oportunidade
   company         Company?          @relation(fields: [companyId], references: [id], onDelete: SetNull)
   identityProfiles IdentityProfile[]
   personaFeatures PersonaFeatures?
   playbooks       Playbook[]
+  outreachHistory OutreachHistory[]
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
   
   @@index([companyId])
   @@index([email])
+  @@index([seniority])
+  @@index([lastJobChange])
 }
 
 model IdentityProfile {
@@ -336,6 +360,9 @@ model Playbook {
   cta             String   // Call to action
   productsTotvs   String[] // Array de produtos TOTVS sugeridos
   packagesOlv     String[] // Array de pacotes OLV sugeridos
+  competitorMigration String? // Migração de competitor (ex: "SAP → TOTVS")
+  estimatedDeal   Float?   // Ticket estimado
+  decisionPath    String?  // JSON: [{ role, approval_power, influence }]
   lastRefreshedAt DateTime @default(now())
   person          Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
   createdAt       DateTime @default(now())
@@ -343,5 +370,49 @@ model Playbook {
   
   @@index([personId, vendor])
   @@index([lastRefreshedAt])
+}
+
+// ==========================================
+// B2B INTELLIGENCE - BUYING SIGNALS
+// ==========================================
+model BuyingSignal {
+  id          String   @id @default(cuid())
+  companyId   String
+  type        String   // "job_opening" | "expansion" | "funding" | "tech_hire" | "competitor_issue"
+  description String
+  strength    String   @default("medium") // "weak" | "medium" | "strong" | "very_strong"
+  source      String   // "linkedin_jobs" | "news" | "sales_nav" | "crunchbase"
+  detectedAt  DateTime @default(now())
+  expiresAt   DateTime? // Alguns sinais expiram (ex: vaga pode ser preenchida)
+  metadata    String?  // JSON: detalhes específicos do sinal
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  
+  @@index([companyId, strength, detectedAt])
+  @@index([type, detectedAt])
+  @@index([expiresAt])
+}
+
+// ==========================================
+// OUTREACH AUTOMATION - PROSPECÇÃO ATIVA
+// ==========================================
+model OutreachHistory {
+  id          String   @id @default(cuid())
+  personId    String
+  channel     String   // "email" | "phone" | "whatsapp" | "linkedin" | "inmail"
+  template    String   // Nome do template usado
+  message     String   // Mensagem enviada
+  sentAt      DateTime @default(now())
+  status      String   @default("sent") // "sent" | "delivered" | "opened" | "clicked" | "replied" | "bounced"
+  response    String?  // Resposta do lead (se houver)
+  respondedAt DateTime?
+  sentiment   String?  // "positive" | "neutral" | "negative" | "interested"
+  nextFollowUp DateTime? // Próximo follow-up agendado
+  person      Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  
+  @@index([personId, sentAt])
+  @@index([channel, status])
+  @@index([nextFollowUp])
 }
 
