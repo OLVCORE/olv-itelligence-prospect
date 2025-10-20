@@ -127,22 +127,44 @@ export async function POST(req: NextRequest) {
     }
 
     // ========================================
-    // 4) PRESENÇA DIGITAL: Redes Sociais
+    // 4) PRESENÇA DIGITAL: Redes Sociais + Jusbrasil + Marketplaces
     // ========================================
-    // TODO: Integrar com /api/digital-presence (Instagram, LinkedIn, Facebook, YouTube)
-    enrichmentResults.socialMedia = { status: 'not_implemented' };
-
-    // ========================================
-    // 5) JUSBRASIL: Processos e Menções Legais
-    // ========================================
-    // TODO: Integrar com /api/jusbrasil
-    enrichmentResults.jusbrasil = { status: 'not_implemented' };
-
-    // ========================================
-    // 6) MARKETPLACES B2B: Presença em Portais
-    // ========================================
-    // TODO: Integrar com /api/marketplaces
-    enrichmentResults.marketplaces = { status: 'not_implemented' };
+    const presenceStart = Date.now();
+    try {
+      console.log(`[Enrich] 🔍 Presença Digital: ${company.name}`);
+      
+      const presenceRes = await fetch(`${baseUrl}/api/integrations/digital-presence`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyName: company.name,
+          cnpj: company.cnpj,
+          fantasia: company.tradeName,
+          website: domain ? `https://${domain}` : null,
+          socios: [], // TODO: buscar sócios da ReceitaWS (QSA)
+          companyId
+        })
+      });
+      
+      if (presenceRes.ok) {
+        const presenceData = await presenceRes.json();
+        enrichmentResults.socialMedia = presenceData.data?.redesSociais || {};
+        enrichmentResults.jusbrasil = presenceData.data?.jusbrasil || null;
+        enrichmentResults.marketplaces = presenceData.data?.marketplaces || [];
+        
+        console.log(`[Enrich] ✅ Presença Digital sucesso:`, {
+          redes: Object.keys(enrichmentResults.socialMedia).length,
+          jusbrasil: !!enrichmentResults.jusbrasil,
+          marketplaces: enrichmentResults.marketplaces.length
+        });
+      } else {
+        enrichmentResults.errors.push(`DigitalPresence: ${presenceRes.status}`);
+      }
+    } catch (err: any) {
+      console.warn('[Enrich] Presença Digital falhou:', err.message);
+      enrichmentResults.errors.push(`DigitalPresence: ${err.message}`);
+    }
+    enrichmentResults.timings.digitalPresence = Date.now() - presenceStart;
 
     // ========================================
     // 7) MATURITY CALCULATOR: Scores + Fit

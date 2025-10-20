@@ -115,69 +115,73 @@ export function BulkUploadModal({ isOpen, onClose, onComplete }: BulkUploadModal
     setProgress(0)
     
     const selected = companies.filter(c => c.selected)
-    const total = selected.length
-    let completed = 0
-
-    for (const company of selected) {
-      try {
-        // Atualizar status
-        setCompanies(prev => 
-          prev.map(c => c.id === company.id ? { ...c, status: 'processing' } : c)
-        )
-
-        // Chamar API para gerar análise
-        const response = await fetch('/api/companies/preview', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            cnpj: company.cnpj,
-            useAI: true,
-            useCrossReference: true
-          })
-        })
-
-        const data = await response.json()
-
-        if (data.status === 'success') {
-          // Salvar empresa no banco
-          const saveResponse = await fetch('/api/companies/search', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ cnpj: company.cnpj })
-          })
-
-          const saveData = await saveResponse.json()
-
-          setCompanies(prev => 
-            prev.map(c => c.id === company.id ? { 
-              ...c, 
-              status: 'completed',
-              result: saveData.data
-            } : c)
-          )
-        } else {
-          throw new Error(data.message || 'Erro ao processar empresa')
-        }
-      } catch (error: any) {
-        console.error(`[BulkUpload] Erro ao processar ${company.cnpj}:`, error.message)
-        setCompanies(prev => 
-          prev.map(c => c.id === company.id ? { 
-            ...c, 
-            status: 'error',
-            error: error.message
-          } : c)
-        )
-      }
-
-      completed++
-      setProgress(Math.round((completed / total) * 100))
-      
-      // Delay de 1s entre requisições para não sobrecarregar
-      await new Promise(resolve => setTimeout(resolve, 1000))
+    
+    if (selected.length === 0) {
+      alert('Selecione pelo menos uma empresa para processar')
+      setProcessing(false)
+      return
     }
 
-    setProcessing(false)
-    onComplete()
+    try {
+      console.log('[Bulk Upload] 🚀 Processando', selected.length, 'empresas via bulk-import')
+      
+      // Marcar todas como processing
+      setCompanies(prev => prev.map(c => 
+        c.selected ? { ...c, status: 'processing' } : c
+      ))
+      
+      // Chamar API de bulk import (processa todas de uma vez)
+      const response = await fetch('/api/companies/bulk-import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companies: selected.map(c => ({
+            cnpj: c.cnpj,
+            fantasia: c.fantasia
+          }))
+        })
+      })
+
+      const result = await response.json()
+
+      if (result.ok) {
+        console.log('[Bulk Upload] ✅ Import concluído:', result.data)
+        
+        // Atualizar status de cada empresa com base no resultado
+        setCompanies(prev => prev.map(c => {
+          const successItem = result.data.success.find((s: any) => s.cnpj === c.cnpj)
+          const failedItem = result.data.failed.find((f: any) => f.cnpj === c.cnpj)
+          
+          if (successItem) {
+            return { ...c, status: 'completed', result: successItem }
+          } else if (failedItem) {
+            return { ...c, status: 'error', error: failedItem.error }
+          }
+          return c
+        }))
+        
+        setProgress(100)
+        
+        const successCount = result.data.success.length
+        const failedCount = result.data.failed.length
+        
+        alert(`✅ Import concluído!\n\nSucesso: ${successCount}\nFalhas: ${failedCount}\n\nClique em "Analisar Empresa" em cada item para enriquecimento completo.`)
+        
+        onComplete()
+      } else {
+        throw new Error(result.error?.message || 'Erro no bulk import')
+      }
+    } catch (error: any) {
+      console.error('[Bulk Upload] ❌ Erro:', error.message)
+      alert(`❌ Erro: ${error.message}`)
+      
+      // Marcar todas como erro
+      setCompanies(prev => prev.map(c => 
+        c.selected ? { ...c, status: 'error', error: error.message } : c
+      ))
+    } finally {
+      setProcessing(false)
+    }
   }
 
   // Reset modal
