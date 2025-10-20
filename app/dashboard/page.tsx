@@ -305,16 +305,16 @@ function DashboardContent() {
     })
   }
 
-  const [isGeneratingPreview, setIsGeneratingPreview] = useState(false)
+  const [generatingPreviewFor, setGeneratingPreviewFor] = useState<string | null>(null)
 
   const generatePreview = async (cnpj: string) => {
-    if (isGeneratingPreview) {
-      console.log('[Dashboard] ⏳ Preview já sendo gerado, ignorando clique')
+    if (generatingPreviewFor) {
+      console.log('[Dashboard] ⏳ Preview já sendo gerado para:', generatingPreviewFor)
       return
     }
 
     try {
-      setIsGeneratingPreview(true)
+      setGeneratingPreviewFor(cnpj)
       console.log('[Dashboard] 📄 Gerando preview para CNPJ:', cnpj)
       
       const response = await fetch('/api/companies/preview', {
@@ -348,8 +348,8 @@ function DashboardContent() {
       console.error('[Dashboard] ❌ Erro ao gerar preview:', error.message)
       alert(`Erro ao gerar relatório: ${error.message}`)
     } finally {
-      setIsGeneratingPreview(false)
-      console.log('[Dashboard] ✅ Preview generation finalizada')
+      setGeneratingPreviewFor(null)
+      console.log('[Dashboard] ✅ Preview generation finalizada para:', cnpj)
     }
   }
 
@@ -610,10 +610,10 @@ function DashboardContent() {
                               // Gerar preview diretamente via API
                               generatePreview(company.cnpj)
                             }}
-                            disabled={isGeneratingPreview}
+                            disabled={generatingPreviewFor === company.cnpj}
                           >
-                            <RefreshCw className={`h-4 w-4 mr-2 ${isGeneratingPreview ? 'animate-spin' : ''}`} />
-                            {isGeneratingPreview ? 'Gerando...' : 'Gerar Relatório'}
+                            <RefreshCw className={`h-4 w-4 mr-2 ${generatingPreviewFor === company.cnpj ? 'animate-spin' : ''}`} />
+                            {generatingPreviewFor === company.cnpj ? 'Gerando...' : 'Gerar Relatório'}
                           </Button>
                         </CardContent>
                       </Card>

@@ -372,6 +372,8 @@ async function findSocialMedia(
 ): Promise<DigitalPresence['redesSociais']> {
   console.log('[DigitalPresence] 📱 INICIANDO BUSCA DE REDES SOCIAIS')
   console.log('[DigitalPresence] 📝 Params:', { companyName, cnpj, fantasia, domain })
+  console.log('[DigitalPresence] 🔑 GOOGLE_API_KEY presente?', !!process.env.GOOGLE_API_KEY)
+  console.log('[DigitalPresence] 🔑 GOOGLE_CSE_ID presente?', !!process.env.GOOGLE_CSE_ID)
   
   const apiKey = process.env.GOOGLE_API_KEY!
   const cseId = process.env.GOOGLE_CSE_ID!
@@ -379,6 +381,8 @@ async function findSocialMedia(
   const redesSociais: DigitalPresence['redesSociais'] = {}
 
   // MODO RÁPIDO: reduz estratégias para evitar timeout
+  console.log('[DigitalPresence] ⚡ FAST_MODE ativo?', FAST_MODE)
+  
   const platforms = [
     { 
       name: 'instagram', 
@@ -457,9 +461,14 @@ async function findSocialMedia(
     for (const strategy of platform.strategies) {
       try {
         const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cseId}&q=${encodeURIComponent(strategy)}&num=5`
+        console.log(`[DigitalPresence] 🌐 URL da busca: ${url}`)
         const response = await fetch(url, { next: { revalidate: 3600 } })
         
-        if (!response.ok) continue
+        console.log(`[DigitalPresence] 📡 Response status: ${response.status}`)
+        if (!response.ok) {
+          console.error(`[DigitalPresence] ❌ Erro HTTP ${response.status} para ${platform.name}:`, response.statusText)
+          continue
+        }
 
         const data = await response.json()
         const items = data.items || []
