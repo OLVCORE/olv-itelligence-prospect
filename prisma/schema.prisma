@@ -94,6 +94,11 @@ model Company {
   project         Project?    @relation(fields: [projectId], references: [id], onDelete: Cascade)
   stacks          TechStack[]
   maturity        CompanyTechMaturity[]
+  icpProfile      ICPProfile?
+  intentSignals   IntentSignal[]
+  propensityScores PropensityScore[]
+  nextBestActions NextBestAction[]
+  cadenceExecutions CadenceExecution[]
   contacts        Contact[]
   benchmarks      Benchmark[]
   reports         Report[]
@@ -131,6 +136,100 @@ model CompanyTechMaturity {
   company            Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@unique([companyId, vendor])
+}
+
+model ICPProfile {
+  id              String   @id @default(cuid())
+  companyId       String
+  vertical        String   // "Manufatura", "Distribuição", "Varejo", etc.
+  subVertical     String?  // "Automotivo", "Alimentício", etc.
+  tier            String   // "A", "B", "C" (ideal, bom, baixo fit)
+  score           Float    // 0-100
+  features        Json     // { porte: "Grande", stack: ["SAP"], maturidade: 85 }
+  lastCalculated  DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId])
+}
+
+model IntentSignal {
+  id          String   @id @default(cuid())
+  companyId   String
+  type        String   // "tech_change", "hiring", "funding", "news", "website_change"
+  intensity   String   // "low", "medium", "high"
+  source      String   // "news", "jobs", "website", "social"
+  payload     Json     // dados específicos do sinal
+  detectedAt  DateTime @default(now())
+  expiresAt   DateTime // quando o sinal expira
+  processed   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, type, detectedAt])
+}
+
+model PropensityScore {
+  id              String   @id @default(cuid())
+  companyId       String
+  offer           String   // "TOTVS_Protheus", "TOTVS_Fluig", "OLV_Consultoria"
+  score           Float    // 0-100 probabilidade de conversão
+  timeframe       Int      // dias para conversão (30, 60, 90)
+  features        Json     // features usadas no cálculo
+  lastCalculated  DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, offer])
+}
+
+model NextBestAction {
+  id          String   @id @default(cuid())
+  companyId   String
+  action      String   // "email", "linkedin", "call", "wait"
+  channel     String   // canal específico
+  template    String?  // template a usar
+  timing      String   // "immediate", "tomorrow", "next_week"
+  rationale   String   // explicação da recomendação
+  executed    Boolean  @default(false)
+  executedAt  DateTime?
+  result      String?  // "positive", "negative", "neutral"
+  createdAt   DateTime @default(now())
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, createdAt])
+}
+
+model Cadence {
+  id          String   @id @default(cuid())
+  name        String
+  vertical    String   // vertical alvo
+  persona     String   // persona alvo
+  steps       Json     // array de steps com timing e templates
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  executions  CadenceExecution[]
+
+  @@unique([name, vertical, persona])
+}
+
+model CadenceExecution {
+  id          String   @id @default(cuid())
+  companyId   String
+  cadenceId   String
+  step        Int      // step atual da cadência
+  status      String   // "active", "paused", "completed", "stopped"
+  startedAt   DateTime @default(now())
+  lastStepAt  DateTime?
+  completedAt DateTime?
+  createdAt   DateTime @default(now())
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  cadence     Cadence  @relation(fields: [cadenceId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, cadenceId])
 }
 
 model Contact {
