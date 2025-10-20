@@ -260,13 +260,17 @@ function DashboardContent() {
   // Escutar evento para abrir PreviewModal
   useEffect(() => {
     const handleOpenPreviewModal = (event: CustomEvent) => {
+      console.log('[Dashboard] 🎯 Evento openPreviewModal recebido:', event.detail)
       setPreviewData(event.detail.previewData)
       setShowPreviewModal(true)
+      console.log('[Dashboard] ✅ PreviewModal aberto:', true)
     }
 
+    console.log('[Dashboard] 👂 Adicionando listener para openPreviewModal')
     window.addEventListener('openPreviewModal', handleOpenPreviewModal as EventListener)
     
     return () => {
+      console.log('[Dashboard] 🗑️ Removendo listener para openPreviewModal')
       window.removeEventListener('openPreviewModal', handleOpenPreviewModal as EventListener)
     }
   }, [])
@@ -301,8 +305,16 @@ function DashboardContent() {
     })
   }
 
+  const [isGeneratingPreview, setIsGeneratingPreview] = useState(false)
+
   const generatePreview = async (cnpj: string) => {
+    if (isGeneratingPreview) {
+      console.log('[Dashboard] ⏳ Preview já sendo gerado, ignorando clique')
+      return
+    }
+
     try {
+      setIsGeneratingPreview(true)
       console.log('[Dashboard] 📄 Gerando preview para CNPJ:', cnpj)
       
       const response = await fetch('/api/companies/preview', {
@@ -311,18 +323,23 @@ function DashboardContent() {
         body: JSON.stringify({ cnpj, useAI: true, forceRefresh: true })
       })
 
+      console.log('[Dashboard] 📡 Response status:', response.status)
+
       if (!response.ok) {
         throw new Error(`Erro ${response.status}: ${response.statusText}`)
       }
 
       const data = await response.json()
+      console.log('[Dashboard] 📊 Response data:', data)
       
       if (data.status === 'success') {
+        console.log('[Dashboard] ✅ Abrindo PreviewModal com dados:', data.data)
         // Abrir PreviewModal com os dados
         const event = new CustomEvent('openPreviewModal', { 
           detail: { previewData: data.data } 
         })
         window.dispatchEvent(event)
+        console.log('[Dashboard] 📤 Evento openPreviewModal disparado')
       } else {
         console.error('[Dashboard] ❌ Erro ao gerar preview:', data.message)
         alert(`Erro: ${data.message}`)
@@ -330,6 +347,9 @@ function DashboardContent() {
     } catch (error: any) {
       console.error('[Dashboard] ❌ Erro ao gerar preview:', error.message)
       alert(`Erro ao gerar relatório: ${error.message}`)
+    } finally {
+      setIsGeneratingPreview(false)
+      console.log('[Dashboard] ✅ Preview generation finalizada')
     }
   }
 
@@ -590,9 +610,10 @@ function DashboardContent() {
                               // Gerar preview diretamente via API
                               generatePreview(company.cnpj)
                             }}
+                            disabled={isGeneratingPreview}
                           >
-                            <RefreshCw className="h-4 w-4 mr-2" />
-                            Gerar Relatório
+                            <RefreshCw className={`h-4 w-4 mr-2 ${isGeneratingPreview ? 'animate-spin' : ''}`} />
+                            {isGeneratingPreview ? 'Gerando...' : 'Gerar Relatório'}
                           </Button>
                         </CardContent>
                       </Card>
