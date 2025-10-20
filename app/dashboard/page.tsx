@@ -486,7 +486,7 @@ function DashboardContent() {
                       Análise completa com dados reais do Supabase
                     </p>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     {/* Contador de empresas selecionadas */}
                     {multiSelect.getSelectedCount() > 0 && (
                       <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
@@ -509,6 +509,19 @@ function DashboardContent() {
                       </div>
                     )}
                     
+                    <Button
+                      onClick={() => {
+                        const { downloadCSVTemplate } = require('@/lib/utils/csv-template')
+                        downloadCSVTemplate()
+                      }}
+                      variant="default"
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Template CSV
+                    </Button>
+
                     <Button
                       onClick={loadCompanies}
                       variant="outline"
