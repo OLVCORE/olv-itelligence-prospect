@@ -23,7 +23,6 @@ import {
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { TechStackModule } from "@/components/modules/TechStackModule"
@@ -358,8 +357,8 @@ export default function DashboardPage() {
               onChange={(e) => setIndividualSearchData(prev => ({ ...prev, marketplacesB2B: e.target.value }))}
               rows={2}
               className="text-sm"
-            />
-          </div>
+                />
+              </div>
 
           {/* Marketplaces B2C */}
           <div className="space-y-1">
@@ -379,7 +378,7 @@ export default function DashboardPage() {
                   </p>
                 </TooltipContent>
               </Tooltip>
-            </div>
+                    </div>
             <Textarea
               placeholder="mercadolivre.com.br/perfil/empresa, amazon.com.br/shops/empresa, americanas.com.br/loja/empresa, magazineluiza.com.br/loja/empresa, submarino.com.br/loja/empresa"
               value={individualSearchData.marketplacesB2C}
@@ -387,7 +386,7 @@ export default function DashboardPage() {
               rows={2}
               className="text-sm"
             />
-          </div>
+              </div>
 
           {/* Portais Eletrônicos */}
           <div className="space-y-1">
@@ -407,7 +406,7 @@ export default function DashboardPage() {
                   </p>
                 </TooltipContent>
               </Tooltip>
-            </div>
+                </div>
             <Textarea
               placeholder="g.page/empresa, reclameaqui.com.br/empresa, glassdoor.com.br/empresa, b2bbrasil.com.br/empresa, me.com.br/empresa"
               value={individualSearchData.portaisEletronicos}
@@ -415,7 +414,7 @@ export default function DashboardPage() {
               rows={2}
               className="text-sm"
             />
-          </div>
+                  </div>
 
           {/* Portais do Setor */}
           <div className="space-y-1">
@@ -435,7 +434,7 @@ export default function DashboardPage() {
                   </p>
                 </TooltipContent>
               </Tooltip>
-            </div>
+                </div>
             <Textarea
               placeholder="sbinee.com.br, abimac.com.br, sindicatos específicos do setor, associações comerciais, federações"
               value={individualSearchData.portaisSetor}
@@ -443,7 +442,7 @@ export default function DashboardPage() {
               rows={2}
               className="text-sm"
             />
-          </div>
+              </div>
 
           {/* Notícias Recentes */}
           <div className="space-y-1">
@@ -499,12 +498,12 @@ export default function DashboardPage() {
               rows={2}
               className="text-sm"
             />
-          </div>
-        </div>
+                  </div>
+                        </div>
 
         {/* Botão de Busca */}
         <div className="flex justify-end pt-3">
-          <Button
+                          <Button
             onClick={handleIndividualSearch}
             disabled={loading}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 h-9"
@@ -520,7 +519,7 @@ export default function DashboardPage() {
                 Analisar Empresa
               </>
             )}
-          </Button>
+                          </Button>
         </div>
       </CardContent>
     </Card>
