@@ -128,6 +128,24 @@ export function PreviewModal({
   
   // Dados já vêm completos da API
   const mergedData = data
+  
+  // Helper para acessar dados de forma segura
+  const getData = (path: string, fallback: any = 'N/A') => {
+    try {
+      const keys = path.split('.')
+      let value: any = mergedData
+      for (const key of keys) {
+        if (value && typeof value === 'object' && key in value) {
+          value = value[key]
+        } else {
+          return fallback
+        }
+      }
+      return value !== undefined && value !== null ? value : fallback
+    } catch {
+      return fallback
+    }
+  }
 
   const handlePrint = () => {
     window.print()
@@ -262,36 +280,36 @@ export function PreviewModal({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-900 rounded-lg p-4 print:bg-white print:border">
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Razão Social</p>
-                  <p className="font-semibold text-sm">{mergedData?.receita?.identificacao?.razaoSocial || mergedData?.nome || 'N/A'}</p>
+                  <p className="font-semibold text-sm">{getData('nome') || getData('receita.identificacao.razaoSocial')}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Nome Fantasia</p>
-                  <p className="font-semibold text-sm">{mergedData?.receita?.identificacao?.nomeFantasia || mergedData?.fantasia || '-'}</p>
+                  <p className="font-semibold text-sm">{getData('fantasia') || getData('receita.identificacao.nomeFantasia') || '-'}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">CNPJ</p>
-                  <p className="font-mono font-semibold text-sm">{formatCNPJ(mergedData?.receita?.identificacao?.cnpj || mergedData?.cnpj || '')}</p>
+                  <p className="font-mono font-semibold text-sm">{formatCNPJ(getData('cnpj', '') || getData('receita.identificacao.cnpj', ''))}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Tipo</p>
-                  <Badge variant="outline">{mergedData?.receita?.identificacao?.tipo || 'N/A'}</Badge>
+                  <Badge variant="outline">{getData('tipo') || getData('receita.identificacao.tipo')}</Badge>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Porte</p>
-                  <Badge>{mergedData?.receita?.identificacao?.porte || mergedData?.porte || 'N/A'}</Badge>
+                  <Badge>{getData('porte') || getData('receita.identificacao.porte')}</Badge>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Natureza Jurídica</p>
-                  <p className="font-semibold text-sm">{mergedData?.receita?.identificacao?.naturezaJuridica || mergedData?.natureza_juridica || 'N/A'}</p>
+                  <p className="font-semibold text-sm">{getData('natureza_juridica') || getData('receita.identificacao.naturezaJuridica')}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Data de Abertura</p>
-                  <p className="font-semibold text-sm">{formatDate(mergedData?.receita?.identificacao?.dataAbertura || mergedData?.abertura || null)}</p>
+                  <p className="font-semibold text-sm">{formatDate(getData('abertura', null) || getData('receita.identificacao.dataAbertura', null))}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Capital Social</p>
                   <p className="font-semibold text-sm">
-                    {formatCurrency(mergedData?.receita?.capital?.valor || mergedData?.capital_social || 0)}
+                    {formatCurrency(parseFloat(getData('capital_social', '0')) || getData('receita.capital.valor', 0))}
                   </p>
                 </div>
               </div>
@@ -307,26 +325,26 @@ export function PreviewModal({
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-1">Endereço Completo</p>
                   <p className="font-semibold text-sm">
-                    {mergedData.receita.endereco.logradouro}, {mergedData.receita.endereco.numero}
-                    {mergedData.receita.endereco.complemento && ` - ${mergedData.receita.endereco.complemento}`}
+                    {getData('logradouro') || 'N/A'}, {getData('numero') || 'S/N'}
+                    {getData('complemento') && ` - ${getData('complemento')}`}
                   </p>
                   <p className="text-sm text-slate-600 dark:text-slate-400">
-                    {mergedData.receita.endereco.bairro} - {mergedData.receita.endereco.municipio}/{mergedData.receita.endereco.uf}
+                    {getData('bairro') || 'N/A'} - {getData('municipio') || 'N/A'}/{getData('uf') || 'N/A'}
                   </p>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">CEP: {formatCEP(mergedData.receita.endereco.cep)}</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">CEP: {formatCEP(getData('cep', ''))}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4 pt-2 border-t">
                   <div>
                     <p className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1">
                       <Phone className="h-3 w-3" /> Telefone
                     </p>
-                    <p className="font-semibold text-sm">{formatPhone(mergedData.receita.endereco.telefone)}</p>
+                    <p className="font-semibold text-sm">{formatPhone(getData('telefone', ''))}</p>
                   </div>
                   <div>
                     <p className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1">
                       <Mail className="h-3 w-3" /> Email
                     </p>
-                    <p className="font-semibold text-sm">{mergedData.receita.endereco.email || 'Não informado'}</p>
+                    <p className="font-semibold text-sm">{getData('email') || 'Não informado'}</p>
                   </div>
                 </div>
               </div>

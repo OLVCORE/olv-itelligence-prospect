@@ -79,18 +79,10 @@ async function fetchReceitaPreview(cnpj: string): Promise<any> {
 
     receitaBreaker.recordSuccess()
     
-    // Retornar apenas dados essenciais para preview
-    return {
-      cnpj: data.cnpj,
-      nome: data.nome,
-      fantasia: data.fantasia,
-      situacao: data.situacao,
-      uf: data.uf,
-      municipio: data.municipio,
-      cnaePrincipal: data.atividade_principal?.[0]?.text || 'Não informado',
-      porte: data.porte || 'Não informado',
-      abertura: data.abertura || 'Não informado'
-    }
+    console.log('[CompanyPreview] ✅ Dados ReceitaWS recebidos:', JSON.stringify(data, null, 2))
+    
+    // Retornar TODOS os dados da ReceitaWS sem modificar
+    return data
   } catch (error: any) {
     console.error('[CompanyPreview] ReceitaWS falhou:', error.message)
     receitaBreaker.recordFailure()
