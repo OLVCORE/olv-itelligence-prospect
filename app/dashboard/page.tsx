@@ -565,8 +565,8 @@ function DashboardContent() {
                           <div className="space-y-2">
                             <div className="flex justify-between text-sm">
                               <span className="text-gray-600">Score:</span>
-                              <span className="font-semibold">
-                                {company.analyses?.[0]?.score ?? '—'}
+                              <span className={`font-semibold ${company.analyses?.[0]?.score ? 'text-green-600' : 'text-orange-500'}`}>
+                                {company.analyses?.[0]?.score ?? 'Gerar'}
                               </span>
                             </div>
                             <div className="flex justify-between text-sm">
