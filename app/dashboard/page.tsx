@@ -40,6 +40,7 @@ import { BenchmarkComparisonModal } from "@/components/modals/BenchmarkCompariso
 import { PreviewModal } from "@/components/modals/PreviewModal"
 import { BulkUploadModal } from "@/components/modals/BulkUploadModal"
 import { DigitalProfilingModal } from "@/components/modals/DigitalProfilingModal"
+import { Sidebar } from "@/components/layout/Sidebar"
 import { useMultiSelect } from "@/hooks/useMultiSelect"
 import { formatCurrency } from "@/lib/utils/format"
 import {
@@ -143,6 +144,7 @@ export default function DashboardPage() {
   const [sortBy, setSortBy] = useState<'name' | 'capital' | 'analysis' | 'date'>('name')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all')
+  const [sidebarOpen, setSidebarOpen] = useState(true)
 
   const supabase = getSupabaseBrowser()
 
@@ -290,8 +292,8 @@ export default function DashboardPage() {
               value={individualSearchData.cnpj}
               onChange={(e) => setIndividualSearchData(prev => ({ ...prev, cnpj: e.target.value }))}
               className="h-9"
-            />
-          </div>
+                />
+              </div>
           <div className="space-y-1">
             <Label htmlFor="website" className="text-sm font-medium dark:text-gray-200">Website</Label>
             <Input
@@ -324,7 +326,7 @@ export default function DashboardPage() {
                   </p>
                 </TooltipContent>
               </Tooltip>
-            </div>
+                    </div>
             <Textarea
               placeholder="@empresa_insta, empresa-linkedin, empresa.facebook, @empresa_youtube, @empresa_twitter, @empresa_threads"
               value={individualSearchData.redesSociais}
@@ -332,7 +334,7 @@ export default function DashboardPage() {
               rows={2}
               className="text-sm"
             />
-          </div>
+              </div>
 
           {/* Marketplaces B2B */}
           <div className="space-y-1">
@@ -352,7 +354,7 @@ export default function DashboardPage() {
                   </p>
                 </TooltipContent>
               </Tooltip>
-            </div>
+                </div>
             <Textarea
               placeholder="empresa.alibaba.com, shopee.com.br/shop/empresa, b2bbrasil.com.br/empresa, globalsupplies.com/empresa, tradekey.com/empresa, ec21.com/empresa"
               value={individualSearchData.marketplacesB2B}
@@ -360,7 +362,7 @@ export default function DashboardPage() {
               rows={2}
               className="text-sm"
                 />
-              </div>
+                  </div>
 
           {/* Marketplaces B2C */}
           <div className="space-y-1">
@@ -380,7 +382,7 @@ export default function DashboardPage() {
                   </p>
                 </TooltipContent>
               </Tooltip>
-                    </div>
+                </div>
             <Textarea
               placeholder="mercadolivre.com.br/perfil/empresa, amazon.com.br/shops/empresa, americanas.com.br/loja/empresa, magazineluiza.com.br/loja/empresa, submarino.com.br/loja/empresa"
               value={individualSearchData.marketplacesB2C}
@@ -408,7 +410,7 @@ export default function DashboardPage() {
                   </p>
                 </TooltipContent>
               </Tooltip>
-                </div>
+            </div>
             <Textarea
               placeholder="g.page/empresa, reclameaqui.com.br/empresa, glassdoor.com.br/empresa, b2bbrasil.com.br/empresa, me.com.br/empresa"
               value={individualSearchData.portaisEletronicos}
@@ -416,7 +418,7 @@ export default function DashboardPage() {
               rows={2}
               className="text-sm"
             />
-                  </div>
+          </div>
 
           {/* Portais do Setor */}
           <div className="space-y-1">
@@ -436,7 +438,7 @@ export default function DashboardPage() {
                   </p>
                 </TooltipContent>
               </Tooltip>
-                </div>
+                  </div>
             <Textarea
               placeholder="sbinee.com.br, abimac.com.br, sindicatos específicos do setor, associações comerciais, federações"
               value={individualSearchData.portaisSetor}
@@ -444,7 +446,7 @@ export default function DashboardPage() {
               rows={2}
               className="text-sm"
             />
-              </div>
+                        </div>
 
           {/* Notícias Recentes */}
           <div className="space-y-1">
@@ -455,7 +457,7 @@ export default function DashboardPage() {
                 <TooltipTrigger asChild>
                   <Button variant="ghost" size="sm" className="h-4 w-4 p-0">
                     <SearchIcon className="h-3 w-3 text-gray-400" />
-                  </Button>
+                          </Button>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p className="text-xs max-w-xs">
@@ -464,7 +466,7 @@ export default function DashboardPage() {
                   </p>
                 </TooltipContent>
               </Tooltip>
-            </div>
+                      </div>
             <Textarea
               placeholder="Digite palavras-chave para busca de notícias (ex: empresa, produto, tecnologia, inovação)"
               value={individualSearchData.noticiasRecentes}
@@ -505,9 +507,9 @@ export default function DashboardPage() {
 
         {/* Botão de Busca */}
         <div className="flex justify-end pt-3">
-                          <Button
+                    <Button
             onClick={handleIndividualSearch}
-            disabled={loading}
+                      disabled={loading}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 h-9"
           >
             {loading ? (
@@ -521,8 +523,8 @@ export default function DashboardPage() {
                 Analisar Empresa
               </>
             )}
-                          </Button>
-        </div>
+                    </Button>
+                  </div>
       </CardContent>
     </Card>
   )
@@ -548,8 +550,8 @@ export default function DashboardPage() {
             <li>Selecione as empresas que deseja analisar com prioridade</li>
             <li>O sistema processará todas as empresas automaticamente</li>
           </ol>
-                      </div>
-                    
+                </div>
+
         <div className="flex gap-3">
                     <Button
             onClick={() => {
@@ -592,10 +594,10 @@ export default function DashboardPage() {
           <CardContent className="p-4">
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
+                                <input
+                                  type="checkbox"
                   checked={selectedCompanies.includes(company.id)}
-                  onChange={(e) => {
+                                  onChange={(e) => {
                     if (e.target.checked) {
                       setSelectedCompanies(prev => [...prev, company.id])
                     } else {
@@ -611,7 +613,7 @@ export default function DashboardPage() {
                 </div>
 
             <h3 className="font-semibold text-lg mb-2 line-clamp-2 dark:text-white">
-              {company.tradeName || company.name}
+                                {company.tradeName || company.name}
             </h3>
             
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
@@ -624,12 +626,12 @@ export default function DashboardPage() {
                 <span className="font-semibold dark:text-white">
                   {company.capital ? formatCurrency(company.capital) : 'N/D'}
                 </span>
-              </div>
+                            </div>
               
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600 dark:text-gray-400">Cadastrado:</span>
                 <span className="font-semibold dark:text-white text-xs">{formatDate(company.createdAt)}</span>
-              </div>
+                                </div>
             </div>
 
             <Button
@@ -656,7 +658,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       ))}
-    </div>
+                            </div>
   )
 
   const renderCompanyList = () => (
@@ -685,7 +687,7 @@ export default function DashboardPage() {
                     <Badge variant={company.status === 'active' ? 'default' : 'secondary'}>
                       {company.status === 'active' ? 'ATIVA' : 'INATIVA'}
                               </Badge>
-                                </div>
+                          </div>
                   
                   <div className="grid grid-cols-3 gap-4 text-sm text-gray-600">
                     <div>
@@ -693,11 +695,11 @@ export default function DashboardPage() {
                             </div>
                     <div>
                       <span className="font-medium">Capital:</span> {company.capital ? formatCurrency(company.capital) : 'N/D'}
-                          </div>
+                            </div>
                     <div>
                       <span className="font-medium">Análises:</span> {company.analyses?.length || 0}
                             </div>
-                            </div>
+                          </div>
                             </div>
                           </div>
               
@@ -729,9 +731,13 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
       <EnvCheck />
-      <Header />
+      <Header 
+        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+        sidebarOpen={sidebarOpen}
+      />
+      <Sidebar open={sidebarOpen} />
       
-      <div className="container mx-auto px-4 py-8">
+      <div className={`container mx-auto px-4 py-8 transition-all ${sidebarOpen ? 'ml-64' : 'ml-0'}`}>
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">
@@ -742,27 +748,61 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {/* Tabs para Individual vs Massa */}
-        <Tabs value={searchMode} onValueChange={(value) => setSearchMode(value as 'individual' | 'massa')} className="mb-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="individual" className="flex items-center gap-2">
-              <Search className="h-4 w-4" />
-              Pesquisa Individual
-            </TabsTrigger>
-            <TabsTrigger value="massa" className="flex items-center gap-2">
-              <Upload className="h-4 w-4" />
-              Pesquisa em Massa
-            </TabsTrigger>
-          </TabsList>
+        {/* Renderizar módulo ativo OU dashboard */}
+        {activeModule === 'dashboard' && (
+          <>
+            {/* Tabs para Individual vs Massa */}
+            <Tabs value={searchMode} onValueChange={(value) => setSearchMode(value as 'individual' | 'massa')} className="mb-6 dark:bg-slate-800 dark:border-slate-700">
+              <TabsList className="grid w-full grid-cols-2 dark:bg-slate-800">
+                <TabsTrigger value="individual" className="flex items-center gap-2 dark:data-[state=active]:bg-slate-700">
+                  <Search className="h-4 w-4" />
+                  Pesquisa Individual
+                </TabsTrigger>
+                <TabsTrigger value="massa" className="flex items-center gap-2 dark:data-[state=active]:bg-slate-700">
+                  <Upload className="h-4 w-4" />
+                  Pesquisa em Massa
+                </TabsTrigger>
+              </TabsList>
 
-          <TabsContent value="individual">
-            {renderIndividualSearchForm()}
+              <TabsContent value="individual">
+                {renderIndividualSearchForm()}
               </TabsContent>
 
-          <TabsContent value="massa">
-            {renderMassaSearchInstructions()}
+              <TabsContent value="massa">
+                {renderMassaSearchInstructions()}
               </TabsContent>
-        </Tabs>
+            </Tabs>
+          </>
+        )}
+
+        {/* Módulos */}
+        {activeModule === 'tech-stack' && currentCompany && (
+          <TechStackModule companyId={currentCompany.id} />
+        )}
+        {activeModule === 'decision-makers' && currentCompany && (
+          <DecisionMakersModule companyId={currentCompany.id} />
+        )}
+        {activeModule === 'financial' && currentCompany && (
+          <FinancialModule companyId={currentCompany.id} />
+        )}
+        {activeModule === 'maturity' && currentCompany && (
+          <MaturityModule companyId={currentCompany.id} />
+        )}
+        {activeModule === 'benchmark' && (
+          <BenchmarkModule companies={companies.filter(c => selectedCompanies.includes(c.id))} />
+        )}
+        {activeModule === 'fit-totvs' && currentCompany && (
+          <FitTotvsModule companyId={currentCompany.id} />
+        )}
+        {activeModule === 'playbooks' && currentCompany && (
+          <PlaybooksModule companyId={currentCompany.id} />
+        )}
+        {activeModule === 'alerts' && (
+          <AlertsModule />
+        )}
+        {activeModule === 'company-search' && (
+          <CompanySearchModule />
+        )}
 
         {/* Controles de Gestão */}
         <Card className="mb-6">
