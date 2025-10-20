@@ -105,6 +105,8 @@ model Company {
   analyses        Analysis[]
   people          Person[]
   buyingSignalHistory BuyingSignal[]
+  firmographics   Firmographics[]
+  techSignals     TechSignals[]
 }
 
 model TechStack {
@@ -529,5 +531,56 @@ model OutreachHistory {
   @@index([personId, sentAt])
   @@index([channel, status])
   @@index([nextFollowUp])
+}
+
+// ========================================
+// TABELAS AUXILIARES (ADITIVAS)
+// ========================================
+
+model Firmographics {
+  id              String   @id @default(cuid())
+  companyId       String
+  employeesRange  String?  // "51-200", "201-500", etc.
+  revenueRange    String?  // "$1M-$10M", etc.
+  techTags        String[] // ["SaaS", "Cloud-First", etc.]
+  source          String   // "apollo", "manual", etc.
+  fetchedAt       DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  @@index([companyId])
+  @@index([source, fetchedAt])
+}
+
+model TechSignals {
+  id         String   @id @default(cuid())
+  companyId  String
+  kind       String   // "header", "job", "mention", etc.
+  key        String   // "X-Powered-By", "job_title", etc.
+  value      String   // "PHP/7.4", "Analista SAP", etc.
+  confidence Int      @default(50) // 0-100
+  source     String   // "http_headers", "linkedin_jobs", etc.
+  url        String?
+  fetchedAt  DateTime @default(now())
+  createdAt  DateTime @default(now())
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  @@index([companyId, kind])
+  @@index([source, fetchedAt])
+}
+
+model SearchCache {
+  id         String   @id @default(cuid())
+  hash       String   @unique // Hash do payload da busca
+  provider   String   // "serper", "apollo", "hunter", etc.
+  payload    Json     // Request original
+  response   Json     // Response cacheado
+  fetchedAt  DateTime @default(now())
+  expiresAt  DateTime // TTL: 24h para searches, 7d para company data
+  createdAt  DateTime @default(now())
+  
+  @@index([provider, hash])
+  @@index([expiresAt])
 }
 

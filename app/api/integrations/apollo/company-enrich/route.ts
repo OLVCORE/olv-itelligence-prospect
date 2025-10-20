@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { apolloCompanyEnrich } from '@/lib/integrations/apollo'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 
 export async function POST(req: Request) {
   try {
@@ -13,6 +14,24 @@ export async function POST(req: Request) {
     }
 
     const data = await apolloCompanyEnrich(params)
+
+    // UPSERT Firmographics se tiver companyId
+    if (params.companyId && data.organizations && data.organizations.length > 0) {
+      const org = data.organizations[0]
+      
+      await supabaseAdmin.from('Firmographics').upsert({
+        companyId: params.companyId,
+        employeesRange: org.estimated_num_employees || null,
+        revenueRange: org.estimated_annual_revenue || null,
+        techTags: org.keywords || [],
+        source: 'apollo',
+        fetchedAt: new Date().toISOString()
+      }, {
+        onConflict: 'companyId,source'
+      })
+      
+      console.log('[Apollo] ✅ Firmographics salvo para:', params.companyId)
+    }
 
     return NextResponse.json({
       ok: true,
@@ -30,4 +49,5 @@ export async function POST(req: Request) {
     }, { status: 502 })
   }
 }
+
 
