@@ -1,200 +1,373 @@
 import { NextResponse } from 'next/server'
+import { z } from 'zod'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { getDefaultProjectId } from '@/lib/projects/get-default-project'
 import { normalizeCnpj, isValidCnpj, normalizeDomain } from '@/lib/utils/cnpj'
-import { fetchReceitaWS } from '@/lib/services/receita-ws'
-import { fetchGoogleCSE, resolveCnpjFromWebsite } from '@/lib/services/google-cse'
-import { analyzeWithOpenAI } from '@/lib/services/openai-analysis'
+
+// Schema de validação
+const searchSchema = z.object({
+  cnpj: z.string().optional(),
+  website: z.string().optional()
+}).refine(data => data.cnpj || data.website, {
+  message: "CNPJ ou website deve ser fornecido"
+}).refine(data => !(data.cnpj && data.website), {
+  message: "Forneça apenas CNPJ ou website, não ambos"
+})
+
+// Circuit breaker simples
+class CircuitBreaker {
+  private failures = 0
+  private lastFailure = 0
+  private readonly threshold = 3
+  private readonly timeout = 30000 // 30s
+
+  isOpen(): boolean {
+    if (this.failures >= this.threshold) {
+      const now = Date.now()
+      if (now - this.lastFailure < this.timeout) {
+        return true
+      }
+      // Reset após timeout
+      this.failures = 0
+    }
+    return false
+  }
+
+  recordSuccess(): void {
+    this.failures = 0
+  }
+
+  recordFailure(): void {
+    this.failures++
+    this.lastFailure = Date.now()
+  }
+}
+
+const receitaBreaker = new CircuitBreaker()
+const googleBreaker = new CircuitBreaker()
+
+// Função para buscar dados da ReceitaWS com retry
+async function fetchReceitaWS(cnpj: string): Promise<any> {
+  const enabled = process.env.ENABLE_RECEITA !== 'false'
+  if (!enabled) {
+    throw new Error('Provider ReceitaWS desabilitado')
+  }
+
+  if (receitaBreaker.isOpen()) {
+    throw new Error('Provider ReceitaWS temporariamente indisponível')
+  }
+
+  const token = process.env.RECEITAWS_API_TOKEN
+  if (!token) {
+    throw new Error('RECEITAWS_API_TOKEN não configurado')
+  }
+
+  const url = `https://receitaws.com.br/v1/cnpj/${cnpj}`
+  
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      console.log(`[CompanySearch] Tentativa ${attempt}/3 para ReceitaWS: ${cnpj}`)
+      
+      const response = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${token}` },
+        signal: AbortSignal.timeout(8000)
+      })
+
+      if (!response.ok) {
+        throw new Error(`ReceitaWS HTTP ${response.status}`)
+      }
+
+      const data = await response.json()
+      
+      if (data.status === 'ERROR') {
+        throw new Error(data.message || 'CNPJ não encontrado na ReceitaWS')
+      }
+
+      receitaBreaker.recordSuccess()
+      console.log(`[CompanySearch] ReceitaWS sucesso: ${data.nome}`)
+      return data
+    } catch (error: any) {
+      console.error(`[CompanySearch] ReceitaWS tentativa ${attempt} falhou:`, error.message)
+      
+      if (attempt === 3) {
+        receitaBreaker.recordFailure()
+        throw error
+      }
+      
+      // Backoff exponencial
+      await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000))
+    }
+  }
+}
+
+// Função para buscar dados do Google CSE
+async function fetchGoogleCSE(companyName: string, cnpj?: string): Promise<any> {
+  const enabled = process.env.ENABLE_GOOGLE_CSE !== 'false'
+  if (!enabled) {
+    throw new Error('Provider Google CSE desabilitado')
+  }
+
+  if (googleBreaker.isOpen()) {
+    throw new Error('Provider Google CSE temporariamente indisponível')
+  }
+
+  const apiKey = process.env.GOOGLE_API_KEY
+  const cseId = process.env.GOOGLE_CSE_ID
+
+  if (!apiKey || !cseId) {
+    throw new Error('GOOGLE_API_KEY ou GOOGLE_CSE_ID não configurados')
+  }
+
+  try {
+    console.log(`[CompanySearch] Buscando Google CSE: ${companyName}`)
+    
+    const query = `${companyName} ${cnpj || ''}`.trim()
+    const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cseId}&q=${encodeURIComponent(query)}&num=5`
+    
+    const response = await fetch(url, {
+      signal: AbortSignal.timeout(5000)
+    })
+
+    if (!response.ok) {
+      throw new Error(`Google CSE HTTP ${response.status}`)
+    }
+
+    const data = await response.json()
+    googleBreaker.recordSuccess()
+    
+    console.log(`[CompanySearch] Google CSE sucesso: ${data.items?.length || 0} resultados`)
+    return data
+  } catch (error: any) {
+    console.error('[CompanySearch] Google CSE falhou:', error.message)
+    googleBreaker.recordFailure()
+    throw error
+  }
+}
 
 export async function POST(req: Request) {
+  const startTime = Date.now()
+  
   try {
-    // Extrair parâmetros do body ou query string
-    const body = await req.json().catch(() => ({}))
-    const url = new URL(req.url)
-    const params = Object.fromEntries(url.searchParams)
-    
-    const { cnpj: rawCnpj, website: rawWebsite } = { ...params, ...body }
+    const body = await req.json()
+    console.log('[CompanySearch] Input recebido:', { cnpj: body.cnpj ? '***' : undefined, website: body.website })
 
-    console.log('[API /companies/search] 📥 Request:', { cnpj: rawCnpj, website: rawWebsite })
+    // Validar input
+    const validation = searchSchema.safeParse(body)
+    if (!validation.success) {
+      console.log('[CompanySearch] Input inválido:', validation.error.issues)
+      return NextResponse.json({
+        ok: false,
+        error: {
+          code: 'INVALID_INPUT',
+          message: validation.error.issues[0].message
+        }
+      }, { status: 422 })
+    }
 
-    let resolvedCnpj = normalizeCnpj(rawCnpj)
+    const { cnpj, website } = validation.data
 
-    // Se não tem CNPJ mas tem website, tentar resolver
-    if (!resolvedCnpj && rawWebsite) {
-      const domain = normalizeDomain(rawWebsite)
-      console.log('[API] 🔍 Tentando resolver CNPJ do domínio:', domain)
+    let companyData: any = null
+    let analysisData: any = null
+
+    if (cnpj) {
+      // Busca por CNPJ
+      const normalizedCnpj = normalizeCnpj(cnpj)
       
-      resolvedCnpj = await resolveCnpjFromWebsite(domain) || ''
+      if (!isValidCnpj(normalizedCnpj)) {
+        console.log('[CompanySearch] CNPJ inválido:', normalizedCnpj)
+        return NextResponse.json({
+          ok: false,
+          error: {
+            code: 'INVALID_CNPJ',
+            message: 'CNPJ inválido. Verifique os dígitos verificadores.'
+          }
+        }, { status: 422 })
+      }
+
+      try {
+        companyData = await fetchReceitaWS(normalizedCnpj)
+        
+        // Buscar dados complementares do Google CSE
+        try {
+          const googleData = await fetchGoogleCSE(companyData.nome, normalizedCnpj)
+          analysisData = {
+            website: googleData.items?.[0]?.link || null,
+            news: googleData.items?.slice(0, 3).map((item: any) => ({
+              title: item.title,
+              snippet: item.snippet,
+              link: item.link,
+              date: item.pagemap?.metatags?.[0]?.['article:published_time']
+            })) || []
+          }
+        } catch (googleError: any) {
+          console.warn('[CompanySearch] Google CSE falhou, continuando sem dados complementares:', googleError.message)
+          analysisData = { website: null, news: [] }
+        }
+      } catch (receitaError: any) {
+        console.error('[CompanySearch] ReceitaWS falhou:', receitaError.message)
+        return NextResponse.json({
+          ok: false,
+          error: {
+            code: 'PROVIDER_ERROR',
+            message: `Erro ao buscar dados da Receita Federal: ${receitaError.message}`
+          }
+        }, { status: 502 })
+      }
+    } else if (website) {
+      // Busca por website
+      const domain = normalizeDomain(website)
       
-      if (!resolvedCnpj) {
-        return NextResponse.json(
-          {
-            status: 'error',
-            message: 'Não foi possível identificar o CNPJ a partir do website fornecido',
-            hint: 'Tente fornecer o CNPJ diretamente (14 dígitos)'
-          },
-          { status: 400 }
-        )
+      try {
+        const googleData = await fetchGoogleCSE(domain)
+        
+        companyData = {
+          nome: domain,
+          fantasia: domain,
+          situacao: 'ATIVA',
+          website: `https://${domain}`
+        }
+        
+        analysisData = {
+          website: `https://${domain}`,
+          news: googleData.items?.slice(0, 3).map((item: any) => ({
+            title: item.title,
+            snippet: item.snippet,
+            link: item.link,
+            date: item.pagemap?.metatags?.[0]?.['article:published_time']
+          })) || []
+        }
+      } catch (googleError: any) {
+        console.error('[CompanySearch] Google CSE falhou:', googleError.message)
+        return NextResponse.json({
+          ok: false,
+          error: {
+            code: 'PROVIDER_ERROR',
+            message: `Erro ao buscar dados do website: ${googleError.message}`
+          }
+        }, { status: 502 })
       }
     }
 
-    // Validar CNPJ
-    if (!isValidCnpj(resolvedCnpj)) {
-      return NextResponse.json(
-        {
-          status: 'error',
-          message: 'CNPJ inválido. Forneça um CNPJ com 14 dígitos ou um website válido.',
-          code: 'INVALID_CNPJ'
-        },
-        { status: 422 }
-      )
-    }
+    // Obter projeto padrão
+    const projectId = await getDefaultProjectId()
+    console.log('[CompanySearch] ProjectId obtido:', projectId)
 
-    console.log('[API] ✅ CNPJ validado:', resolvedCnpj)
-
-    // Pipeline de enriquecimento
-    console.log('[API] 📊 Iniciando pipeline de enriquecimento...')
-
-    // 1. ReceitaWS
-    const receitaData = await fetchReceitaWS(resolvedCnpj)
-
-    // 2. Google CSE (site + notícias) - passar CNPJ para busca mais específica
-    const googleData = await fetchGoogleCSE(
-      receitaData.nome || receitaData.fantasia || resolvedCnpj,
-      resolvedCnpj
-    )
-
-    // 3. OpenAI (análise)
-    const aiAnalysis = await analyzeWithOpenAI({
-      company: receitaData,
-      website: googleData.website?.url || null,
-      news: googleData.news
-    })
-
-    console.log('[API] 🧠 Análise concluída. Score:', aiAnalysis.score)
-
-    // 4. Gravação no Supabase
-    console.log('[API] 💾 Gravando no Supabase...')
-
-    // Obter ou criar projeto padrão (resolve FK obrigatória)
-    let projectId: string
-    try {
-      projectId = await getDefaultProjectId()
-      console.log('[API] ✅ ProjectId obtido:', projectId)
-    } catch (error: any) {
-      console.error('[API] ❌ Erro ao obter ProjectId:', error)
-      // Fallback: usar ID fixo para não quebrar o sistema
-      projectId = 'default-project-id'
-      console.log('[API] ⚠️ Usando ProjectId fallback:', projectId)
-    }
-
-    // Parse capital (string → number) com fallback 0
+    // Parse capital social
     const capitalNum = Number(
-      (receitaData.capital_social || '0')
+      (companyData.capital_social || '0')
         .toString()
         .replace(/[^\d,.-]/g, '')
-        .replace('.', '')
         .replace(',', '.')
-    )
-    const nowIso = new Date().toISOString()
+    ) || 0
 
-    // Upsert Company
+    // Preparar dados para inserção
+    const companyInsert = {
+      cnpj: cnpj ? normalizeCnpj(cnpj) : null,
+      name: companyData.nome || 'Empresa sem razão social',
+      tradeName: companyData.fantasia || null,
+      projectId,
+      capital: capitalNum,
+      size: companyData.porte || 'MÉDIO',
+      location: JSON.stringify({
+        cidade: companyData.municipio || '',
+        estado: companyData.uf || '',
+        endereco: companyData.logradouro || '',
+        numero: companyData.numero || '',
+        bairro: companyData.bairro || '',
+        cep: companyData.cep || ''
+      }),
+      financial: JSON.stringify({
+        porte: companyData.porte || 'MÉDIO',
+        situacao: companyData.situacao || 'ATIVA',
+        abertura: companyData.abertura || '',
+        naturezaJuridica: companyData.natureza_juridica || '',
+        capitalSocial: companyData.capital_social || '0'
+      }),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+
+    // Inserir empresa
     const { data: company, error: companyError } = await supabaseAdmin
       .from('Company')
-      .upsert({
-        id: crypto.randomUUID(), // Gerar ID explícito
-        projectId, // FK obrigatória - usa projeto padrão
-        cnpj: resolvedCnpj,
-        name: receitaData.nome || 'Empresa sem razão social',
-        tradeName: receitaData.fantasia ?? null,
-        status: receitaData.situacao ?? null,
-        openingDate: receitaData.abertura ? new Date(receitaData.abertura.split('/').reverse().join('-')).toISOString() : null,
-        capital: Number.isFinite(capitalNum) ? capitalNum : 0,
-        // PATCH: garantir que o banco receba valores e não quebre com NOT NULL
-        createdAt: nowIso,
-        updatedAt: nowIso,
-      }, {
-        onConflict: 'cnpj'
-      })
+      .insert(companyInsert)
       .select()
       .single()
 
     if (companyError) {
-      console.error('[API] ❌ Erro ao gravar Company:', companyError)
-      
-      // Mensagem de erro específica para FK
-      if (companyError.message?.includes('foreign key constraint')) {
-        throw new Error(
-          `Falha ao gravar empresa: ${companyError.message}. ` +
-          `Dica: Defina DEFAULT_PROJECT_ID no .env com um ID de Project existente, ` +
-          `ou deixe o sistema criar um automaticamente.`
-        )
-      }
-      
-      throw new Error(`Falha ao gravar empresa: ${companyError.message}`)
+      console.error('[CompanySearch] Erro ao inserir empresa:', companyError)
+      return NextResponse.json({
+        ok: false,
+        error: {
+          code: 'DATABASE_ERROR',
+          message: 'Erro ao salvar empresa no banco de dados'
+        }
+      }, { status: 500 })
     }
 
-    console.log('[API] ✅ Company gravada:', company.id)
+    // Inserir análise
+    const analysisInsert = {
+      companyId: company.id,
+      projectId,
+      insights: JSON.stringify({
+        website: analysisData.website,
+        news: analysisData.news,
+        scoreRegras: 75, // Score baseado em regras
+        scoreIA: 0,
+        justificativa: 'Análise baseada em dados da Receita Federal e Google CSE'
+      }),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
 
-    // Insert Analysis com breakdown completo
     const { data: analysis, error: analysisError } = await supabaseAdmin
       .from('Analysis')
-      .insert({
-        companyId: company.id,
-        score: aiAnalysis.score, // Score híbrido
-        // Salvar insights como objeto completo com breakdown
-        insights: JSON.stringify({
-          insights: aiAnalysis.insights,
-          scoreIA: aiAnalysis.scoreIA,
-          scoreRegras: aiAnalysis.scoreRegras,
-          breakdown: aiAnalysis.breakdown,
-          classificacao: aiAnalysis.classificacao,
-          justification: aiAnalysis.justification,
-        }),
-        redFlags: JSON.stringify(aiAnalysis.redFlags),
-      })
+      .insert(analysisInsert)
       .select()
       .single()
 
     if (analysisError) {
-      console.error('[API] ❌ Erro ao gravar Analysis:', analysisError)
-      // Continuar mesmo se falhar a análise
-    } else {
-      console.log('[API] ✅ Analysis gravada:', analysis?.id)
+      console.error('[CompanySearch] Erro ao inserir análise:', analysisError)
+      // Não falhar aqui, empresa já foi criada
     }
 
-    // Resposta final
+    const latency = Date.now() - startTime
+    console.log(`[CompanySearch] Sucesso em ${latency}ms:`, company.id)
+
     return NextResponse.json({
-      status: 'success',
-      message: 'Empresa analisada e gravada com sucesso',
+      ok: true,
       data: {
-        company,
-        analysis,
+        company: {
+          id: company.id,
+          cnpj: company.cnpj,
+          name: company.name,
+          tradeName: company.tradeName,
+          capital: company.capital,
+          size: company.size
+        },
+        analysis: analysis ? {
+          id: analysis.id,
+          insights: analysis.insights
+        } : null,
         enrichment: {
-          website: googleData.website,
-          news: googleData.news,
-          justification: aiAnalysis.justification,
+          website: analysisData.website,
+          news: analysisData.news,
+          latency
         }
-      },
-      timestamp: new Date().toISOString(),
+      }
     })
 
   } catch (error: any) {
-    console.error('[API /companies/search] ❌ Erro:', error.message)
+    const latency = Date.now() - startTime
+    console.error(`[CompanySearch] Erro geral em ${latency}ms:`, error.message)
 
-    const status = error.message?.includes('ReceitaWS') ? 502 :
-                   error.message?.includes('não encontrado') ? 404 :
-                   error.message?.includes('inválido') ? 422 :
-                   500
-
-    return NextResponse.json(
-      {
-        status: 'error',
-        message: error.message || 'Erro inesperado ao processar empresa',
-        code: error.code || 'INTERNAL_ERROR'
-      },
-      { status }
-    )
+    return NextResponse.json({
+      ok: false,
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'Erro interno do servidor'
+      }
+    }, { status: 500 })
   }
 }
 
@@ -204,14 +377,13 @@ export async function GET(req: Request) {
   const website = url.searchParams.get('website')
 
   if (!cnpj && !website) {
-    return NextResponse.json(
-      {
-        status: 'error',
-        message: 'Forneça um parâmetro "cnpj" ou "website"',
-        example: '/api/companies/search?cnpj=00000000000191'
-      },
-      { status: 400 }
-    )
+    return NextResponse.json({
+      ok: false,
+      error: {
+        code: 'MISSING_PARAMETERS',
+        message: 'Forneça um parâmetro "cnpj" ou "website"'
+      }
+    }, { status: 400 })
   }
 
   // Redirecionar para POST

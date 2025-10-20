@@ -9,11 +9,24 @@ export async function getDefaultProjectId(): Promise<string> {
     // 1. Tenta usar o ID do .env se houver
     const fromEnv = process.env.DEFAULT_PROJECT_ID
     if (fromEnv) {
-      console.log('[getDefaultProjectId] Usando DEFAULT_PROJECT_ID do .env:', fromEnv)
-      return fromEnv
+      console.log('[ProjectFallback] Usando DEFAULT_PROJECT_ID do .env:', fromEnv)
+      
+      // Validar se o projeto existe no banco
+      const { data: validation, error: validationError } = await supabaseAdmin
+        .from('Project')
+        .select('id')
+        .eq('id', fromEnv)
+        .single()
+      
+      if (validationError || !validation) {
+        console.warn('[ProjectFallback] DEFAULT_PROJECT_ID do .env não existe no banco, criando novo...')
+      } else {
+        console.log('[ProjectFallback] ✅ DEFAULT_PROJECT_ID validado:', fromEnv)
+        return fromEnv
+      }
     }
 
-    console.log('[getDefaultProjectId] DEFAULT_PROJECT_ID não definida, buscando/criando projeto padrão...')
+    console.log('[ProjectFallback] Buscando/criando projeto padrão...')
 
     // 2. Tenta pegar um projeto existente (o mais antigo)
     const { data: existing, error: selectError } = await supabaseAdmin
@@ -24,43 +37,48 @@ export async function getDefaultProjectId(): Promise<string> {
       .maybeSingle()
 
     if (selectError) {
-      console.error('[getDefaultProjectId] Erro ao buscar projeto existente:', selectError)
+      console.error('[ProjectFallback] Erro ao buscar projeto existente:', selectError)
       // Não falha aqui, continua para criar um novo
     }
 
     if (existing?.id) {
-      console.log('[getDefaultProjectId] ✅ Usando projeto existente:', existing.id)
+      console.log('[ProjectFallback] ✅ Usando projeto existente:', existing.id)
       return existing.id
     }
 
-    // 3. Cria um novo projeto padrão
-    console.log('[getDefaultProjectId] Criando novo projeto padrão...')
+    // 3. Cria um novo projeto padrão usando upsert transacional
+    console.log('[ProjectFallback] Criando novo projeto padrão...')
     const nowIso = new Date().toISOString()
     
+    // Usar upsert para evitar duplicatas em caso de concorrência
     const { data: created, error: createError } = await supabaseAdmin
       .from('Project')
-      .insert({
+      .upsert({
+        id: 'default-project-id',
         name: 'Projeto Principal',
         description: 'Projeto padrão criado automaticamente pelo sistema',
         createdAt: nowIso,
         updatedAt: nowIso,
+      }, {
+        onConflict: 'id',
+        ignoreDuplicates: false
       })
       .select('id')
       .single()
 
     if (createError) {
-      console.error('[getDefaultProjectId] ❌ Erro ao criar projeto padrão:', createError)
+      console.error('[ProjectFallback] ❌ Erro ao criar projeto padrão:', createError)
       // Se falhar ao criar, retorna um ID fixo para evitar quebrar o sistema
-      console.log('[getDefaultProjectId] ⚠️ Retornando ID fixo para evitar quebra do sistema')
+      console.log('[ProjectFallback] ⚠️ Retornando ID fixo para evitar quebra do sistema')
       return 'default-project-id'
     }
 
-    console.log('[getDefaultProjectId] ✅ Projeto padrão criado:', created.id)
+    console.log('[ProjectFallback] ✅ Projeto padrão criado/encontrado:', created.id)
     return created.id
   } catch (error: any) {
-    console.error('[getDefaultProjectId] ❌ Erro geral:', error)
+    console.error('[ProjectFallback] ❌ Erro geral:', error)
     // Fallback: retorna um ID fixo para não quebrar o sistema
-    console.log('[getDefaultProjectId] ⚠️ Fallback: usando ID fixo')
+    console.log('[ProjectFallback] ⚠️ Fallback: usando ID fixo')
     return 'default-project-id'
   }
 }
