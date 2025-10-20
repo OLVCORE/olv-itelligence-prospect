@@ -268,13 +268,13 @@ export default function DashboardPage() {
   const paginatedCompanies = sortedCompanies.slice(startIndex, startIndex + itemsPerPage)
 
   const renderIndividualSearchForm = () => (
-    <Card className="mb-6">
+    <Card className="mb-6 dark:bg-slate-800 dark:border-slate-700">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Search className="h-5 w-5 text-blue-600" />
+        <CardTitle className="flex items-center gap-2 dark:text-white">
+          <Search className="h-5 w-5 text-blue-600 dark:text-blue-400" />
           Pesquisa Individual Avançada
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="dark:text-gray-300">
           Preencha os campos abaixo para uma análise completa e personalizada
         </CardDescription>
       </CardHeader>
@@ -424,13 +424,13 @@ export default function DashboardPage() {
   )
 
   const renderMassaSearchInstructions = () => (
-    <Card className="mb-6">
+    <Card className="mb-6 dark:bg-slate-800 dark:border-slate-700">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Upload className="h-5 w-5 text-purple-600" />
+        <CardTitle className="flex items-center gap-2 dark:text-white">
+          <Upload className="h-5 w-5 text-purple-600 dark:text-purple-400" />
           Pesquisa em Massa
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="dark:text-gray-300">
           Instruções para análise de múltiplas empresas
         </CardDescription>
       </CardHeader>
@@ -614,17 +614,17 @@ export default function DashboardPage() {
   )
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
       <EnvCheck />
       <Header />
       
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-blue-600 mb-2">
+          <h1 className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">
             Prospecção Inteligente
           </h1>
-          <p className="text-gray-600 text-lg">
+          <p className="text-gray-600 dark:text-gray-300 text-lg">
             Análise completa com dados reais do Supabase
           </p>
         </div>

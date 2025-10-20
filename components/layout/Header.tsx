@@ -22,7 +22,7 @@ import {
   Menu,
   X
 } from "lucide-react"
-import { getRoleDisplayName, getRoleColor } from "@/lib/auth"
+import { ModeToggle } from "@/components/ModeToggle"
 
 interface HeaderProps {
   onToggleSidebar?: () => void
@@ -87,6 +87,9 @@ export function Header({ onToggleSidebar, sidebarOpen = true }: HeaderProps) {
 
         {/* Right Side - User Info */}
         <div className="flex items-center gap-2 sm:gap-4">
+          {/* Theme Toggle */}
+          <ModeToggle />
+          
           {/* Notifications */}
           <Button
             variant="ghost"
