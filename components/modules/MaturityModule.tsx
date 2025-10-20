@@ -66,7 +66,7 @@ interface MaturityModuleProps {
   companyId: string | null
 }
 
-export default function MaturityModule({ companyId }: MaturityModuleProps) {
+export function MaturityModule({ companyId }: MaturityModuleProps) {
   const [maturityData, setMaturityData] = useState<MaturityData | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [lastAnalyzed, setLastAnalyzed] = useState<string | null>(null)

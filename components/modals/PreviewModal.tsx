@@ -359,17 +359,17 @@ export function PreviewModal({
               <div className="grid grid-cols-3 gap-3 bg-slate-50 dark:bg-slate-900 rounded-lg p-4 print:bg-white print:border">
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Status</p>
-                  <Badge variant={mergedData.receita.situacao.status === 'ATIVA' ? 'default' : 'secondary'} className="mt-1">
-                    {mergedData.receita.situacao.status}
+                  <Badge variant={getData('situacao') === 'ATIVA' ? 'default' : 'secondary'} className="mt-1">
+                    {getData('situacao') || 'N/A'}
                   </Badge>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Data da Situação</p>
-                  <p className="font-semibold text-sm">{mergedData.receita.situacao.data}</p>
+                  <p className="font-semibold text-sm">{getData('data_situacao') || 'N/A'}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Motivo</p>
-                  <p className="font-semibold text-sm">{mergedData.receita.situacao.motivo || 'N/A'}</p>
+                  <p className="font-semibold text-sm">{getData('motivo_situacao') || 'N/A'}</p>
                 </div>
               </div>
             </section>

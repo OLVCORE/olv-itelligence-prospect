@@ -260,8 +260,12 @@ export async function POST(req: Request) {
         .replace(',', '.')
     ) || 0
 
+    // Gerar ID único para a empresa
+    const companyId = `comp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    
     // Preparar dados para inserção
     const companyInsert = {
+      id: companyId,
       cnpj: cnpj ? normalizeCnpj(cnpj) : null,
       name: companyData.nome || 'Empresa sem razão social',
       tradeName: companyData.fantasia || null,
