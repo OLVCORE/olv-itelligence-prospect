@@ -584,3 +584,20 @@ model SearchCache {
   @@index([expiresAt])
 }
 
+// ========================================
+// MULTI-TENANT ACCESS CONTROL (RLS)
+// ========================================
+
+model ProjectMember {
+  id         String   @id @default(cuid())
+  projectId  String
+  userId     String
+  role       String   @default("member") // "owner" | "admin" | "member" | "viewer"
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  @@unique([projectId, userId])
+  @@index([userId])
+  @@index([projectId])
+}
+
