@@ -63,8 +63,8 @@ export function CompanySearchModule() {
     try {
       console.log('[CompanySearch] Buscando:', searchType, searchQuery)
       
-      // USAR QUICK-SEARCH (SUPER RÁPIDO, SEM TIMEOUT)
-      const endpoint = searchType === 'cnpj' ? '/api/companies/quick-search' : '/api/companies/search';
+      // USAR SMART-SEARCH (RÁPIDO + ENRIQUECIMENTO AUTOMÁTICO EM BACKGROUND)
+      const endpoint = searchType === 'cnpj' ? '/api/companies/smart-search' : '/api/companies/search';
       
       const response = await fetch(endpoint, {
         method: 'POST',
