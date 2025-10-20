@@ -1,42 +1,45 @@
-# 🧪 COMANDOS DE TESTE - APIs REAIS
+# 📋 COMANDOS DE VALIDAÇÃO - OLV INTELLIGENT PROSPECTING SYSTEM
 
-## ✅ TESTE LOCAL (localhost:3000)
+> **Comandos reais para testar integrações LIVE em produção ou local.**  
+> Substitua `http://localhost:3000` por `https://SEU-APP.vercel.app` para testes em produção.
 
-### 1. Health Check
+---
+
+## ✅ **1. Healthcheck Geral**
+
+Verifica se a API está respondendo.
+
 ```bash
 curl http://localhost:3000/api/health
 ```
 
-**Resposta esperada:**
+**Saída Esperada:**
 ```json
-{
-  "ok": true,
-  "service": "OLV Intelligence API",
-  "time": "2025-10-20T17:15:00.000Z",
-  "version": "1.0.0",
-  "status": "operational"
-}
+{"ok":true,"time":"2025-10-20T17:15:00.000Z"}
 ```
 
 ---
 
-### 2. Serper (Google Search REAL)
+## 🔍 **2. Serper (Google Search REAL)**
+
+Busca resultados do Google usando a API Serper. Requer `SERPER_API_KEY` configurada.
+
 ```bash
 curl -X POST http://localhost:3000/api/integrations/serper/search \
-  -H "Content-Type: application/json" \
-  -d "{\"q\":\"site:empresa.com.br ERP SAP\",\"num\":5}"
+  -H 'Content-Type: application/json' \
+  -d '{"q":"site:masterindustria.com.br ERP SAP","num":5}'
 ```
 
-**Resposta esperada:**
+**Saída Esperada (exemplo):**
 ```json
 {
   "ok": true,
   "data": {
     "organic": [
       {
-        "title": "Empresa XYZ - Soluções SAP",
-        "link": "https://empresa.com.br/sap",
-        "snippet": "Implementação SAP S/4HANA..."
+        "title": "SAP na Master Indústria - Case de Sucesso",
+        "link": "https://masterindustria.com.br/cases/sap",
+        "snippet": "Implementação do SAP S/4HANA na Master Indústria resultou em 30% de otimização..."
       }
     ]
   }
@@ -45,50 +48,90 @@ curl -X POST http://localhost:3000/api/integrations/serper/search \
 
 ---
 
-### 3. Apollo Company Enrichment
+## 🏢 **3. Apollo Company Enrich (Firmographics REAL)**
+
+Enriquece dados de uma empresa via Apollo.io. Requer `APOLLO_API_KEY` configurada.  
+**NOTA:** Este comando fará um `UPSERT` na tabela `Firmographics` se `companyId` for fornecido.
+
 ```bash
 curl -X POST http://localhost:3000/api/integrations/apollo/company-enrich \
-  -H "Content-Type: application/json" \
-  -d "{\"domain\":\"empresa.com.br\",\"page\":1,\"companyId\":\"comp_xxx\"}"
+  -H 'Content-Type: application/json' \
+  -d '{"domain":"masterindustria.com.br","companyId":"comp_exemplo_id","page":1}'
 ```
 
-**Resposta esperada:**
+**Saída Esperada (exemplo):**
 ```json
 {
   "ok": true,
   "data": {
     "organizations": [
       {
-        "name": "Empresa XYZ",
+        "id": "apollo_org_123",
+        "name": "Master Indústria",
+        "website_url": "masterindustria.com.br",
         "estimated_num_employees": "201-500",
-        "estimated_annual_revenue": "$10M-$50M",
-        "keywords": ["Manufacturing", "ERP", "B2B"]
+        "estimated_annual_revenue": "$50M-$100M",
+        "keywords": ["Manufatura", "Metalúrgica", "Autopeças"]
       }
     ]
   }
 }
 ```
 
-**NOTA:** Se `companyId` for fornecido, salva automaticamente em `Firmographics`.
+---
+
+## 👥 **4. Apollo People Search (Decisores REAL)**
+
+Busca pessoas em uma empresa via Apollo.io. Requer `APOLLO_API_KEY` configurada.
+
+```bash
+curl -X POST http://localhost:3000/api/integrations/apollo/people-search \
+  -H 'Content-Type: application/json' \
+  -d '{"q_organization_domains":"masterindustria.com.br","page":1,"per_page":10,"companyId":"comp_exemplo_id"}'
+```
+
+**Saída Esperada (exemplo):**
+```json
+{
+  "ok": true,
+  "data": {
+    "people": [
+      {
+        "id": "apollo_person_456",
+        "first_name": "Carlos",
+        "last_name": "Silva",
+        "title": "Diretor de TI",
+        "email": "carlos.silva@masterindustria.com.br",
+        "linkedin_url": "https://linkedin.com/in/carlos-silva-tech",
+        "seniority": "Director",
+        "department": "Information Technology"
+      }
+    ]
+  }
+}
+```
 
 ---
 
-### 4. Hunter Email Finder
+## 📧 **5. Hunter Email Finder (Pessoas REAL)**
+
+Encontra emails de pessoas em um domínio via Hunter.io. Requer `HUNTER_API_KEY` configurada.
+
 ```bash
 curl -X POST http://localhost:3000/api/integrations/hunter/find \
-  -H "Content-Type: application/json" \
-  -d "{\"domain\":\"empresa.com.br\",\"full_name\":\"Carlos Silva\"}"
+  -H 'Content-Type: application/json' \
+  -d '{"domain":"masterindustria.com.br","full_name":"Carlos Silva","companyId":"comp_exemplo_id"}'
 ```
 
-**Resposta esperada:**
+**Saída Esperada (exemplo):**
 ```json
 {
   "ok": true,
   "data": {
     "data": {
-      "email": "carlos.silva@empresa.com.br",
-      "score": 92,
-      "type": "professional"
+      "email": "carlos.silva@masterindustria.com.br",
+      "score": 95,
+      "status": "valid"
     }
   }
 }
@@ -96,22 +139,25 @@ curl -X POST http://localhost:3000/api/integrations/hunter/find \
 
 ---
 
-### 5. Hunter Email Verifier
+## ✅ **6. Hunter Email Verifier (Validação REAL)**
+
+Verifica a validade de um email via Hunter.io. Requer `HUNTER_API_KEY` configurada.
+
 ```bash
 curl -X POST http://localhost:3000/api/integrations/hunter/verify \
-  -H "Content-Type: application/json" \
-  -d "{\"email\":\"carlos.silva@empresa.com.br\"}"
+  -H 'Content-Type: application/json' \
+  -d '{"email":"carlos.silva@masterindustria.com.br","personId":"person_exemplo_id"}'
 ```
 
-**Resposta esperada:**
+**Saída Esperada (exemplo):**
 ```json
 {
   "ok": true,
   "data": {
     "data": {
-      "result": "deliverable",
-      "score": 95,
-      "email": "carlos.silva@empresa.com.br"
+      "status": "valid",
+      "score": 98,
+      "result": "deliverable"
     }
   }
 }
@@ -119,210 +165,179 @@ curl -X POST http://localhost:3000/api/integrations/hunter/verify \
 
 ---
 
-### 6. HTTP Headers (Tech Detection)
+## 🌐 **7. HTTP Headers (Tech Detection REAL)**
+
+Detecta tecnologias a partir dos headers HTTP de um website.  
+**NOTA:** Este comando fará um `INSERT` na tabela `TechSignals` se `companyId` for fornecido.
+
 ```bash
 curl -X POST http://localhost:3000/api/integrations/http/headers \
-  -H "Content-Type: application/json" \
-  -d "{\"url\":\"https://empresa.com.br\",\"companyId\":\"comp_xxx\"}"
+  -H 'Content-Type: application/json' \
+  -d '{"url":"https://masterindustria.com.br","companyId":"comp_exemplo_id"}'
 ```
 
-**Resposta esperada:**
+**Saída Esperada (exemplo):**
 ```json
 {
   "ok": true,
-  "data": {
-    "url": "https://empresa.com.br",
-    "status": 200,
-    "headers": {
-      "server": "nginx",
-      "x-powered-by": "PHP/7.4",
-      "cf-ray": "abc123"
-    },
-    "detectedTech": [
-      {
-        "technology": "Nginx",
-        "confidence": 95,
-        "evidence": "Server: nginx"
-      },
-      {
-        "technology": "PHP",
-        "confidence": 90,
-        "evidence": "X-Powered-By: PHP/7.4"
-      },
-      {
-        "technology": "Cloudflare",
-        "confidence": 100,
-        "evidence": "CF-Ray: abc123"
-      }
-    ]
+  "headers": {
+    "server": "nginx",
+    "x-powered-by": "PHP/7.4",
+    "content-type": "text/html; charset=UTF-8"
   }
 }
 ```
 
-**NOTA:** Se `companyId` for fornecido, salva automaticamente em `TechSignals`.
+---
+
+## 💼 **8. PhantomBuster LinkedIn Jobs (Sinais REAL)**
+
+Lança um agente PhantomBuster para coletar vagas abertas no LinkedIn de uma empresa.  
+Requer `PHANTOM_BUSTER_API_KEY` e `agentId` configurados.
+
+```bash
+curl -X POST http://localhost:3000/api/integrations/phantom/linkedin-jobs \
+  -H 'Content-Type: application/json' \
+  -d '{"agentId":"YOUR_AGENT_ID","companyLinkedinUrl":"https://linkedin.com/company/master-industria","companyId":"comp_exemplo_id"}'
+```
+
+**Saída Esperada (exemplo):**
+```json
+{
+  "ok": true,
+  "data": {
+    "containerId": "phantom_job_789",
+    "status": "launched"
+  }
+}
+```
 
 ---
 
-### 7. Maturity Calculator
+## 📊 **9. Maturity Calculator (Cálculo REAL + UPSERT)**
+
+Calcula a maturidade tecnológica e o fit com soluções TOTVS/OLV, persistindo os resultados.  
+**NOTA:** Este comando fará um `UPSERT` na tabela `CompanyTechMaturity`.
+
 ```bash
 curl -X POST http://localhost:3000/api/maturity/calculate \
-  -H "Content-Type: application/json" \
+  -H 'Content-Type: application/json' \
   -d '{
-    "companyId":"comp_1729456789_abc123xyz",
+    "projectId":"default-project-id",
+    "companyId":"comp_exemplo_id",
     "vendor":"TOTVS",
     "detectedStack":{
-      "erp":[{"product":"SAP S/4HANA","vendor":"SAP"}],
-      "bi":[{"product":"Power BI","vendor":"Microsoft"}],
-      "cloud":[{"product":"AWS","vendor":"Amazon"}]
+      "erp":[{"product":"SAP S/4HANA","vendor":"SAP","confidence":90}],
+      "bi":[{"product":"Power BI","vendor":"Microsoft","confidence":70}],
+      "cloud":[{"product":"AWS EC2","vendor":"Amazon","confidence":85}],
+      "security":[{"product":"Fortinet Firewall","vendor":"Fortinet","confidence":80}]
     },
-    "sources":{"serper":true,"headers":true}
+    "sources":{"serper":true,"headers":true,"apollo":true}
   }'
 ```
 
-**Resposta esperada:**
+**Saída Esperada (exemplo):**
 ```json
 {
   "ok": true,
   "scores": {
-    "infra": 70,
+    "infra": 80,
     "systems": 75,
-    "data": 65,
-    "security": 55,
+    "data": 60,
+    "security": 80,
     "automation": 50,
-    "culture": 60,
-    "overall": 65
+    "culture": 30,
+    "overall": 63
   },
   "fit": {
-    "vendor": "TOTVS",
-    "score": 85,
-    "products": [
-      {
-        "name": "TOTVS Protheus",
-        "category": "ERP",
-        "rationale": "Substituição de ERP legado (SAP) por solução nacional"
-      },
-      {
-        "name": "TOTVS Fluig",
-        "category": "BPM",
-        "rationale": "Baixa automação detectada"
-      }
-    ],
-    "dealSize": "R$ 300k - 600k",
+    "products": ["TOTVS Protheus", "TOTVS Backoffice", "Fluig (BPM/Workflow)", "TOTVS BI"],
+    "olv_packs": [],
     "rationale": [
-      "Stack legado necessita modernização",
-      "Automação em 50% - gap significativo"
+      "Migração/substituição com redução de TCO e integração nativa TOTVS",
+      "Ausência de BPM detectada – padronização e automação de processos",
+      "Camada de BI integrada ao ERP e relatórios financeiros"
     ]
-  },
-  "saved": true
-}
-```
-
-**NOTA:** Salva automaticamente em `CompanyTechMaturity`.
-
----
-
-## 🔐 VARIÁVEIS DE AMBIENTE NECESSÁRIAS
-
-Adicione no `.env.local`:
-
-```bash
-# Serper (Google Search)
-SERPER_API_KEY=your_serper_key_here
-
-# Apollo.io
-APOLLO_API_KEY=your_apollo_key_here
-
-# Hunter.io
-HUNTER_API_KEY=your_hunter_key_here
-
-# PhantomBuster
-PHANTOM_BUSTER_API_KEY=your_phantom_key_here
-```
-
----
-
-## ⚠️ ERROS ESPERADOS (quando API key não configurada)
-
-```json
-{
-  "ok": false,
-  "error": {
-    "code": "SERPER_ERROR",
-    "message": "SERPER_API_KEY não configurado"
   }
 }
 ```
 
-**Isso é CORRETO.** Significa que a rota está funcionando, apenas precisa da chave.
-
 ---
 
-## 📊 VERIFICAR NO BANCO
+## 🔄 **10. Fluxo Completo de Ativação (Sequencial)**
 
-### Ver Firmographics salvos:
-```sql
-SELECT * FROM "Firmographics" 
-WHERE "companyId" = 'comp_xxx' 
-ORDER BY "fetchedAt" DESC;
-```
+Execute os comandos na ordem para popular o sistema com dados reais de uma empresa:
 
-### Ver TechSignals salvos:
-```sql
-SELECT * FROM "TechSignals" 
-WHERE "companyId" = 'comp_xxx' 
-ORDER BY "fetchedAt" DESC;
-```
-
-### Ver Maturity salvo:
-```sql
-SELECT * FROM "CompanyTechMaturity" 
-WHERE "companyId" = 'comp_xxx';
-```
-
----
-
-## ✅ TESTE COMPLETO (FLUXO)
-
-1. **Buscar empresa REAL:**
 ```bash
-curl -X POST http://localhost:3000/api/companies/search \
-  -H "Content-Type: application/json" \
-  -d '{"cnpj":"18.627.195/0001-60"}'
-```
+# 1. Buscar empresa via CNPJ (se já tiver endpoint de busca)
+# curl -X POST http://localhost:3000/api/companies/search -d '{"cnpj":"06.990.590/0001-23"}'
 
-2. **Pegar companyId da resposta** (ex: `comp_1729456789_abc123xyz`)
-
-3. **Detectar headers:**
-```bash
-curl -X POST http://localhost:3000/api/integrations/http/headers \
-  -H "Content-Type: application/json" \
-  -d '{"url":"https://masterindustria.com.br","companyId":"comp_1729456789_abc123xyz"}'
-```
-
-4. **Enriquecer com Apollo:**
-```bash
+# 2. Enriquecer com Apollo (empresa + firmographics)
 curl -X POST http://localhost:3000/api/integrations/apollo/company-enrich \
-  -H "Content-Type: application/json" \
-  -d '{"domain":"masterindustria.com.br","companyId":"comp_1729456789_abc123xyz"}'
-```
+  -d '{"domain":"masterindustria.com.br","companyId":"comp_123"}' \
+  -H 'Content-Type: application/json'
 
-5. **Calcular maturidade:**
-```bash
+# 3. Buscar decisores via Apollo
+curl -X POST http://localhost:3000/api/integrations/apollo/people-search \
+  -d '{"q_organization_domains":"masterindustria.com.br","companyId":"comp_123"}' \
+  -H 'Content-Type: application/json'
+
+# 4. Encontrar emails via Hunter
+curl -X POST http://localhost:3000/api/integrations/hunter/find \
+  -d '{"domain":"masterindustria.com.br","full_name":"Carlos Silva","companyId":"comp_123"}' \
+  -H 'Content-Type: application/json'
+
+# 5. Detectar tech stack via HTTP headers
+curl -X POST http://localhost:3000/api/integrations/http/headers \
+  -d '{"url":"https://masterindustria.com.br","companyId":"comp_123"}' \
+  -H 'Content-Type: application/json'
+
+# 6. Buscar sinais de compra via Serper
+curl -X POST http://localhost:3000/api/integrations/serper/search \
+  -d '{"q":"site:masterindustria.com.br contratando diretor TI OR vaga ERP","num":10}' \
+  -H 'Content-Type: application/json'
+
+# 7. Calcular maturidade e fit
 curl -X POST http://localhost:3000/api/maturity/calculate \
-  -H "Content-Type: application/json" \
   -d '{
-    "companyId":"comp_1729456789_abc123xyz",
+    "projectId":"default-project-id",
+    "companyId":"comp_123",
     "vendor":"TOTVS",
-    "detectedStack":{"erp":[],"cloud":[]},
-    "sources":{}
-  }'
+    "detectedStack":{"erp":[{"product":"SAP S/4HANA","vendor":"SAP","confidence":90}]},
+    "sources":{"serper":true,"headers":true,"apollo":true}
+  }' \
+  -H 'Content-Type: application/json'
 ```
-
-6. **Ver no dashboard:**
-- Abra `http://localhost:3000/dashboard`
-- O TechMaturityCard vai aparecer com os scores calculados
 
 ---
 
-**TODOS OS DADOS SÃO REAIS. ZERO MOCKS.** 🚀
+## 🚀 **Produção (Vercel)**
 
+Troque `http://localhost:3000` por `https://seu-app.vercel.app` em todos os comandos acima.
+
+**Exemplo:**
+```bash
+curl https://seu-app.vercel.app/api/health
+```
+
+---
+
+## 🔒 **Segurança**
+
+- ✅ **Todas as chaves são server-only** (`process.env` em rotas API, NUNCA no client)
+- ✅ **RLS policies** isolam dados por `projectId` no Supabase
+- ✅ **Rate limiting** via Vercel Edge Config (opcional, adicionar posteriormente)
+- ✅ **Logs sem secrets** (prefixos `[Serper]`, `[Apollo]`, etc., sem expor chaves)
+
+---
+
+## 📚 **Referências**
+
+- [Serper API Docs](https://serper.dev/docs)
+- [Apollo.io API Docs](https://apolloio.github.io/apollo-api-docs/)
+- [Hunter.io API Docs](https://hunter.io/api-documentation/v2)
+- [PhantomBuster API Docs](https://docs.phantombuster.com/api-reference/)
+- [Supabase RLS Docs](https://supabase.com/docs/guides/auth/row-level-security)
+
+---
+
+**✅ Sistema 100% conectado a dados REAIS. Zero mocks. Pronto para apresentação TOTVS!**
