@@ -21,31 +21,36 @@ export function GlobalSearch({ className = "" }: GlobalSearchProps) {
     setIsSearching(true)
     
     try {
-      // Buscar empresa via API
+      // Tentar detectar se é CNPJ ou website
+      const isCnpj = searchQuery.replace(/\D/g, '').length === 14 && !isNaN(Number(searchQuery.replace(/\D/g, '')))
+      
       const response = await fetch('/api/companies/search', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          cnpj: searchQuery
+          cnpj: isCnpj ? searchQuery : undefined,
+          website: !isCnpj ? searchQuery : undefined
         })
       })
 
       const data = await response.json()
       
-      if (response.ok && data.data?.company) {
+      if (data.ok && data.data?.company) {
         // Redirecionar para dashboard com empresa selecionada
         router.push(`/dashboard?company=${data.data.company.id}`)
       } else {
-        // Se não encontrou, mostrar erro
-        alert(data.message || 'Empresa não encontrada')
+        // Se não encontrou, redirecionar para módulo de busca
+        router.push(`/dashboard?module=company-search&query=${encodeURIComponent(searchQuery)}`)
       }
     } catch (error) {
       console.error('Erro na busca:', error)
-      alert('Erro ao buscar empresa')
+      // Em caso de erro, redirecionar para módulo de busca
+      router.push(`/dashboard?module=company-search&query=${encodeURIComponent(searchQuery)}`)
     } finally {
       setIsSearching(false)
+      setSearchQuery("")
     }
   }
 

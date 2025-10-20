@@ -46,7 +46,37 @@ export async function getDefaultProjectId(): Promise<string> {
       return existing.id
     }
 
-    // 3. Cria um novo projeto padrão usando upsert transacional
+    // 3. Busca ou cria organização padrão primeiro
+    console.log('[ProjectFallback] Buscando/criando organização padrão...')
+    let organizationId = 'default-org-id'
+    
+    const { data: existingOrg } = await supabaseAdmin
+      .from('Organization')
+      .select('id')
+      .eq('id', 'default-org-id')
+      .maybeSingle()
+    
+    if (!existingOrg) {
+      const { data: newOrg, error: orgError } = await supabaseAdmin
+        .from('Organization')
+        .insert({
+          id: 'default-org-id',
+          name: 'Organização Principal',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        })
+        .select('id')
+        .single()
+      
+      if (orgError) {
+        console.error('[ProjectFallback] Erro ao criar organização:', orgError)
+      } else {
+        organizationId = newOrg.id
+        console.log('[ProjectFallback] ✅ Organização criada:', organizationId)
+      }
+    }
+    
+    // 4. Cria um novo projeto padrão usando upsert transacional
     console.log('[ProjectFallback] Criando novo projeto padrão...')
     const nowIso = new Date().toISOString()
     
@@ -55,8 +85,12 @@ export async function getDefaultProjectId(): Promise<string> {
       .from('Project')
       .upsert({
         id: 'default-project-id',
+        organizationId,
         name: 'Projeto Principal',
         description: 'Projeto padrão criado automaticamente pelo sistema',
+        vendor: 'TOTVS',
+        cnpjQuota: 1000,
+        cnpjQuotaUsed: 0,
         createdAt: nowIso,
         updatedAt: nowIso,
       }, {

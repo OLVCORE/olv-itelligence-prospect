@@ -78,16 +78,29 @@ export function CompanySearchModule() {
       console.log('[CompanySearch] Resposta:', data)
 
       if (!response.ok) {
-        throw new Error(data.error || 'Erro ao buscar empresa')
+        throw new Error(data.error?.message || 'Erro ao buscar empresa')
       }
 
-      // Mostrar preview COMPLETO da empresa
-      setSearchResult({
-        ...data.company,
-        preview: data.preview // Dados completos incluindo insights, red flags, score
-      })
-      console.log('[CompanySearch] Empresa REAL encontrada:', data.company.razao)
-      console.log('[CompanySearch] Preview completo:', data.preview)
+      if (data.ok && data.data?.company) {
+        const company = data.data.company
+        setSearchResult({
+          cnpj: company.cnpj || '',
+          razao: company.name || '',
+          fantasia: company.tradeName || company.name || '',
+          cidade: 'Não informado',
+          uf: 'Não informado',
+          porte: company.size || 'Não informado',
+          situacao: 'Ativa',
+          abertura: 'Não informado',
+          naturezaJuridica: 'Não informado',
+          capitalSocial: company.capital ? `R$ ${company.capital.toLocaleString('pt-BR')}` : 'Não informado',
+          cnae: 'Não informado',
+          website: data.data.enrichment?.website || undefined
+        })
+        setSuccess("Empresa encontrada com sucesso!")
+      } else {
+        throw new Error('Empresa não encontrada')
+      }
       
     } catch (error: any) {
       console.error('[CompanySearch] Erro:', error)
@@ -105,15 +118,17 @@ export function CompanySearchModule() {
     setSuccess("")
 
     try {
-      console.log('[CompanySearch] Salvando e analisando empresa:', searchResult.razao)
+      console.log('[CompanySearch] Salvando empresa:', searchResult.razao)
       
-      const response = await fetch('/api/companies/add', {
+      const response = await fetch('/api/companies', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          query: searchResult.cnpj
+          cnpj: searchResult.cnpj,
+          name: searchResult.razao,
+          tradeName: searchResult.fantasia
         })
       })
 
@@ -124,14 +139,14 @@ export function CompanySearchModule() {
         throw new Error(data.error || 'Erro ao salvar empresa')
       }
 
-      setSuccess(`✅ Empresa "${searchResult.fantasia}" adicionada e analisada com sucesso! Redirecionando...`)
+      setSuccess(`✅ Empresa "${searchResult.fantasia}" adicionada com sucesso!`)
       setSearchResult(null)
       setSearchQuery("")
       
-      // Recarregar página após 3 segundos para mostrar a nova empresa
+      // Redirecionar para dashboard após 2 segundos
       setTimeout(() => {
-        window.location.reload()
-      }, 3000)
+        window.location.href = '/dashboard'
+      }, 2000)
     } catch (error: any) {
       console.error('[CompanySearch] Erro ao salvar:', error)
       setError(error.message)
