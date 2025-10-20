@@ -262,36 +262,36 @@ export function PreviewModal({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-900 rounded-lg p-4 print:bg-white print:border">
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Razão Social</p>
-                  <p className="font-semibold text-sm">{mergedData.receita.identificacao.razaoSocial}</p>
+                  <p className="font-semibold text-sm">{mergedData?.receita?.identificacao?.razaoSocial || mergedData?.nome || 'N/A'}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Nome Fantasia</p>
-                  <p className="font-semibold text-sm">{mergedData.receita.identificacao.nomeFantasia || '-'}</p>
+                  <p className="font-semibold text-sm">{mergedData?.receita?.identificacao?.nomeFantasia || mergedData?.fantasia || '-'}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">CNPJ</p>
-                  <p className="font-mono font-semibold text-sm">{formatCNPJ(mergedData.receita.identificacao.cnpj)}</p>
+                  <p className="font-mono font-semibold text-sm">{formatCNPJ(mergedData?.receita?.identificacao?.cnpj || mergedData?.cnpj || '')}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Tipo</p>
-                  <Badge variant="outline">{mergedData.receita.identificacao.tipo}</Badge>
+                  <Badge variant="outline">{mergedData?.receita?.identificacao?.tipo || 'N/A'}</Badge>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Porte</p>
-                  <Badge>{mergedData.receita.identificacao.porte}</Badge>
+                  <Badge>{mergedData?.receita?.identificacao?.porte || mergedData?.porte || 'N/A'}</Badge>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Natureza Jurídica</p>
-                  <p className="font-semibold text-sm">{mergedData.receita.identificacao.naturezaJuridica}</p>
+                  <p className="font-semibold text-sm">{mergedData?.receita?.identificacao?.naturezaJuridica || mergedData?.natureza_juridica || 'N/A'}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Data de Abertura</p>
-                  <p className="font-semibold text-sm">{formatDate(mergedData.receita.identificacao.dataAbertura)}</p>
+                  <p className="font-semibold text-sm">{formatDate(mergedData?.receita?.identificacao?.dataAbertura || mergedData?.abertura || null)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Capital Social</p>
                   <p className="font-semibold text-sm">
-                    {formatCurrency(mergedData.receita.capital.valor)}
+                    {formatCurrency(mergedData?.receita?.capital?.valor || mergedData?.capital_social || 0)}
                   </p>
                 </div>
               </div>
