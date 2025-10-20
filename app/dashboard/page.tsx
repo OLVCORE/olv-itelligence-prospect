@@ -10,6 +10,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import {
   Dialog,
   DialogContent,
@@ -39,8 +42,6 @@ import { PreviewModal } from "@/components/modals/PreviewModal"
 import { BulkUploadModal } from "@/components/modals/BulkUploadModal"
 import { useMultiSelect } from "@/hooks/useMultiSelect"
 import { formatCurrency } from "@/lib/utils/format"
-// REMOVIDO: Imports de mock-data
-// Sistema agora usa dados REAIS de APIs
 import {
   Building2,
   Search,
@@ -48,730 +49,1063 @@ import {
   Download,
   Plus,
   RefreshCw,
-  BarChart3,
   Upload,
-  Layers,
   Users,
-  DollarSign,
-  Gauge,
   TrendingUp,
   Target,
-  BookOpen,
-  Network,
-  Bell,
-  Activity,
-  Star,
-  Sparkles,
+  AlertTriangle,
   Play,
+  BarChart3,
+  Filter,
+  ChevronLeft,
+  ChevronRight,
+  Grid3X3,
+  List,
+  SortAsc,
+  SortDesc,
   Eye,
-  LineChart,
-  PieChart,
-  MapPin,
-  Edit,
-  Menu,
-  X,
-  Info,
-  Loader2,
-  Lightbulb
+  EyeOff,
+  Star,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Zap,
+  Globe,
+  ShoppingCart,
+  Newspaper,
+  Scale,
+  Heart,
+  Instagram,
+  Linkedin,
+  Facebook,
+  Youtube,
+  Twitter,
+  ShoppingBag,
+  Store,
+  Search as SearchIcon,
+  ArrowRight,
+  Sparkles
 } from "lucide-react"
 
-// Inicializar Supabase Client (singleton) - uma única instância para todo o app
-const supabase = getSupabaseBrowser()
-
-// Tipo para empresas do Supabase
 interface Company {
   id: string
   cnpj: string
-  name: string
-  tradeName?: string | null
-  status?: string | null
-  openingDate?: string | null
-  capital?: number | null
-  userId?: string
-  createdAt?: string
-  updatedAt?: string
-  analyses?: Array<{
-    id: string
-    score: number
-    insights: any
-    redFlags: any
-    createdAt: string
-  }>
+  razao_social: string
+  nome_fantasia?: string
+  capital?: number
+  status: string
+  last_analysis?: string
+  analysis_count?: number
+  created_at: string
+  updated_at: string
 }
 
-// Componente de Loading
-function LoadingState() {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-      <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
-      <p className="text-gray-600 text-lg">Carregando empresas...</p>
-    </div>
-  )
+interface IndividualSearchData {
+  cnpj: string
+  website: string
+  redesSociais: {
+    instagram: string
+    linkedin: string
+    facebook: string
+    youtube: string
+    twitter: string
+    threads: string
+  }
+  marketplacesB2B: {
+    alibaba: string
+    shopee: string
+    b2bBrasil: string
+    globSupplies: string
+    tradeKey: string
+    ec21: string
+  }
+  marketplacesB2C: {
+    mercadoLivre: string
+    amazon: string
+    americanas: string
+    magazineLuiza: string
+    submarino: string
+  }
+  portaisEletronicos: {
+    googleMeuNegocio: string
+    reclameAqui: string
+    glassdoor: string
+    b2bBrasil: string
+    meMercadoEletronico: string
+  }
+  noticiasRecentes: string
+  juridico: {
+    jusbrasil: string
+    outros: string
+  }
 }
 
-// Componente de Empty State
-function EmptyState() {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4 text-center px-4">
-      <div className="rounded-full bg-blue-50 p-6">
-        <Search className="h-16 w-16 text-blue-600" />
-      </div>
-      <h3 className="text-2xl font-semibold">Nenhuma empresa analisada</h3>
-      <p className="text-gray-600 max-w-md">
-        Use a busca por CNPJ para adicionar e analisar empresas com dados reais.
-        O sistema coletará informações da ReceitaWS, análise com IA e muito mais.
-      </p>
-      <Button className="mt-4">
-        <Plus className="mr-2 h-4 w-4" />
-        Buscar Primeira Empresa
-      </Button>
-    </div>
-  )
-}
-
-// Componente de Error State
-function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4 text-center px-4">
-      <div className="rounded-full bg-red-50 p-6">
-        <X className="h-16 w-16 text-red-600" />
-      </div>
-      <h3 className="text-2xl font-semibold text-red-600">Erro ao carregar dados</h3>
-      <p className="text-gray-600 max-w-md">{message}</p>
-      <Button onClick={onRetry} variant="destructive">
-        <RefreshCw className="mr-2 h-4 w-4" />
-        Tentar novamente
-      </Button>
-    </div>
-  )
-}
-
-function DashboardContent() {
+export default function DashboardPage() {
   const router = useRouter()
-  const { selectedCompany, analysisData, isLoading, selectCompany, triggerAnalysis, refreshData } = useModuleContext()
-  const [activeTab, setActiveTab] = useState("dashboard")
-  
-  // Multi-select para benchmark comparativo
-  const multiSelect = useMultiSelect()
-  const [showComparisonModal, setShowComparisonModal] = useState(false)
+  const { activeModule, setActiveModule } = useModuleContext()
+  const [companies, setCompanies] = useState<Company[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState("")
   const [showPreviewModal, setShowPreviewModal] = useState(false)
   const [previewData, setPreviewData] = useState<any>(null)
   const [showBulkUploadModal, setShowBulkUploadModal] = useState(false)
-  
-  // Estados para empresas do Supabase
-  const [companies, setCompanies] = useState<Company[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  
-  const [sidebarOpen, setSidebarOpen] = useState(false) // Começar fechado
-  const [sidebarHovered, setSidebarHovered] = useState(false)
-  const [user, setUser] = useState<any>(null)
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true)
-  const [showCompanyDetails, setShowCompanyDetails] = useState(false)
+  const [showBenchmarkModal, setShowBenchmarkModal] = useState(false)
   const [currentCompany, setCurrentCompany] = useState<Company | null>(null)
+  const [selectedCompanies, setSelectedCompanies] = useState<string[]>([])
+  const [searchMode, setSearchMode] = useState<'individual' | 'massa'>('individual')
+  const [individualSearchData, setIndividualSearchData] = useState<IndividualSearchData>({
+    cnpj: '',
+    website: '',
+    redesSociais: {
+      instagram: '',
+      linkedin: '',
+      facebook: '',
+      youtube: '',
+      twitter: '',
+      threads: ''
+    },
+    marketplacesB2B: {
+      alibaba: '',
+      shopee: '',
+      b2bBrasil: '',
+      globSupplies: '',
+      tradeKey: '',
+      ec21: ''
+    },
+    marketplacesB2C: {
+      mercadoLivre: '',
+      amazon: '',
+      americanas: '',
+      magazineLuiza: '',
+      submarino: ''
+    },
+    portaisEletronicos: {
+      googleMeuNegocio: '',
+      reclameAqui: '',
+      glassdoor: '',
+      b2bBrasil: '',
+      meMercadoEletronico: ''
+    },
+    noticiasRecentes: '',
+    juridico: {
+      jusbrasil: '',
+      outros: ''
+    }
+  })
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage] = useState(12)
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [sortBy, setSortBy] = useState<'name' | 'capital' | 'analysis' | 'date'>('name')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all')
 
-  // Carregar empresas do Supabase
+  const supabase = getSupabaseBrowser()
+
   const loadCompanies = useCallback(async () => {
     try {
-      setError(null)
       setLoading(true)
+      const { data, error } = await supabase
+        .from('companies')
+        .select('*')
+        .order('created_at', { ascending: false })
 
-      // TODO: Recolocar "analyses:Analysis(*)" após padronizar DDL no banco.
-      // Alternativa: criar view v_company_with_last_analysis e consumir direto.
-      const { data, error: supabaseError } = await supabase
-        .from('Company')
-        .select(`
-          id,
-          cnpj,
-          name,
-          tradeName,
-          status,
-          openingDate,
-          capital,
-          userId,
-          createdAt,
-          updatedAt
-        `)
-        .order('createdAt', { ascending: false })
-        .limit(50)
-
-      if (supabaseError) {
-        console.error('[Dashboard] ❌ Erro do Supabase:', supabaseError)
-        throw supabaseError
-      }
-
-      console.log('[Dashboard] ✅ Empresas carregadas:', data?.length || 0)
+      if (error) throw error
       setCompanies(data || [])
-    } catch (e: any) {
-      console.error('[Dashboard] ❌ Erro ao carregar empresas:', e)
-      setError(e.message || 'Falha ao carregar empresas do Supabase')
+    } catch (error) {
+      console.error('Erro ao carregar empresas:', error)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [supabase])
 
-  // Configurar realtime
   useEffect(() => {
-    console.log('[Dashboard] 🎯 Iniciando carregamento e realtime...')
     loadCompanies()
-
-    const channel = supabase
-      .channel('companies-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'Company' },
-        (payload) => {
-          console.log('[Dashboard] 🔔 Mudança detectada em Company:', payload.eventType)
-          loadCompanies()
-        }
-      )
-      .subscribe()
-
-    return () => {
-      console.log('[Dashboard] 🔌 Desconectando realtime')
-      channel.unsubscribe()
-    }
   }, [loadCompanies])
 
-  // Autenticação (mantido do código original)
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const userData = localStorage.getItem('user')
-        if (userData) {
-          setUser(JSON.parse(userData))
-        } else {
-          router.push('/login')
-        }
-      } catch (error) {
-        console.error('Erro ao verificar autenticação:', error)
-        router.push('/login')
-      } finally {
-        setIsCheckingAuth(false)
-      }
-    }
+  const handleSearch = async () => {
+    if (!searchTerm.trim()) return
 
-    checkAuth()
-  }, [router])
+    try {
+      setLoading(true)
+      const response = await fetch('/api/companies/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cnpj: searchTerm,
+          useCrossReference: true,
+          individualSearchData: searchMode === 'individual' ? individualSearchData : undefined
+        })
+      })
 
-  // Log de mudanças de tab
-  useEffect(() => {
-    console.log('[Dashboard] ✅ Active tab changed to:', activeTab)
-    console.log('[Dashboard] Selected company:', selectedCompany?.fantasia || 'Nenhuma empresa selecionada')
-  }, [activeTab, selectedCompany])
+      if (!response.ok) throw new Error('Erro na busca')
 
-  // Escutar evento para abrir PreviewModal
-  useEffect(() => {
-    const handleOpenPreviewModal = (event: CustomEvent) => {
-      console.log('[Dashboard] 🎯 Evento openPreviewModal recebido:', event.detail)
-      setPreviewData(event.detail.previewData)
+      const data = await response.json()
+      setPreviewData(data)
       setShowPreviewModal(true)
-      console.log('[Dashboard] ✅ PreviewModal aberto:', true)
+    } catch (error) {
+      console.error('Erro na busca:', error)
+    } finally {
+      setLoading(false)
     }
-
-    console.log('[Dashboard] 👂 Adicionando listener para openPreviewModal')
-    window.addEventListener('openPreviewModal', handleOpenPreviewModal as EventListener)
-    
-    return () => {
-      console.log('[Dashboard] 🗑️ Removendo listener para openPreviewModal')
-      window.removeEventListener('openPreviewModal', handleOpenPreviewModal as EventListener)
-    }
-  }, [])
-
-  const handleCompanyClick = (company: Company) => {
-    // Selecionar empresa diretamente sem modal
-    selectCompany({
-      id: company.id,
-      cnpj: company.cnpj,
-      name: company.name,
-      tradeName: company.tradeName,
-      website: company.website
-    })
-    
-    // Opcional: mostrar modal para detalhes
-    setCurrentCompany(company)
-    setShowCompanyDetails(true)
   }
 
-  const handleSelectCompany = (company: Company) => {
-    selectCompany({
-      id: company.id,
-      cnpj: company.cnpj,
-      razao: company.name,
-      fantasia: company.tradeName || company.name,
-      cidade: '',
-      uf: '',
-      porte: '',
-      status: company.status || 'ATIVA',
-      lastAnalyzed: company.analyses?.[0]?.createdAt || '',
-      capitalSocial: company.capital?.toString() || '0'
-    })
-  }
-
-  const [generatingPreviewFor, setGeneratingPreviewFor] = useState<string | null>(null)
-
-  const generatePreview = async (cnpj: string) => {
-    if (generatingPreviewFor) {
-      console.log('[Dashboard] ⏳ Preview já sendo gerado para:', generatingPreviewFor)
+  const handleIndividualSearch = async () => {
+    if (!individualSearchData.cnpj.trim() && !individualSearchData.website.trim()) {
+      alert('Digite pelo menos CNPJ ou Website')
       return
     }
 
     try {
-      setGeneratingPreviewFor(cnpj)
-      console.log('[Dashboard] 📄 Gerando preview para CNPJ:', cnpj)
-      
+      setLoading(true)
       const response = await fetch('/api/companies/preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cnpj, useAI: true, forceRefresh: true })
+        body: JSON.stringify({
+          cnpj: individualSearchData.cnpj,
+          website: individualSearchData.website,
+          useCrossReference: true,
+          individualSearchData: individualSearchData
+        })
       })
 
-      console.log('[Dashboard] 📡 Response status:', response.status)
-
-      if (!response.ok) {
-        throw new Error(`Erro ${response.status}: ${response.statusText}`)
-      }
+      if (!response.ok) throw new Error('Erro na busca individual')
 
       const data = await response.json()
-      console.log('[Dashboard] 📊 Response data:', data)
-      
-      if (data.status === 'success') {
-        console.log('[Dashboard] ✅ Abrindo PreviewModal com dados:', data.data)
-        // Abrir PreviewModal com os dados
-        const event = new CustomEvent('openPreviewModal', { 
-          detail: { previewData: data.data } 
-        })
-        window.dispatchEvent(event)
-        console.log('[Dashboard] 📤 Evento openPreviewModal disparado')
-      } else {
-        console.error('[Dashboard] ❌ Erro ao gerar preview:', data.message)
-        alert(`Erro: ${data.message}`)
-      }
-    } catch (error: any) {
-      console.error('[Dashboard] ❌ Erro ao gerar preview:', error.message)
-      alert(`Erro ao gerar relatório: ${error.message}`)
+      setPreviewData(data)
+      setShowPreviewModal(true)
+    } catch (error) {
+      console.error('Erro na busca individual:', error)
     } finally {
-      setGeneratingPreviewFor(null)
-      console.log('[Dashboard] ✅ Preview generation finalizada para:', cnpj)
+      setLoading(false)
     }
   }
 
-  if (isCheckingAuth) {
-    return <LoadingState />
-  }
+  const filteredCompanies = companies.filter(company => {
+    if (filterStatus !== 'all' && company.status !== filterStatus) return false
+    if (searchTerm && !company.razao_social.toLowerCase().includes(searchTerm.toLowerCase())) return false
+    return true
+  })
 
-  if (!user) {
-    return null
-  }
+  const sortedCompanies = [...filteredCompanies].sort((a, b) => {
+    let aValue: any, bValue: any
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
-      <Header sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-      
-      <div className="flex">
-        {/* Sidebar Responsivo com Hover Reveal */}
-        <aside
-          className={`${
-            sidebarOpen || sidebarHovered ? "translate-x-0 w-64 lg:w-80" : "translate-x-0 w-16 lg:w-20"
-          } fixed inset-y-0 left-0 z-40 bg-white/95 backdrop-blur-xl border-r border-gray-200 transition-all duration-300 ease-in-out pt-16 lg:pt-20 overflow-y-auto`}
-          onMouseEnter={() => setSidebarHovered(true)}
-          onMouseLeave={() => setSidebarHovered(false)}
-        >
-          <div className={`${sidebarOpen || sidebarHovered ? 'p-4 lg:p-6' : 'p-2'} space-y-4 lg:space-y-6`}>
-            {/* Busca rápida - apenas quando expandido */}
-            {(sidebarOpen || sidebarHovered) && (
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+    switch (sortBy) {
+      case 'name':
+        aValue = a.razao_social.toLowerCase()
+        bValue = b.razao_social.toLowerCase()
+        break
+      case 'capital':
+        aValue = a.capital || 0
+        bValue = b.capital || 0
+        break
+      case 'analysis':
+        aValue = a.analysis_count || 0
+        bValue = b.analysis_count || 0
+        break
+      case 'date':
+        aValue = new Date(a.created_at).getTime()
+        bValue = new Date(b.created_at).getTime()
+        break
+      default:
+        return 0
+    }
+
+    if (sortOrder === 'asc') {
+      return aValue > bValue ? 1 : -1
+    } else {
+      return aValue < bValue ? 1 : -1
+    }
+  })
+
+  const totalPages = Math.ceil(sortedCompanies.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const paginatedCompanies = sortedCompanies.slice(startIndex, startIndex + itemsPerPage)
+
+  const renderIndividualSearchForm = () => (
+    <Card className="mb-6">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Search className="h-5 w-5 text-blue-600" />
+          Pesquisa Individual Avançada
+        </CardTitle>
+        <CardDescription>
+          Preencha os campos abaixo para uma análise completa e personalizada
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* CNPJ e Website */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="cnpj">CNPJ</Label>
+            <Input
+              id="cnpj"
+              placeholder="00.000.000/0000-00"
+              value={individualSearchData.cnpj}
+              onChange={(e) => setIndividualSearchData(prev => ({ ...prev, cnpj: e.target.value }))}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="website">Website</Label>
+            <Input
+              id="website"
+              placeholder="empresa.com.br"
+              value={individualSearchData.website}
+              onChange={(e) => setIndividualSearchData(prev => ({ ...prev, website: e.target.value }))}
+            />
+          </div>
+        </div>
+
+        {/* Redes Sociais */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Instagram className="h-4 w-4 text-pink-500" />
+            <Label className="text-sm font-medium">📱 Redes Sociais</Label>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="space-y-1">
+              <Label htmlFor="instagram" className="text-xs">Instagram</Label>
+              <Input
+                id="instagram"
+                placeholder="@empresa_insta"
+                value={individualSearchData.redesSociais.instagram}
+                onChange={(e) => setIndividualSearchData(prev => ({
+                  ...prev,
+                  redesSociais: { ...prev.redesSociais, instagram: e.target.value }
+                }))}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="linkedin" className="text-xs">LinkedIn</Label>
+              <Input
+                id="linkedin"
+                placeholder="empresa-linkedin"
+                value={individualSearchData.redesSociais.linkedin}
+                onChange={(e) => setIndividualSearchData(prev => ({
+                  ...prev,
+                  redesSociais: { ...prev.redesSociais, linkedin: e.target.value }
+                }))}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="facebook" className="text-xs">Facebook</Label>
+              <Input
+                id="facebook"
+                placeholder="empresa.facebook"
+                value={individualSearchData.redesSociais.facebook}
+                onChange={(e) => setIndividualSearchData(prev => ({
+                  ...prev,
+                  redesSociais: { ...prev.redesSociais, facebook: e.target.value }
+                }))}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="youtube" className="text-xs">YouTube</Label>
+              <Input
+                id="youtube"
+                placeholder="@empresa_youtube"
+                value={individualSearchData.redesSociais.youtube}
+                onChange={(e) => setIndividualSearchData(prev => ({
+                  ...prev,
+                  redesSociais: { ...prev.redesSociais, youtube: e.target.value }
+                }))}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="twitter" className="text-xs">X/Twitter</Label>
+              <Input
+                id="twitter"
+                placeholder="@empresa_twitter"
+                value={individualSearchData.redesSociais.twitter}
+                onChange={(e) => setIndividualSearchData(prev => ({
+                  ...prev,
+                  redesSociais: { ...prev.redesSociais, twitter: e.target.value }
+                }))}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="threads" className="text-xs">Threads</Label>
+              <Input
+                id="threads"
+                placeholder="@empresa_threads"
+                value={individualSearchData.redesSociais.threads}
+                onChange={(e) => setIndividualSearchData(prev => ({
+                  ...prev,
+                  redesSociais: { ...prev.redesSociais, threads: e.target.value }
+                }))}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Marketplaces B2B */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <ShoppingBag className="h-4 w-4 text-blue-500" />
+            <Label className="text-sm font-medium">🛒 Marketplaces B2B</Label>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="space-y-1">
+              <Label htmlFor="alibaba" className="text-xs">Alibaba</Label>
+              <Input
+                id="alibaba"
+                placeholder="empresa.alibaba.com"
+                value={individualSearchData.marketplacesB2B.alibaba}
+                onChange={(e) => setIndividualSearchData(prev => ({
+                  ...prev,
+                  marketplacesB2B: { ...prev.marketplacesB2B, alibaba: e.target.value }
+                }))}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="shopee" className="text-xs">Shopee</Label>
+              <Input
+                id="shopee"
+                placeholder="shopee.com.br/shop/empresa"
+                value={individualSearchData.marketplacesB2B.shopee}
+                onChange={(e) => setIndividualSearchData(prev => ({
+                  ...prev,
+                  marketplacesB2B: { ...prev.marketplacesB2B, shopee: e.target.value }
+                }))}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="b2bBrasil" className="text-xs">B2B Brasil</Label>
+              <Input
+                id="b2bBrasil"
+                placeholder="b2bbrasil.com.br/empresa"
+                value={individualSearchData.marketplacesB2B.b2bBrasil}
+                onChange={(e) => setIndividualSearchData(prev => ({
+                  ...prev,
+                  marketplacesB2B: { ...prev.marketplacesB2B, b2bBrasil: e.target.value }
+                }))}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="globSupplies" className="text-xs">GlobSupplies</Label>
+              <Input
+                id="globSupplies"
+                placeholder="globalsupplies.com/empresa"
+                value={individualSearchData.marketplacesB2B.globSupplies}
+                onChange={(e) => setIndividualSearchData(prev => ({
+                  ...prev,
+                  marketplacesB2B: { ...prev.marketplacesB2B, globSupplies: e.target.value }
+                }))}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="tradeKey" className="text-xs">TradeKey</Label>
+              <Input
+                id="tradeKey"
+                placeholder="tradekey.com/empresa"
+                value={individualSearchData.marketplacesB2B.tradeKey}
+                onChange={(e) => setIndividualSearchData(prev => ({
+                  ...prev,
+                  marketplacesB2B: { ...prev.marketplacesB2B, tradeKey: e.target.value }
+                }))}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="ec21" className="text-xs">EC21</Label>
+              <Input
+                id="ec21"
+                placeholder="ec21.com/empresa"
+                value={individualSearchData.marketplacesB2B.ec21}
+                onChange={(e) => setIndividualSearchData(prev => ({
+                  ...prev,
+                  marketplacesB2B: { ...prev.marketplacesB2B, ec21: e.target.value }
+                }))}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Marketplaces B2C */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Store className="h-4 w-4 text-green-500" />
+            <Label className="text-sm font-medium">🛍️ Marketplaces B2C</Label>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="space-y-1">
+              <Label htmlFor="mercadoLivre" className="text-xs">Mercado Livre</Label>
+              <Input
+                id="mercadoLivre"
+                placeholder="mercadolivre.com.br/perfil/empresa"
+                value={individualSearchData.marketplacesB2C.mercadoLivre}
+                onChange={(e) => setIndividualSearchData(prev => ({
+                  ...prev,
+                  marketplacesB2C: { ...prev.marketplacesB2C, mercadoLivre: e.target.value }
+                }))}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="amazon" className="text-xs">Amazon</Label>
+              <Input
+                id="amazon"
+                placeholder="amazon.com.br/shops/empresa"
+                value={individualSearchData.marketplacesB2C.amazon}
+                onChange={(e) => setIndividualSearchData(prev => ({
+                  ...prev,
+                  marketplacesB2C: { ...prev.marketplacesB2C, amazon: e.target.value }
+                }))}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="americanas" className="text-xs">Americanas</Label>
+              <Input
+                id="americanas"
+                placeholder="americanas.com.br/loja/empresa"
+                value={individualSearchData.marketplacesB2C.americanas}
+                onChange={(e) => setIndividualSearchData(prev => ({
+                  ...prev,
+                  marketplacesB2C: { ...prev.marketplacesB2C, americanas: e.target.value }
+                }))}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="magazineLuiza" className="text-xs">Magazine Luiza</Label>
+              <Input
+                id="magazineLuiza"
+                placeholder="magazineluiza.com.br/loja/empresa"
+                value={individualSearchData.marketplacesB2C.magazineLuiza}
+                onChange={(e) => setIndividualSearchData(prev => ({
+                  ...prev,
+                  marketplacesB2C: { ...prev.marketplacesB2C, magazineLuiza: e.target.value }
+                }))}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="submarino" className="text-xs">Submarino</Label>
+              <Input
+                id="submarino"
+                placeholder="submarino.com.br/loja/empresa"
+                value={individualSearchData.marketplacesB2C.submarino}
+                onChange={(e) => setIndividualSearchData(prev => ({
+                  ...prev,
+                  marketplacesB2C: { ...prev.marketplacesB2C, submarino: e.target.value }
+                }))}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Portais Eletrônicos */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Globe className="h-4 w-4 text-purple-500" />
+            <Label className="text-sm font-medium">🌐 Portais Eletrônicos</Label>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="space-y-1">
+              <Label htmlFor="googleMeuNegocio" className="text-xs">Google Meu Negócio</Label>
+              <Input
+                id="googleMeuNegocio"
+                placeholder="g.page/empresa"
+                value={individualSearchData.portaisEletronicos.googleMeuNegocio}
+                onChange={(e) => setIndividualSearchData(prev => ({
+                  ...prev,
+                  portaisEletronicos: { ...prev.portaisEletronicos, googleMeuNegocio: e.target.value }
+                }))}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="reclameAqui" className="text-xs">Reclame Aqui</Label>
+              <Input
+                id="reclameAqui"
+                placeholder="reclameaqui.com.br/empresa"
+                value={individualSearchData.portaisEletronicos.reclameAqui}
+                onChange={(e) => setIndividualSearchData(prev => ({
+                  ...prev,
+                  portaisEletronicos: { ...prev.portaisEletronicos, reclameAqui: e.target.value }
+                }))}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="glassdoor" className="text-xs">Glassdoor</Label>
+              <Input
+                id="glassdoor"
+                placeholder="glassdoor.com.br/empresa"
+                value={individualSearchData.portaisEletronicos.glassdoor}
+                onChange={(e) => setIndividualSearchData(prev => ({
+                  ...prev,
+                  portaisEletronicos: { ...prev.portaisEletronicos, glassdoor: e.target.value }
+                }))}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="b2bBrasilPortal" className="text-xs">B2B Brasil Portal</Label>
+              <Input
+                id="b2bBrasilPortal"
+                placeholder="b2bbrasil.com.br/empresa"
+                value={individualSearchData.portaisEletronicos.b2bBrasil}
+                onChange={(e) => setIndividualSearchData(prev => ({
+                  ...prev,
+                  portaisEletronicos: { ...prev.portaisEletronicos, b2bBrasil: e.target.value }
+                }))}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="meMercadoEletronico" className="text-xs">ME Mercado Eletrônico</Label>
+              <Input
+                id="meMercadoEletronico"
+                placeholder="me.com.br/empresa"
+                value={individualSearchData.portaisEletronicos.meMercadoEletronico}
+                onChange={(e) => setIndividualSearchData(prev => ({
+                  ...prev,
+                  portaisEletronicos: { ...prev.portaisEletronicos, meMercadoEletronico: e.target.value }
+                }))}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Notícias Recentes */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Newspaper className="h-4 w-4 text-orange-500" />
+            <Label className="text-sm font-medium">📰 Notícias Recentes (Últimos 12 meses)</Label>
+          </div>
+          <Textarea
+            placeholder="Digite palavras-chave para busca de notícias (ex: empresa, produto, tecnologia)"
+            value={individualSearchData.noticiasRecentes}
+            onChange={(e) => setIndividualSearchData(prev => ({ ...prev, noticiasRecentes: e.target.value }))}
+            rows={3}
+          />
+        </div>
+
+        {/* Jurídico */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Scale className="h-4 w-4 text-red-500" />
+            <Label className="text-sm font-medium">⚖️ Jurídico</Label>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label htmlFor="jusbrasil" className="text-xs">Jusbrasil</Label>
+              <Input
+                id="jusbrasil"
+                placeholder="jusbrasil.com.br/empresa"
+                value={individualSearchData.juridico.jusbrasil}
+                onChange={(e) => setIndividualSearchData(prev => ({
+                  ...prev,
+                  juridico: { ...prev.juridico, jusbrasil: e.target.value }
+                }))}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="juridicoOutros" className="text-xs">Outros Portais Jurídicos</Label>
+              <Input
+                id="juridicoOutros"
+                placeholder="Outros portais jurídicos relevantes"
+                value={individualSearchData.juridico.outros}
+                onChange={(e) => setIndividualSearchData(prev => ({
+                  ...prev,
+                  juridico: { ...prev.juridico, outros: e.target.value }
+                }))}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Botão de Busca */}
+        <div className="flex justify-end pt-4">
+          <Button
+            onClick={handleIndividualSearch}
+            disabled={loading}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-8"
+          >
+            {loading ? (
+              <>
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                Analisando...
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-4 w-4 mr-2" />
+                Analisar Empresa
+              </>
+            )}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+
+  const renderMassaSearchInstructions = () => (
+    <Card className="mb-6">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Upload className="h-5 w-5 text-purple-600" />
+          Pesquisa em Massa
+        </CardTitle>
+        <CardDescription>
+          Instruções para análise de múltiplas empresas
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h4 className="font-semibold text-blue-900 mb-2">📋 Como usar a Pesquisa em Massa:</h4>
+          <ol className="list-decimal list-inside space-y-2 text-sm text-blue-800">
+            <li>Clique em <strong>"Template CSV"</strong> para baixar a planilha modelo</li>
+            <li>Preencha a planilha com os dados das empresas (CNPJ, Razão Social, etc.)</li>
+            <li>Clique em <strong>"Upload CSV"</strong> para carregar o arquivo</li>
+            <li>Selecione as empresas que deseja analisar com prioridade</li>
+            <li>O sistema processará todas as empresas automaticamente</li>
+          </ol>
+        </div>
+        
+        <div className="flex gap-3">
+          <Button
+            onClick={() => {
+              const { downloadCSVTemplate } = require('@/lib/utils/csv-template')
+              downloadCSVTemplate()
+            }}
+            variant="default"
+            className="bg-green-600 hover:bg-green-700 text-white"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Template CSV
+          </Button>
+
+          <Button
+            onClick={() => setShowBulkUploadModal(true)}
+            variant="default"
+            className="bg-purple-600 hover:bg-purple-700 text-white"
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            Upload CSV
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+
+  const renderCompanyGrid = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {paginatedCompanies.map((company) => (
+        <Card key={company.id} className="hover:shadow-lg transition-shadow">
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center gap-2">
                 <input
-                  type="text"
-                  placeholder="Buscar empresas..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  type="checkbox"
+                  checked={selectedCompanies.includes(company.id)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedCompanies(prev => [...prev, company.id])
+                    } else {
+                      setSelectedCompanies(prev => prev.filter(id => id !== company.id))
+                    }
+                  }}
+                  className="rounded"
                 />
-              </div>
-            )}
-
-            {/* Métricas rápidas - apenas quando expandido */}
-            {(sidebarOpen || sidebarHovered) && (
-              <div className="grid grid-cols-2 gap-2 lg:gap-3">
-                <Card className="bg-gradient-to-br from-blue-50 to-indigo-50">
-                  <CardContent className="p-3 lg:p-4">
-                    <div className="text-xs lg:text-sm text-gray-600">Empresas</div>
-                    <div className="text-xl lg:text-2xl font-bold text-blue-600">{companies.length}</div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-gradient-to-br from-purple-50 to-pink-50">
-                  <CardContent className="p-3 lg:p-4">
-                    <div className="text-xs lg:text-sm text-gray-600">Análises</div>
-                    <div className="text-xl lg:text-2xl font-bold text-purple-600">
-                      {companies.reduce((acc, c) => acc + (c.analyses?.length || 0), 0)}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-
-            {/* Métricas compactas quando fechado */}
-            {!(sidebarOpen || sidebarHovered) && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-center p-2 bg-blue-50 rounded-lg">
-                  <div className="text-lg font-bold text-blue-600">{companies.length}</div>
-                </div>
-                <div className="flex items-center justify-center p-2 bg-purple-50 rounded-lg">
-                  <div className="text-lg font-bold text-purple-600">
-                    {companies.reduce((acc, c) => acc + (c.analyses?.length || 0), 0)}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Navegação de módulos - responsiva */}
-            <div className="space-y-2">
-              {(sidebarOpen || sidebarHovered) && (
-                <h3 className="text-xs lg:text-sm font-semibold text-gray-500 uppercase tracking-wide px-2">
-                  Módulos Inteligentes
-                </h3>
-              )}
-              <nav className="space-y-1">
-                {[
-                  { id: "dashboard", label: "Dashboard", icon: BarChart3 },
-                  { id: "tech", label: "Tech Stack", icon: Layers },
-                  { id: "decisores", label: "Decisores", icon: Users },
-                  { id: "financeiro", label: "Financeiro", icon: DollarSign },
-                  { id: "maturidade", label: "Maturidade", icon: Gauge },
-                  { id: "benchmark", label: "Benchmark", icon: TrendingUp },
-                  { id: "fit", label: "Fit TOTVS", icon: Target },
-                  { id: "playbooks", label: "Playbooks", icon: BookOpen },
-                  { id: "canvas", label: "Canvas", icon: Network },
-                  { id: "alertas", label: "Alertas", icon: Bell }
-                ].map((item) => {
-                  const Icon = item.icon
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => setActiveTab(item.id)}
-                      className={`w-full flex items-center ${
-                        sidebarOpen || sidebarHovered ? 'gap-3 px-3' : 'justify-center px-2'
-                      } py-2 rounded-lg transition-all ${
-                        activeTab === item.id
-                          ? "bg-blue-50 text-blue-700 font-medium shadow-sm"
-                          : "text-gray-600 hover:bg-gray-50"
-                      }`}
-                      title={!(sidebarOpen || sidebarHovered) ? item.label : undefined}
-                    >
-                      <Icon className="h-4 w-4 lg:h-5 lg:w-5" />
-                      {(sidebarOpen || sidebarHovered) && (
-                        <span className="text-sm lg:text-base">{item.label}</span>
-                      )}
-                    </button>
-                  )
-                })}
-              </nav>
-            </div>
-          </div>
-        </aside>
-
-        {/* Main Content */}
-        <main
-          className={`flex-1 transition-all duration-300 ${
-            sidebarOpen || sidebarHovered ? "lg:ml-80" : "lg:ml-20"
-          } pt-16 lg:pt-20`}
-        >
-          <div className="p-4 lg:p-8 max-w-[2000px] mx-auto">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              {/* Dashboard principal */}
-              <TabsContent value="dashboard" className="space-y-6">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                  <div>
-                    <h1 className="text-2xl lg:text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                      Prospecção Inteligente
-                    </h1>
-                    <p className="text-sm lg:text-base text-gray-600 mt-1">
-                      Análise completa com dados reais do Supabase
-                    </p>
-                  </div>
-                  <div className="flex gap-2 flex-wrap">
-                    {/* Contador de empresas selecionadas */}
-                    {multiSelect.getSelectedCount() > 0 && (
-                      <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
-                        <div className="bg-blue-600 text-white px-2 py-1 rounded-full text-xs font-medium">
-                          {multiSelect.getSelectedCount()}
-                        </div>
-                        <span className="text-sm text-blue-700">
-                          {multiSelect.getSelectedCount() === 1 ? 'empresa selecionada' : 'empresas selecionadas'}
-                        </span>
-                        {multiSelect.canCompare() && (
-                          <Button
-                            onClick={() => setShowComparisonModal(true)}
-                            size="sm"
-                            className="ml-2"
-                          >
-                            <BarChart3 className="h-4 w-4 mr-2" />
-                            Comparar
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                    
-                    <Button
-                      onClick={() => {
-                        const { downloadCSVTemplate } = require('@/lib/utils/csv-template')
-                        downloadCSVTemplate()
-                      }}
-                      variant="default"
-                      size="sm"
-                      className="bg-green-600 hover:bg-green-700 text-white"
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      Template CSV
-                    </Button>
-
-                    <Button
-                      onClick={() => setShowBulkUploadModal(true)}
-                      variant="default"
-                      size="sm"
-                      className="bg-purple-600 hover:bg-purple-700 text-white"
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      Upload CSV
-                    </Button>
-
-                    <Button
-                      onClick={loadCompanies}
-                      variant="outline"
-                      size="sm"
-                      disabled={loading}
-                    >
-                      <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                      Atualizar
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Barra de busca inteligente */}
-                <SearchBar onSuccess={loadCompanies} />
-
-                {/* Conteúdo condicional baseado no estado */}
-                {loading ? (
-                  <LoadingState />
-                ) : error ? (
-                  <ErrorState message={error} onRetry={loadCompanies} />
-                ) : companies.length === 0 ? (
-                  <EmptyState />
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
-                    {companies.map((company) => (
-                      <Card
-                        key={company.id}
-                        className={`hover:shadow-lg transition-all ${
-                          multiSelect.isSelected(company.id) 
-                            ? 'ring-2 ring-blue-500 bg-blue-50' 
-                            : ''
-                        }`}
-                      >
-                        <CardHeader>
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <CardTitle className="text-lg line-clamp-1 flex items-center gap-2">
-                                <input
-                                  type="checkbox"
-                                  checked={multiSelect.isSelected(company.id)}
-                                  onChange={(e) => {
-                                    e.stopPropagation()
-                                    multiSelect.toggleSelection({
-                                      id: company.id,
-                                      cnpj: company.cnpj,
-                                      name: company.name,
-                                      tradeName: company.tradeName,
-                                      status: company.status,
-                                      capital: company.capital,
-                                      analyses: company.analyses
-                                    })
-                                  }}
-                                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                />
-                                {company.tradeName || company.name}
-                              </CardTitle>
-                              <CardDescription className="text-sm mt-1">
-                                CNPJ: {company.cnpj}
-                              </CardDescription>
-                            </div>
-                            <div className="flex flex-col items-end gap-2">
-                              <Badge variant={company.status === 'ATIVA' ? 'default' : 'secondary'}>
-                                {company.status || 'N/D'}
-                              </Badge>
-                              {multiSelect.isSelected(company.id) && (
-                                <div className="bg-blue-100 text-blue-700 border border-blue-300 px-2 py-1 rounded text-xs font-medium">
-                                  Selecionada
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-2">
-                            <div className="flex justify-between text-sm">
-                              <span className="text-gray-600">Score:</span>
-                              <span className={`font-semibold ${company.analyses?.[0]?.score ? 'text-green-600' : 'text-orange-500'}`}>
-                                {company.analyses?.[0]?.score ?? 'Gerar'}
-                              </span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                              <span className="text-gray-600">Capital:</span>
-                              <span className="font-semibold">
-                                {company.capital ? formatCurrency(company.capital) : '—'}
-                              </span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                              <span className="text-gray-600">Análises:</span>
-                              <span className="font-semibold">
-                                {company.analyses?.length || 0}
-                              </span>
-                            </div>
-                          </div>
-                          <Button
-                            className="w-full mt-4"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              // Gerar preview diretamente via API
-                              generatePreview(company.cnpj)
-                            }}
-                            disabled={generatingPreviewFor === company.cnpj}
-                          >
-                            <RefreshCw className={`h-4 w-4 mr-2 ${generatingPreviewFor === company.cnpj ? 'animate-spin' : ''}`} />
-                            {generatingPreviewFor === company.cnpj ? 'Gerando...' : 'Gerar Relatório'}
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
-
-              {/* Outros módulos (DADOS REAIS) */}
-              <TabsContent value="tech">
-                <TechStackModule 
-                  companyId={selectedCompany?.id} 
-                  companyName={selectedCompany?.tradeName || selectedCompany?.name}
-                />
-              </TabsContent>
-
-              <TabsContent value="decisores">
-                <DecisionMakersModule 
-                  companyId={selectedCompany?.id}
-                  companyName={selectedCompany?.tradeName || selectedCompany?.name}
-                />
-              </TabsContent>
-
-              <TabsContent value="financeiro">
-                <FinancialModule 
-                  companyId={selectedCompany?.id}
-                  companyName={selectedCompany?.tradeName || selectedCompany?.name}
-                />
-              </TabsContent>
-
-              <TabsContent value="maturidade">
-                <MaturityModule 
-                  companyId={selectedCompany?.id}
-                  companyName={selectedCompany?.tradeName || selectedCompany?.name}
-                />
-              </TabsContent>
-
-              <TabsContent value="benchmark">
-                <BenchmarkModule 
-                  companyId={selectedCompany?.id}
-                  companyName={selectedCompany?.tradeName || selectedCompany?.name}
-                />
-              </TabsContent>
-
-              <TabsContent value="fit">
-                <FitTotvsModule 
-                  companyId={selectedCompany?.id} 
-                  companyName={selectedCompany?.name || selectedCompany?.tradeName} 
-                />
-              </TabsContent>
-
-              <TabsContent value="playbooks">
-                <PlaybooksModule 
-                  companyId={selectedCompany?.id}
-                  companyName={selectedCompany?.tradeName || selectedCompany?.name}
-                />
-              </TabsContent>
-
-              <TabsContent value="canvas">
-                <div className="text-center p-12">
-                  <Network className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-                  <h3 className="text-xl font-semibold mb-2">Canvas Colaborativo</h3>
-                  <p className="text-gray-600">Módulo em desenvolvimento</p>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="alertas">
-                <AlertsModule 
-                  companyId={selectedCompany?.id}
-                  companyName={selectedCompany?.tradeName || selectedCompany?.name}
-                />
-              </TabsContent>
-            </Tabs>
-          </div>
-        </main>
-      </div>
-
-      {/* Dialog de detalhes (mantido) */}
-      <Dialog open={showCompanyDetails} onOpenChange={setShowCompanyDetails}>
-        <DialogContent className="max-w-[95vw] sm:max-w-3xl lg:max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{currentCompany?.tradeName || currentCompany?.name}</DialogTitle>
-            <DialogDescription>
-              CNPJ: {currentCompany?.cnpj}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-600">Status</p>
-                <p className="font-semibold">{currentCompany?.status || 'N/D'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Capital Social</p>
-                <p className="font-semibold">
-                  {currentCompany?.capital ? formatCurrency(currentCompany.capital) : 'N/D'}
-                </p>
+                <Badge variant={company.status === 'active' ? 'default' : 'secondary'}>
+                  {company.status === 'active' ? 'ATIVA' : 'INATIVA'}
+                </Badge>
               </div>
             </div>
+
+            <h3 className="font-semibold text-lg mb-2 line-clamp-2">
+              {company.razao_social}
+            </h3>
+            
+            <p className="text-sm text-gray-600 mb-2">
+              CNPJ: {company.cnpj}
+            </p>
+
+            <div className="space-y-2 mb-4">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Capital:</span>
+                <span className="font-semibold">
+                  {company.capital ? formatCurrency(company.capital) : 'N/D'}
+                </span>
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Análises:</span>
+                <span className="font-semibold">{company.analysis_count || 0}</span>
+              </div>
+            </div>
+
             <Button
               onClick={() => {
-                if (currentCompany) {
-                  handleSelectCompany(currentCompany)
-                  setShowCompanyDetails(false)
-                }
+                setCurrentCompany(company)
+                setSearchTerm(company.cnpj)
+                handleSearch()
               }}
-              className="w-full"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+              disabled={loading}
             >
-              Analisar Empresa
+              {loading ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Gerando...
+                </>
+              ) : (
+                <>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Gerar Relatório
+                </>
+              )}
             </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  )
 
-      {/* Modal de Comparação Benchmark */}
-      <BenchmarkComparisonModal
-        isOpen={showComparisonModal}
-        onClose={() => setShowComparisonModal(false)}
-        companies={multiSelect.getComparisonData()}
-      />
+  const renderCompanyList = () => (
+    <div className="space-y-3">
+      {paginatedCompanies.map((company) => (
+        <Card key={company.id} className="hover:shadow-md transition-shadow">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4 flex-1">
+                <input
+                  type="checkbox"
+                  checked={selectedCompanies.includes(company.id)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedCompanies(prev => [...prev, company.id])
+                    } else {
+                      setSelectedCompanies(prev => prev.filter(id => id !== company.id))
+                    }
+                  }}
+                  className="rounded"
+                />
+                
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-1">
+                    <h3 className="font-semibold text-lg">{company.razao_social}</h3>
+                    <Badge variant={company.status === 'active' ? 'default' : 'secondary'}>
+                      {company.status === 'active' ? 'ATIVA' : 'INATIVA'}
+                    </Badge>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-4 text-sm text-gray-600">
+                    <div>
+                      <span className="font-medium">CNPJ:</span> {company.cnpj}
+                    </div>
+                    <div>
+                      <span className="font-medium">Capital:</span> {company.capital ? formatCurrency(company.capital) : 'N/D'}
+                    </div>
+                    <div>
+                      <span className="font-medium">Análises:</span> {company.analysis_count || 0}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <Button
+                onClick={() => {
+                  setCurrentCompany(company)
+                  setSearchTerm(company.cnpj)
+                  handleSearch()
+                }}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                disabled={loading}
+              >
+                {loading ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <FileText className="h-4 w-4 mr-2" />
+                    Relatório
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  )
 
-      {/* Modal de Preview */}
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <EnvCheck />
+      <Header />
+      
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-blue-600 mb-2">
+            Prospecção Inteligente
+          </h1>
+          <p className="text-gray-600 text-lg">
+            Análise completa com dados reais do Supabase
+          </p>
+        </div>
+
+        {/* Tabs para Individual vs Massa */}
+        <Tabs value={searchMode} onValueChange={(value) => setSearchMode(value as 'individual' | 'massa')} className="mb-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="individual" className="flex items-center gap-2">
+              <Search className="h-4 w-4" />
+              Pesquisa Individual
+            </TabsTrigger>
+            <TabsTrigger value="massa" className="flex items-center gap-2">
+              <Upload className="h-4 w-4" />
+              Pesquisa em Massa
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="individual">
+            {renderIndividualSearchForm()}
+          </TabsContent>
+
+          <TabsContent value="massa">
+            {renderMassaSearchInstructions()}
+          </TabsContent>
+        </Tabs>
+
+        {/* Controles de Gestão */}
+        <Card className="mb-6">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5 text-blue-600" />
+                  Empresas Cadastradas ({filteredCompanies.length})
+                </CardTitle>
+                <CardDescription>
+                  Gerencie e analise suas empresas
+                </CardDescription>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+                  variant="outline"
+                  size="sm"
+                >
+                  {viewMode === 'grid' ? <List className="h-4 w-4" /> : <Grid3X3 className="h-4 w-4" />}
+                </Button>
+                
+                <Button
+                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                  variant="outline"
+                  size="sm"
+                >
+                  {sortOrder === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />}
+                </Button>
+                
+                <Button
+                  onClick={loadCompanies}
+                  variant="outline"
+                  size="sm"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {/* Filtros */}
+            <div className="flex items-center gap-4 mb-4">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4" />
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value as 'all' | 'active' | 'inactive')}
+                  className="border rounded px-2 py-1 text-sm"
+                >
+                  <option value="all">Todas</option>
+                  <option value="active">Ativas</option>
+                  <option value="inactive">Inativas</option>
+                </select>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Label className="text-sm">Ordenar por:</Label>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as 'name' | 'capital' | 'analysis' | 'date')}
+                  className="border rounded px-2 py-1 text-sm"
+                >
+                  <option value="name">Nome</option>
+                  <option value="capital">Capital</option>
+                  <option value="analysis">Análises</option>
+                  <option value="date">Data</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Lista de Empresas */}
+            {loading ? (
+              <div className="flex justify-center py-8">
+                <RefreshCw className="h-8 w-8 animate-spin text-blue-600" />
+              </div>
+            ) : paginatedCompanies.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <Building2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Nenhuma empresa encontrada</p>
+              </div>
+            ) : (
+              <>
+                {viewMode === 'grid' ? renderCompanyGrid() : renderCompanyList()}
+                
+                {/* Paginação */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-2 mt-6">
+                    <Button
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    
+                    <span className="text-sm text-gray-600">
+                      Página {currentPage} de {totalPages}
+                    </span>
+                    
+                    <Button
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* FIT TOTVS Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Target className="h-5 w-5 text-green-600" />
+              FIT TOTVS
+            </CardTitle>
+            <CardDescription>
+              Análise de compatibilidade com soluções TOTVS
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-8 text-gray-500">
+              <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>Selecione uma empresa para analisar o FIT TOTVS</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Modals */}
       <PreviewModal
         isOpen={showPreviewModal}
-        data={previewData}
-        loading={false}
         onClose={() => {
           setShowPreviewModal(false)
           setPreviewData(null)
         }}
+        data={previewData}
+        loading={false}
         onConfirmSave={async () => {
-          // TODO: Implementar salvamento se necessário
           console.log('[Dashboard] 💾 Preview confirmado')
           setShowPreviewModal(false)
           setPreviewData(null)
@@ -779,24 +1113,20 @@ function DashboardContent() {
         }}
       />
 
-      {/* Modal de Upload em Massa */}
       <BulkUploadModal
         isOpen={showBulkUploadModal}
         onClose={() => setShowBulkUploadModal(false)}
-        onComplete={() => {
+        onComplete={async () => {
           setShowBulkUploadModal(false)
-          loadCompanies()
+          await loadCompanies()
         }}
       />
-    </div>
-  )
-}
 
-export default function DashboardPage() {
-  return (
-    <TooltipProvider>
-      {process.env.NODE_ENV !== 'production' && <EnvCheck />}
-      <DashboardContent />
-    </TooltipProvider>
+      <BenchmarkComparisonModal
+        isOpen={showBenchmarkModal}
+        onClose={() => setShowBenchmarkModal(false)}
+        companies={companies.filter(c => selectedCompanies.includes(c.id))}
+      />
+    </div>
   )
 }
