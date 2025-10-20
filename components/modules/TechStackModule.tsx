@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -10,7 +11,9 @@ import {
   Info,
   Shield,
   Zap,
-  TrendingUp
+  TrendingUp,
+  RefreshCw,
+  Play
 } from "lucide-react"
 import { 
   Tooltip,
@@ -43,6 +46,57 @@ interface TechStackModuleProps {
 }
 
 export function TechStackModule({ companyId, company, data = [], companyName = "Empresa", isLoading = false }: TechStackModuleProps) {
+  const [techStackData, setTechStackData] = useState<TechStackItem[]>(data)
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [lastAnalyzed, setLastAnalyzed] = useState<string | null>(null)
+
+  // Carregar tech stack existente
+  useEffect(() => {
+    if (companyId) {
+      loadTechStack()
+    }
+  }, [companyId])
+
+  const loadTechStack = async () => {
+    if (!companyId) return
+    
+    try {
+      const response = await fetch(`/api/tech-stack?companyId=${companyId}`)
+      const result = await response.json()
+      
+      if (result.success) {
+        setTechStackData(result.techStack)
+        setLastAnalyzed(result.summary.lastAnalyzed)
+      }
+    } catch (error) {
+      console.error('Erro ao carregar tech stack:', error)
+    }
+  }
+
+  const analyzeTechStack = async () => {
+    if (!companyId) return
+    
+    setIsAnalyzing(true)
+    try {
+      const response = await fetch('/api/tech-stack', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ companyId })
+      })
+      
+      const result = await response.json()
+      
+      if (result.success) {
+        setTechStackData(result.techStack)
+        setLastAnalyzed(new Date().toISOString())
+        console.log('[Tech Stack Module] ✅ Análise concluída:', result.summary)
+      }
+    } catch (error) {
+      console.error('Erro ao analisar tech stack:', error)
+    } finally {
+      setIsAnalyzing(false)
+    }
+  }
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "Confirmado": return <CheckCircle className="h-5 w-5 text-emerald-500" />
@@ -118,6 +172,11 @@ export function TechStackModule({ companyId, company, data = [], companyName = "
                 <strong> DNS</strong>, <strong>vagas de emprego</strong> e <strong>análise de headers HTTP</strong>. 
                 Cada tecnologia possui nível de confiança baseado em múltiplas evidências.
               </CardDescription>
+              {lastAnalyzed && (
+                <div className="mt-2 text-xs text-slate-400">
+                  Última análise: {new Date(lastAnalyzed).toLocaleString('pt-BR')}
+                </div>
+              )}
               {isLoading && (
                 <div className="mt-2 flex items-center gap-2 text-blue-400">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400"></div>
@@ -128,12 +187,30 @@ export function TechStackModule({ companyId, company, data = [], companyName = "
             <div className="flex gap-2">
               <Badge variant="outline" className="border-emerald-500 text-emerald-400 bg-emerald-500/10">
                 <Shield className="h-3 w-3 mr-1" />
-                {data?.filter(t => t.status === "Confirmado").length || 0} Confirmadas
+                {techStackData?.filter(t => t.status === "Confirmado").length || 0} Confirmadas
               </Badge>
               <Badge variant="outline" className="border-yellow-500 text-yellow-400 bg-yellow-500/10">
                 <Clock className="h-3 w-3 mr-1" />
-                {data?.filter(t => t.status === "Em Avaliação").length || 0} Em Avaliação
+                {techStackData?.filter(t => t.status === "Em Avaliação").length || 0} Em Avaliação
               </Badge>
+              <Button
+                onClick={analyzeTechStack}
+                disabled={isAnalyzing}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                size="sm"
+              >
+                {isAnalyzing ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Analisando...
+                  </>
+                ) : (
+                  <>
+                    <Play className="h-4 w-4 mr-2" />
+                    Analisar Tech Stack
+                  </>
+                )}
+              </Button>
             </div>
           </div>
         </CardHeader>
@@ -141,7 +218,7 @@ export function TechStackModule({ companyId, company, data = [], companyName = "
 
       {/* Lista de Tecnologias */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {data?.map((tech) => (
+        {techStackData?.map((tech) => (
           <Card key={tech.id} className="bg-slate-800/50 border-slate-700/50 hover:bg-slate-800/70 transition-all">
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
