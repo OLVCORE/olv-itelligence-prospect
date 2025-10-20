@@ -39,6 +39,7 @@ import { SearchBar } from "@/components/SearchBar"
 import { BenchmarkComparisonModal } from "@/components/modals/BenchmarkComparisonModal"
 import { PreviewModal } from "@/components/modals/PreviewModal"
 import { BulkUploadModal } from "@/components/modals/BulkUploadModal"
+import { DigitalProfilingModal } from "@/components/modals/DigitalProfilingModal"
 import { useMultiSelect } from "@/hooks/useMultiSelect"
 import { formatCurrency } from "@/lib/utils/format"
 import {
@@ -58,6 +59,7 @@ import {
   Filter,
   ChevronLeft,
   ChevronRight,
+  Sparkles,
   Grid3X3,
   List,
   SortAsc,
@@ -82,8 +84,7 @@ import {
   ShoppingBag,
   Store,
   Search as SearchIcon,
-  ArrowRight,
-  Sparkles
+  ArrowRight
 } from "lucide-react"
 
 interface Company {
@@ -121,6 +122,7 @@ export default function DashboardPage() {
   const [previewData, setPreviewData] = useState<any>(null)
   const [showBulkUploadModal, setShowBulkUploadModal] = useState(false)
   const [showBenchmarkModal, setShowBenchmarkModal] = useState(false)
+  const [showDigitalProfilingModal, setShowDigitalProfilingModal] = useState(false)
   const [currentCompany, setCurrentCompany] = useState<Company | null>(null)
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([])
   const [searchMode, setSearchMode] = useState<'individual' | 'massa'>('individual')
@@ -568,6 +570,15 @@ export default function DashboardPage() {
           >
             <Upload className="h-4 w-4 mr-2" />
             Upload CSV
+          </Button>
+
+          <Button
+            onClick={() => setShowDigitalProfilingModal(true)}
+            variant="default"
+            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all"
+          >
+            <Sparkles className="h-4 w-4 mr-2 animate-pulse" />
+            Perfil Digital IA
                     </Button>
         </div>
       </CardContent>
@@ -914,6 +925,12 @@ export default function DashboardPage() {
           setShowBulkUploadModal(false)
           await loadCompanies()
         }}
+      />
+
+      <DigitalProfilingModal
+        isOpen={showDigitalProfilingModal}
+        onClose={() => setShowDigitalProfilingModal(false)}
+        companyName={currentCompany?.name}
       />
 
       <BenchmarkComparisonModal

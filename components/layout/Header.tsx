@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { getRoleColor } from "@/lib/auth"
+import { getRoleColor, getRoleDisplayName } from "@/lib/auth"
 import {
   DropdownMenu,
   DropdownMenuContent,
