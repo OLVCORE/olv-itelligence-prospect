@@ -135,6 +135,15 @@ export function CompanySearchModule() {
       const data = await response.json()
       console.log('[CompanySearch] Resposta salvar:', data)
 
+      // Se empresa já existe (409), tudo bem, redireciona mesmo assim
+      if (response.status === 409) {
+        setSuccess(`✅ Empresa "${searchResult.fantasia}" já cadastrada!`)
+        setTimeout(() => {
+          window.location.href = '/dashboard'
+        }, 1000)
+        return
+      }
+
       if (!response.ok) {
         throw new Error(data.error || 'Erro ao salvar empresa')
       }
@@ -143,10 +152,10 @@ export function CompanySearchModule() {
       setSearchResult(null)
       setSearchQuery("")
       
-      // Redirecionar para dashboard após 2 segundos
+      // Redirecionar para dashboard após 1 segundo
       setTimeout(() => {
         window.location.href = '/dashboard'
-      }, 2000)
+      }, 1000)
     } catch (error: any) {
       console.error('[CompanySearch] Erro ao salvar:', error)
       setError(error.message)

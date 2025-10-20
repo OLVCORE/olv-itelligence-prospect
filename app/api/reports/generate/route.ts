@@ -4,6 +4,8 @@ import { aiReportGenerator } from "@/lib/ai/report-generator"
 
 // Função para buscar dados reais da empresa
 async function getCompanyData(companyId: string) {
+  console.log('[Reports] Buscando empresa com ID:', companyId)
+  
   const { data: company, error: companyError } = await supabaseAdmin
     .from('Company')
     .select('*')
@@ -11,8 +13,11 @@ async function getCompanyData(companyId: string) {
     .single()
 
   if (companyError || !company) {
-    throw new Error('Empresa não encontrada')
+    console.error('[Reports] Empresa não encontrada:', companyError)
+    throw new Error(`Empresa não encontrada (ID: ${companyId})`)
   }
+  
+  console.log('[Reports] ✅ Empresa encontrada:', company.name)
 
   // Buscar análise mais recente
   const { data: analysis, error: analysisError } = await supabaseAdmin
