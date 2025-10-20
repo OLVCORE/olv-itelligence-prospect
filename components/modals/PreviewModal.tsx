@@ -383,9 +383,9 @@ export function PreviewModal({
               <div className="space-y-3 bg-slate-50 dark:bg-slate-900 rounded-lg p-4 print:bg-white print:border">
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2">Atividade Principal</p>
-                  {mergedData.receita.atividades.principal && mergedData.receita.atividades.principal.length > 0 ? (
+                  {getData('atividade_principal', []).length > 0 ? (
                     <div className="space-y-1">
-                      {mergedData.receita.atividades.principal.map((ativ: any, idx: number) => (
+                      {getData('atividade_principal', []).map((ativ: any, idx: number) => (
                         <div key={idx} className="text-sm">
                           <span className="font-mono text-primary">{ativ.code}</span> - {ativ.text}
                         </div>
@@ -396,13 +396,13 @@ export function PreviewModal({
                   )}
                 </div>
                 
-                {mergedData.receita.atividades.secundarias && mergedData.receita.atividades.secundarias.length > 0 && (
+                {getData('atividades_secundarias', []).length > 0 && (
                   <div className="pt-3 border-t">
                     <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2">
-                      Atividades Secundárias ({mergedData.receita.atividades.secundarias.length})
+                      Atividades Secundárias ({getData('atividades_secundarias', []).length})
                     </p>
                     <div className="space-y-1 max-h-48 overflow-y-auto">
-                      {mergedData.receita.atividades.secundarias.map((ativ: any, idx: number) => (
+                      {getData('atividades_secundarias', []).map((ativ: any, idx: number) => (
                         <div key={idx} className="text-xs">
                           <span className="font-mono text-primary">{ativ.code}</span> - {ativ.text}
                         </div>
@@ -414,7 +414,7 @@ export function PreviewModal({
             </section>
 
             {/* 5. Quadro Societário (QSA) */}
-            {mergedData.receita.qsa && mergedData.receita.qsa.length > 0 && (
+            {getData('qsa', []).length > 0 && (
               <section className="break-inside-avoid">
                 <h2 className="text-lg font-bold mb-3 flex items-center gap-2 border-b pb-2">
                   <Users className="h-5 w-5 text-primary" />
@@ -422,11 +422,11 @@ export function PreviewModal({
                 </h2>
                 <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-4 print:bg-white print:border">
                   <div className="space-y-2">
-                    {mergedData.receita.qsa.map((socio: any, idx: number) => (
+                    {getData('qsa', []).map((socio: any, idx: number) => (
                       <div key={idx} className="flex justify-between items-start border-b pb-2 last:border-0">
                         <div>
-                          <p className="font-semibold text-sm">{socio.nome}</p>
-                          <p className="text-xs text-slate-600 dark:text-slate-400">{socio.qual}</p>
+                          <p className="font-semibold text-sm">{socio.nome || 'N/A'}</p>
+                          <p className="text-xs text-slate-600 dark:text-slate-400">{socio.qual || 'N/A'}</p>
                           {socio.pais_origem && (
                             <p className="text-xs text-slate-500">País: {socio.pais_origem}</p>
                           )}
@@ -453,21 +453,13 @@ export function PreviewModal({
               <div className="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-900 rounded-lg p-4 print:bg-white print:border">
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2">Simples Nacional</p>
-                  <Badge variant={mergedData.receita.simples.optante ? 'default' : 'secondary'}>
-                    {mergedData.receita.simples.optante ? 'OPTANTE' : 'NÃO OPTANTE'}
+                  <Badge variant={getData('efr') ? 'default' : 'secondary'}>
+                    {getData('efr') || 'NÃO INFORMADO'}
                   </Badge>
-                  {mergedData.receita.simples.dataOpcao && (
-                    <p className="text-xs text-slate-600 mt-2">Data Opção: {mergedData.receita.simples.dataOpcao}</p>
-                  )}
-                  {mergedData.receita.simples.dataExclusao && (
-                    <p className="text-xs text-slate-600">Data Exclusão: {mergedData.receita.simples.dataExclusao}</p>
-                  )}
                 </div>
                 <div>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2">MEI</p>
-                  <Badge variant={mergedData.receita.mei.optante ? 'default' : 'secondary'}>
-                    {mergedData.receita.mei.optante ? 'SIM' : 'NÃO'}
-                  </Badge>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2">Situação Especial</p>
+                  <p className="text-sm">{getData('situacao_especial') || 'N/A'}</p>
                 </div>
               </div>
             </section>
