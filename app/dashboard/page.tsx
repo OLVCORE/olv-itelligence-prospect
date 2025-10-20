@@ -792,26 +792,122 @@ export default function DashboardPage() {
         )}
 
         {/* Módulos */}
-        {activeModule === 'tech-stack' && currentCompany && (
-          <TechStackModule companyId={currentCompany.id} />
+        {activeModule === 'tech-stack' && (
+          currentCompany ? (
+            <TechStackModule companyId={currentCompany.id} />
+          ) : (
+            <Card className="dark:bg-slate-800 dark:border-slate-700">
+              <CardContent className="p-8 text-center">
+                <Building2 className="h-12 w-12 mx-auto mb-4 text-blue-400" />
+                <h3 className="text-lg font-semibold mb-2 dark:text-white">Tech Stack</h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Selecione uma empresa no Dashboard para analisar seu stack tecnológico
+                </p>
+                <Button onClick={() => setActiveModule('dashboard')} className="bg-blue-600 hover:bg-blue-700">
+                  <ArrowRight className="h-4 w-4 mr-2" />
+                  Ir para Dashboard
+                </Button>
+              </CardContent>
+            </Card>
+          )
         )}
-        {activeModule === 'decision-makers' && currentCompany && (
-          <DecisionMakersModule companyId={currentCompany.id} />
+        {activeModule === 'decision-makers' && (
+          currentCompany ? (
+            <DecisionMakersModule companyId={currentCompany.id} />
+          ) : (
+            <Card className="dark:bg-slate-800 dark:border-slate-700">
+              <CardContent className="p-8 text-center">
+                <Users className="h-12 w-12 mx-auto mb-4 text-green-400" />
+                <h3 className="text-lg font-semibold mb-2 dark:text-white">Decisores</h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Selecione uma empresa no Dashboard para identificar os decisores
+                </p>
+                <Button onClick={() => setActiveModule('dashboard')} className="bg-green-600 hover:bg-green-700">
+                  <ArrowRight className="h-4 w-4 mr-2" />
+                  Ir para Dashboard
+                </Button>
+              </CardContent>
+            </Card>
+          )
         )}
-        {activeModule === 'financial' && currentCompany && (
-          <FinancialModule companyId={currentCompany.id} />
+        {activeModule === 'financial' && (
+          currentCompany ? (
+            <FinancialModule companyId={currentCompany.id} />
+          ) : (
+            <Card className="dark:bg-slate-800 dark:border-slate-700">
+              <CardContent className="p-8 text-center">
+                <TrendingUp className="h-12 w-12 mx-auto mb-4 text-yellow-400" />
+                <h3 className="text-lg font-semibold mb-2 dark:text-white">Financeiro</h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Selecione uma empresa no Dashboard para análise financeira
+                </p>
+                <Button onClick={() => setActiveModule('dashboard')} className="bg-yellow-600 hover:bg-yellow-700">
+                  <ArrowRight className="h-4 w-4 mr-2" />
+                  Ir para Dashboard
+                </Button>
+              </CardContent>
+            </Card>
+          )
         )}
-        {activeModule === 'maturity' && currentCompany && (
-          <MaturityModule companyId={currentCompany.id} />
+        {activeModule === 'maturity' && (
+          currentCompany ? (
+            <MaturityModule companyId={currentCompany.id} />
+          ) : (
+            <Card className="dark:bg-slate-800 dark:border-slate-700">
+              <CardContent className="p-8 text-center">
+                <BarChart3 className="h-12 w-12 mx-auto mb-4 text-orange-400" />
+                <h3 className="text-lg font-semibold mb-2 dark:text-white">Maturidade</h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Selecione uma empresa no Dashboard para análise de maturidade
+                </p>
+                <Button onClick={() => setActiveModule('dashboard')} className="bg-orange-600 hover:bg-orange-700">
+                  <ArrowRight className="h-4 w-4 mr-2" />
+                  Ir para Dashboard
+                </Button>
+              </CardContent>
+            </Card>
+          )
         )}
         {activeModule === 'benchmark' && (
           <BenchmarkModule companies={companies.filter(c => selectedCompanies.includes(c.id))} />
         )}
-        {activeModule === 'fit-totvs' && currentCompany && (
-          <FitTotvsModule companyId={currentCompany.id} />
+        {activeModule === 'fit-totvs' && (
+          currentCompany ? (
+            <FitTotvsModule companyId={currentCompany.id} />
+          ) : (
+            <Card className="dark:bg-slate-800 dark:border-slate-700">
+              <CardContent className="p-8 text-center">
+                <Target className="h-12 w-12 mx-auto mb-4 text-indigo-400" />
+                <h3 className="text-lg font-semibold mb-2 dark:text-white">Fit TOTVS</h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Selecione uma empresa no Dashboard para análise de fit TOTVS
+                </p>
+                <Button onClick={() => setActiveModule('dashboard')} className="bg-indigo-600 hover:bg-indigo-700">
+                  <ArrowRight className="h-4 w-4 mr-2" />
+                  Ir para Dashboard
+                </Button>
+              </CardContent>
+            </Card>
+          )
         )}
-        {activeModule === 'playbooks' && currentCompany && (
-          <PlaybooksModule companyId={currentCompany.id} />
+        {activeModule === 'playbooks' && (
+          currentCompany ? (
+            <PlaybooksModule companyId={currentCompany.id} />
+          ) : (
+            <Card className="dark:bg-slate-800 dark:border-slate-700">
+              <CardContent className="p-8 text-center">
+                <FileText className="h-12 w-12 mx-auto mb-4 text-pink-400" />
+                <h3 className="text-lg font-semibold mb-2 dark:text-white">Playbooks</h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Selecione uma empresa no Dashboard para gerar playbooks personalizados
+                </p>
+                <Button onClick={() => setActiveModule('dashboard')} className="bg-pink-600 hover:bg-pink-700">
+                  <ArrowRight className="h-4 w-4 mr-2" />
+                  Ir para Dashboard
+                </Button>
+              </CardContent>
+            </Card>
+          )
         )}
         {activeModule === 'alerts' && (
           <AlertsModule />
