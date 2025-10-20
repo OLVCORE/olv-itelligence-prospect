@@ -709,7 +709,7 @@ function DashboardContent() {
               <div>
                 <p className="text-sm text-gray-600">Capital Social</p>
                 <p className="font-semibold">
-                  {currentCompany?.capital ? `R$ ${(currentCompany.capital / 1000).toFixed(0)}k` : 'N/D'}
+                  {currentCompany?.capital ? formatCurrency(currentCompany.capital) : 'N/D'}
                 </p>
               </div>
             </div>
@@ -738,8 +738,19 @@ function DashboardContent() {
       {/* Modal de Preview */}
       <PreviewModal
         isOpen={showPreviewModal}
-        onClose={() => setShowPreviewModal(false)}
-        previewData={previewData}
+        data={previewData}
+        loading={false}
+        onClose={() => {
+          setShowPreviewModal(false)
+          setPreviewData(null)
+        }}
+        onConfirmSave={async () => {
+          // TODO: Implementar salvamento se necessário
+          console.log('[Dashboard] 💾 Preview confirmado')
+          setShowPreviewModal(false)
+          setPreviewData(null)
+          await loadCompanies()
+        }}
       />
     </div>
   )

@@ -3,6 +3,7 @@ import { normalizeCnpj, isValidCnpj, normalizeDomain } from '@/lib/utils/cnpj'
 import { fetchReceitaWS } from '@/lib/services/receita-ws'
 import { fetchGoogleCSE } from '@/lib/services/google-cse'
 import { fetchDigitalPresence } from '@/lib/services/digital-presence'
+import { crossReferenceSearch } from '@/lib/services/cross-reference-search'
 import { analyzeWithOpenAI } from '@/lib/services/openai-analysis'
 import { calculatePropensityScore } from '@/lib/scoring/propensity-calculator'
 import { identifyAttentionPoints, generateRecommendation, generateSuggestedActions } from '@/lib/ai/recommendation-engine'
@@ -27,7 +28,7 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json()
-    const { cnpj: rawCnpj, website: rawWebsite, useAI = false, forceRefresh = false } = body
+    const { cnpj: rawCnpj, website: rawWebsite, useAI = false, forceRefresh = false, useCrossReference = true } = body
 
     console.log('[API /preview] 📥 Request:', { cnpj: rawCnpj, website: rawWebsite, useAI, forceRefresh })
 
@@ -104,20 +105,62 @@ export async function POST(req: Request) {
     const elapsedAfterReceita = Date.now() - startTime
     console.log(`[API /preview] ⏱️ ReceitaWS concluído em ${elapsedAfterReceita}ms`)
 
-    // 2. Buscar presença digital COMPLETA (otimizada com FAST_MODE)
-    console.log('[API /preview] 🔍 Buscando presença digital completa (modo otimizado)...')
+    // 2. Buscar presença digital COMPLETA (Cross-Reference ou FAST_MODE)
+    console.log('[API /preview] 🔍 Buscando presença digital completa...')
+    console.log('[API /preview] 🎯 Modo:', useCrossReference ? 'CROSS-REFERENCE (6 categorias)' : 'FAST-MODE (legacy)')
     console.log('[API /preview] 🔑 GOOGLE_API_KEY presente?', !!process.env.GOOGLE_API_KEY)
     console.log('[API /preview] 🔑 GOOGLE_CSE_ID presente?', !!process.env.GOOGLE_CSE_ID)
     
     let digitalPresence
+    let digitalPresenceExtended = null
+    
     try {
-      digitalPresence = await fetchDigitalPresence(
-        receitaData.nome || '',
-        resolvedCnpj,
-        receitaData.fantasia,
-        undefined,
-        receitaData.qsa?.map((socio: any) => socio.nome) || []
-      )
+      if (useCrossReference) {
+        console.log('[API /preview] 🚀 Usando sistema CROSS-REFERENCE com 6 categorias organizadas')
+        
+        // Buscar usando o novo sistema cross-reference
+        digitalPresenceExtended = await crossReferenceSearch.searchAll({
+          cnpj: resolvedCnpj,
+          razaoSocial: receitaData.nome || '',
+          nomeFantasia: receitaData.fantasia,
+          marca: receitaData.fantasia,
+          website: undefined,
+          socios: receitaData.qsa?.map((socio: any) => socio.nome) || []
+        })
+        
+        // Converter para formato legacy (compatibilidade)
+        digitalPresence = {
+          website: digitalPresenceExtended.portaisEletronicos?.google_meu_negocio?.website || null,
+          redesSociais: digitalPresenceExtended.redesSociais || {},
+          marketplaces: [
+            ...(digitalPresenceExtended.marketplaces?.b2b || []),
+            ...(digitalPresenceExtended.marketplaces?.b2c || [])
+          ],
+          jusbrasil: digitalPresenceExtended.juridico?.jusbrasil || null,
+          outrosLinks: digitalPresenceExtended.noticiasRecentes || []
+        }
+        
+        console.log('[API /preview] ✅ Cross-Reference completo:', {
+          redesSociais: Object.keys(digitalPresenceExtended.redesSociais || {}).length,
+          marketplacesB2B: digitalPresenceExtended.marketplaces?.b2b?.length || 0,
+          marketplacesB2C: digitalPresenceExtended.marketplaces?.b2c?.length || 0,
+          portais: Object.keys(digitalPresenceExtended.portaisEletronicos || {}).length,
+          noticias: digitalPresenceExtended.noticiasRecentes?.length || 0,
+          juridico: digitalPresenceExtended.juridico?.jusbrasil ? 'Sim' : 'Não',
+          totalSources: digitalPresenceExtended.metadata?.totalSources || 0,
+          confidence: digitalPresenceExtended.metadata?.confidence || 0
+        })
+      } else {
+        // Usar sistema legacy (FAST_MODE)
+        console.log('[API /preview] ⚡ Usando sistema LEGACY (FAST_MODE)')
+        digitalPresence = await fetchDigitalPresence(
+          receitaData.nome || '',
+          resolvedCnpj,
+          receitaData.fantasia,
+          undefined,
+          receitaData.qsa?.map((socio: any) => socio.nome) || []
+        )
+      }
       
       const elapsedAfterDigital = Date.now() - startTime
       console.log(`[API /preview] ⏱️ Presença digital concluída em ${elapsedAfterDigital}ms`)
