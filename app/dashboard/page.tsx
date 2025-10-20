@@ -40,6 +40,7 @@ import { BenchmarkComparisonModal } from "@/components/modals/BenchmarkCompariso
 import { PreviewModal } from "@/components/modals/PreviewModal"
 import { BulkUploadModal } from "@/components/modals/BulkUploadModal"
 import { DigitalProfilingModal } from "@/components/modals/DigitalProfilingModal"
+import { CompanyIntelligenceModal } from "@/components/modals/CompanyIntelligenceModal"
 import { Sidebar } from "@/components/layout/Sidebar"
 import { useMultiSelect } from "@/hooks/useMultiSelect"
 import { formatCurrency } from "@/lib/utils/format"
@@ -124,6 +125,7 @@ export default function DashboardPage() {
   const [showBulkUploadModal, setShowBulkUploadModal] = useState(false)
   const [showBenchmarkModal, setShowBenchmarkModal] = useState(false)
   const [showDigitalProfilingModal, setShowDigitalProfilingModal] = useState(false)
+  const [showCompanyIntelligenceModal, setShowCompanyIntelligenceModal] = useState(false)
   const [currentCompany, setCurrentCompany] = useState<Company | null>(null)
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([])
   const [searchMode, setSearchMode] = useState<'individual' | 'massa'>('individual')
@@ -507,7 +509,7 @@ export default function DashboardPage() {
 
         {/* Botão de Busca */}
         <div className="flex justify-end pt-3">
-                    <Button
+                          <Button
             onClick={handleIndividualSearch}
                       disabled={loading}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 h-9"
@@ -524,7 +526,7 @@ export default function DashboardPage() {
               </>
             )}
                     </Button>
-                  </div>
+                      </div>
       </CardContent>
     </Card>
   )
@@ -634,27 +636,41 @@ export default function DashboardPage() {
                                 </div>
             </div>
 
-            <Button
-              onClick={() => {
-                setCurrentCompany(company)
-                setSearchTerm(company.cnpj)
-                handleSearch()
-              }}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-              disabled={loading}
-            >
+            <div className="space-y-2">
+              <Button
+                onClick={() => {
+                  setCurrentCompany(company)
+                  setSearchTerm(company.cnpj)
+                  handleSearch()
+                }}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                disabled={loading}
+              >
                 {loading ? (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Gerando...
-                </>
-              ) : (
-                <>
-                  <FileText className="h-4 w-4 mr-2" />
-                  Gerar Relatório
-                </>
-              )}
-            </Button>
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Gerando...
+                  </>
+                ) : (
+                  <>
+                    <FileText className="h-4 w-4 mr-2" />
+                    Gerar Relatório
+                  </>
+                )}
+              </Button>
+
+              <Button
+                onClick={() => {
+                  setCurrentCompany(company)
+                  setShowCompanyIntelligenceModal(true)
+                }}
+                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+                size="sm"
+              >
+                <Building2 className="h-4 w-4 mr-2" />
+                Analisar B2B
+              </Button>
+            </div>
           </CardContent>
         </Card>
       ))}
@@ -687,7 +703,7 @@ export default function DashboardPage() {
                     <Badge variant={company.status === 'active' ? 'default' : 'secondary'}>
                       {company.status === 'active' ? 'ATIVA' : 'INATIVA'}
                               </Badge>
-                          </div>
+                                </div>
                   
                   <div className="grid grid-cols-3 gap-4 text-sm text-gray-600">
                     <div>
@@ -695,11 +711,11 @@ export default function DashboardPage() {
                             </div>
                     <div>
                       <span className="font-medium">Capital:</span> {company.capital ? formatCurrency(company.capital) : 'N/D'}
-                            </div>
+                          </div>
                     <div>
                       <span className="font-medium">Análises:</span> {company.analyses?.length || 0}
                             </div>
-                          </div>
+                            </div>
                             </div>
                           </div>
               
@@ -901,7 +917,7 @@ export default function DashboardPage() {
                       size="sm"
                     >
                       <ChevronLeft className="h-4 w-4" />
-                    </Button>
+            </Button>
                     
                     <span className="text-sm text-gray-600">
                       Página {currentPage} de {totalPages}
@@ -954,6 +970,15 @@ export default function DashboardPage() {
         isOpen={showDigitalProfilingModal}
         onClose={() => setShowDigitalProfilingModal(false)}
         companyName={currentCompany?.name}
+      />
+
+      <CompanyIntelligenceModal
+        isOpen={showCompanyIntelligenceModal}
+        onClose={() => setShowCompanyIntelligenceModal(false)}
+        companyId={currentCompany?.id}
+        companyName={currentCompany?.name || currentCompany?.tradeName || ''}
+        domain={currentCompany?.domain}
+        cnpj={currentCompany?.cnpj}
       />
 
       <BenchmarkComparisonModal
