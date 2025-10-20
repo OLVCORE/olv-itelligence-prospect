@@ -54,6 +54,8 @@ export class SalesNavigatorScraper {
 
   constructor(config?: { phantomBusterApiKey?: string }) {
     this.phantomBusterApiKey = config?.phantomBusterApiKey || process.env.PHANTOM_BUSTER_API_KEY
+    
+    console.log('[Sales Navigator] 🔑 Phantom Buster configurado:', !!this.phantomBusterApiKey)
   }
 
   /**

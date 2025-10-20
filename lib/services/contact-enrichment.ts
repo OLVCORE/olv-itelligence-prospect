@@ -33,6 +33,12 @@ export class ContactEnrichmentService {
     this.apolloApiKey = process.env.APOLLO_API_KEY
     this.hunterApiKey = process.env.HUNTER_API_KEY
     this.rocketReachApiKey = process.env.ROCKETREACH_API_KEY
+    
+    console.log('[Contact Enrichment] 🔑 APIs configuradas:', {
+      apollo: !!this.apolloApiKey,
+      hunter: !!this.hunterApiKey,
+      rocketreach: !!this.rocketReachApiKey
+    })
   }
 
   /**
