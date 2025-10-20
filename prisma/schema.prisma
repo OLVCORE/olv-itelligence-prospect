@@ -601,3 +601,37 @@ model ProjectMember {
   @@index([projectId])
 }
 
+
+
+model CompanyMonitor {
+  id             String   @id @default(cuid())
+  companyId      String
+  vendor         String
+  domain         String?
+  linkedinUrl    String?
+  phantomAgentId String?
+  cadence        String   // '6h' | 'daily' | 'weekly' | 'custom:cron'
+  active         Boolean  @default(true)
+  lastRunAt      DateTime?
+  nextRunAt      DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([companyId, active], map: "idx_monitor_company_active")
+  @@index([nextRunAt], map: "idx_monitor_nextRun")
+}
+
+model IngestRun {
+  id         String   @id @default(cuid())
+  companyId  String
+  vendor     String
+  status     String   // 'queued' | 'running' | 'ok' | 'error' | 'partial'
+  startedAt  DateTime @default(now())
+  finishedAt DateTime?
+  summary    Json?
+  error      String?
+  createdAt  DateTime @default(now())
+
+  @@index([companyId, startedAt], map: "idx_ingest_company_started")
+}
+

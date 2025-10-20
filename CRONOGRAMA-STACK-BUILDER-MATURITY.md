@@ -149,28 +149,46 @@ curl -X POST https://app.vercel.app/api/stack/build \
 ## 📈 FASE 3: AUTOMAÇÃO & ESCALABILIDADE (PRÓXIMA SEMANA)
 
 **Duração Estimada:** 4 dias  
-**Status:** 🔴 0% Completo
+**Status:** 🟢 30% Completo
 
-### Sprint 3.1: Background Jobs (2 dias)
+### Sprint 3.1: Background Jobs (2 dias) - ✅ INICIADO
 
 **Objetivos:**
-- [ ] Cron job de re-ingest semanal
-- [ ] Queue system (BullMQ/Inngest)
-- [ ] Job status tracking
-- [ ] Retry failed jobs
-
-**Entregas:**
-- [ ] `POST /api/jobs/schedule` - Agenda re-ingest
-- [ ] `GET /api/jobs/:id/status` - Status de job
+- [x] Cron job de re-ingest configurável (6h/daily/weekly)
+- [x] Sistema de monitoramento por empresa
+- [x] Job status tracking com IngestRun
+- [x] Concorrência e rate-limiting configuráveis
 - [ ] Dashboard de jobs (admin)
 - [ ] Alertas de falhas (webhook)
 
-**Arquitetura:**
+**Entregas Completadas:**
+- [x] `POST /api/monitor/register` - Cadastra empresa para monitoramento
+- [x] `GET /api/cron/reingest` - Executado por Vercel Cron (6/6h)
+- [x] `POST /api/cron/reingest` - Disparo manual com parâmetros
+- [x] `lib/jobs/reingest.ts` - Engine de reingest em lotes
+- [x] Modelos Prisma: CompanyMonitor, IngestRun
+- [x] vercel.json com cron configurada
+
+**Entregas Pendentes:**
+- [ ] Dashboard de jobs (admin)
+- [ ] Alertas de falhas (webhook)
+
+**Arquitetura Implementada:**
 ```
-Vercel Cron (weekly) → Queue → Worker → /api/stack/ingest → DB
-                          ↓
-                    Job Status Table
+Vercel Cron (6/6h) → /api/cron/reingest → lib/jobs/reingest.ts
+                          ↓                         ↓
+                  CompanyMonitor (queue)    Concurrency Control
+                          ↓                         ↓
+                    /api/stack/ingest      IngestRun (logs)
+                          ↓                         ↓
+                   TechSignals, Firmographics   CompanyTechMaturity
 ```
+
+**Parâmetros Configuráveis:**
+- `batchLimit`: quantas empresas processar por execução (default: 10)
+- `concurrency`: quantas em paralelo (default: 2)
+- `delayMs`: delay entre disparos (default: 800ms)
+- `verifyEmails`: ativar Hunter verification (default: false)
 
 ---
 
@@ -321,9 +339,10 @@ Vercel Cron (weekly) → Queue → Worker → /api/stack/ingest → DB
 ### Hoje (20/10/2025):
 1. ✅ Executar script `olv-ensure.mjs`
 2. ✅ Commit + Push do orchestrator
-3. ⏳ Criar guia de testes
-4. ⏳ Testar /api/stack/ingest em staging
-5. ⏳ Validar 1 empresa piloto
+3. ✅ Criar guia de testes
+4. ✅ Implementar sistema de monitoramento (Vercel Cron)
+5. ⏳ Testar /api/stack/ingest em staging
+6. ⏳ Validar 1 empresa piloto
 
 ### Amanhã (21/10/2025):
 1. Testar 5 empresas piloto
@@ -375,6 +394,15 @@ Vercel Cron (weekly) → Queue → Worker → /api/stack/ingest → DB
 ---
 
 ## ✅ COMMIT LOG
+
+### 20/10/2025 - 19:00
+- ✅ Criado `scripts/olv-ensure-cron.mjs`
+- ✅ Criado `/api/monitor/register` (cadastro de monitoramento)
+- ✅ Criado `/api/cron/reingest` (Vercel Cron)
+- ✅ Criado `lib/jobs/reingest.ts` (engine de lotes)
+- ✅ Modelos Prisma: CompanyMonitor, IngestRun
+- ✅ vercel.json: cron 6/6h configurada
+- ✅ Commit: "OLV: Scheduled Re-Ingest + Monitoring System"
 
 ### 20/10/2025 - 16:30
 - ✅ Criado `scripts/olv-ensure.mjs`

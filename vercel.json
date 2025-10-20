@@ -1,5 +1,7 @@
 {
-  "regions": ["gru1"],
+  "regions": [
+    "gru1"
+  ],
   "functions": {
     "app/api/companies/search/route.ts": {
       "maxDuration": 5
@@ -15,6 +17,11 @@
     "env": {
       "PRISMA_GENERATE_SKIP_AUTOINSTALL": "false"
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/reingest",
+      "schedule": "0 */6 * * *"
+    }
+  ]
 }
-
