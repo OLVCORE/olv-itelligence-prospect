@@ -35,14 +35,18 @@ export function Header({ onToggleSidebar, sidebarOpen = true }: HeaderProps) {
   const [showNotifications, setShowNotifications] = useState(false)
 
   useEffect(() => {
-    const userData = localStorage.getItem("user")
-    if (userData) {
-      setUser(JSON.parse(userData))
+    if (typeof window !== 'undefined') {
+      const userData = localStorage.getItem("user")
+      if (userData) {
+        setUser(JSON.parse(userData))
+      }
     }
   }, [])
 
   const handleLogout = () => {
-    localStorage.removeItem("user")
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem("user")
+    }
     router.push("/login")
   }
 

@@ -9,27 +9,29 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // 🔓 AUTENTICAÇÃO DESABILITADA - Acesso direto ao dashboard
-    // Criar usuário fake automaticamente
-    localStorage.setItem("user", JSON.stringify({
-      email: "admin@olv.com",
-      role: "ADMIN",
-      name: "Administrador OLV"
-    }))
-    
-    // Redirecionar direto para dashboard
-    router.push("/dashboard")
-    setIsLoading(false)
-    
-    /* CÓDIGO ORIGINAL (reativar quando sistema estiver pronto):
-    const user = localStorage.getItem("user")
-    if (user) {
+    if (typeof window !== 'undefined') {
+      // 🔓 AUTENTICAÇÃO DESABILITADA - Acesso direto ao dashboard
+      // Criar usuário fake automaticamente
+      localStorage.setItem("user", JSON.stringify({
+        email: "admin@olv.com",
+        role: "ADMIN",
+        name: "Administrador OLV"
+      }))
+      
+      // Redirecionar direto para dashboard
       router.push("/dashboard")
-    } else {
-      router.push("/login")
+      setIsLoading(false)
+      
+      /* CÓDIGO ORIGINAL (reativar quando sistema estiver pronto):
+      const user = localStorage.getItem("user")
+      if (user) {
+        router.push("/dashboard")
+      } else {
+        router.push("/login")
+      }
+      setIsLoading(false)
+      */
     }
-    setIsLoading(false)
-    */
   }, [router])
 
   if (isLoading) {

@@ -23,16 +23,18 @@ export default function LoginPage() {
     setError("")
 
     try {
-      // 🔓 AUTENTICAÇÃO DESABILITADA TEMPORARIAMENTE - MVP EM DESENVOLVIMENTO
-      // Acesso automático como ADMIN sem validação de credenciais
-      localStorage.setItem("user", JSON.stringify({
-        email: "admin@olv.com",
-        role: "ADMIN",
-        name: "Administrador OLV"
-      }))
-      
-      // Redirecionar diretamente para dashboard
-      router.push("/dashboard")
+      if (typeof window !== 'undefined') {
+        // 🔓 AUTENTICAÇÃO DESABILITADA TEMPORARIAMENTE - MVP EM DESENVOLVIMENTO
+        // Acesso automático como ADMIN sem validação de credenciais
+        localStorage.setItem("user", JSON.stringify({
+          email: "admin@olv.com",
+          role: "ADMIN",
+          name: "Administrador OLV"
+        }))
+        
+        // Redirecionar diretamente para dashboard
+        router.push("/dashboard")
+      }
       
       /* CÓDIGO ORIGINAL (reativar quando sistema estiver pronto):
       const validCredentials = [
@@ -46,12 +48,14 @@ export default function LoginPage() {
       )
 
       if (user) {
-        localStorage.setItem("user", JSON.stringify({
-          email: user.email,
-          role: user.role,
-          name: user.role === "ADMIN" ? "Administrador OLV" : 
-                user.role === "EDITOR" ? "Editor OLV" : "Visualizador OLV"
-        }))
+        if (typeof window !== 'undefined') {
+          localStorage.setItem("user", JSON.stringify({
+            email: user.email,
+            role: user.role,
+            name: user.role === "ADMIN" ? "Administrador OLV" : 
+                  user.role === "EDITOR" ? "Editor OLV" : "Visualizador OLV"
+          }))
+        }
         router.push("/dashboard")
       } else {
         setError("Email ou senha inválidos")
