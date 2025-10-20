@@ -708,6 +708,52 @@ export default function DashboardPage() {
               </Button>
 
               <Button
+                onClick={async () => {
+                  try {
+                    setLoading(true)
+                    console.log('[Dashboard] 🚀 Enriquecendo empresa:', company.id)
+                    
+                    const response = await fetch('/api/companies/enrich', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ companyId: company.id })
+                    })
+                    
+                    const result = await response.json()
+                    
+                    if (result.ok) {
+                      alert(`✅ Enriquecimento completo!\n\nMaturidade Overall: ${result.data?.maturityScores?.overall || 'N/A'}\nTempo: ${result.data?.latency || 0}ms`)
+                      
+                      // Recarregar empresas para mostrar dados atualizados
+                      await fetchCompanies()
+                    } else {
+                      alert(`❌ Erro: ${result.error?.message || 'Falha ao enriquecer empresa'}`)
+                    }
+                  } catch (error: any) {
+                    console.error('[Dashboard] Erro ao enriquecer:', error.message)
+                    alert(`❌ Erro: ${error.message}`)
+                  } finally {
+                    setLoading(false)
+                  }
+                }}
+                className="w-full bg-green-600 hover:bg-green-700 text-white"
+                size="sm"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Enriquecendo...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Analisar Empresa
+                  </>
+                )}
+              </Button>
+
+              <Button
                 onClick={() => {
                   setCurrentCompany(company)
                   setShowCompanyIntelligenceModal(true)
