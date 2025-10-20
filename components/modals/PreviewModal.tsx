@@ -454,13 +454,89 @@ export function PreviewModal({
               </div>
             </section>
 
-            {/* 7. Presença Digital Completa (EXPANDIDO!) */}
+            {/* 7. Presença Digital - 6 CATEGORIAS ORGANIZADAS */}
             {(mergedData.presencaDigital || mergedData.enrichment) && (
               <section className="break-inside-avoid">
                 <h2 className="text-lg font-bold mb-3 flex items-center gap-2 border-b pb-2">
-                  🌐 7. Presença Digital e Canais de Venda
+                  🌐 7. Presença Digital - 6 Categorias Organizadas
                 </h2>
-                <div className="space-y-4 bg-slate-50 dark:bg-slate-900 rounded-lg p-4 print:bg-white print:border">
+                <div className="space-y-6 bg-slate-50 dark:bg-slate-900 rounded-lg p-4 print:bg-white print:border">
+                  
+                  {/* Resumo Visual das 6 Categorias */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pb-4 border-b">
+                    <div className="bg-white dark:bg-slate-800 p-3 rounded-lg border">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-2xl">📱</span>
+                        <span className="font-semibold text-sm">Redes Sociais</span>
+                      </div>
+                      <p className="text-2xl font-bold text-primary">
+                        {Object.keys(mergedData.presencaDigital?.redesSociais || {}).length}
+                      </p>
+                      <p className="text-xs text-muted-foreground">encontradas</p>
+                    </div>
+
+                    <div className="bg-white dark:bg-slate-800 p-3 rounded-lg border">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-2xl">🛒</span>
+                        <span className="font-semibold text-sm">Marketplaces B2B</span>
+                      </div>
+                      <p className="text-2xl font-bold text-blue-600">
+                        {mergedData.presencaDigital?.marketplaces?.filter((m: any) => 
+                          ['B2Brazil', 'Alibaba', 'Shopee', 'GlobSupplies', 'TradeKey', 'EC21'].includes(m.plataforma)
+                        ).length || 0}
+                      </p>
+                      <p className="text-xs text-muted-foreground">portais B2B</p>
+                    </div>
+
+                    <div className="bg-white dark:bg-slate-800 p-3 rounded-lg border">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-2xl">🛍️</span>
+                        <span className="font-semibold text-sm">Marketplaces B2C</span>
+                      </div>
+                      <p className="text-2xl font-bold text-purple-600">
+                        {mergedData.presencaDigital?.marketplaces?.filter((m: any) => 
+                          ['Mercado Livre', 'Amazon', 'Americanas', 'Magazine Luiza'].includes(m.plataforma)
+                        ).length || 0}
+                      </p>
+                      <p className="text-xs text-muted-foreground">lojas online</p>
+                    </div>
+
+                    <div className="bg-white dark:bg-slate-800 p-3 rounded-lg border">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-2xl">🌐</span>
+                        <span className="font-semibold text-sm">Portais</span>
+                      </div>
+                      <p className="text-2xl font-bold text-green-600">
+                        {(mergedData.presencaDigital?.outrosLinks || []).filter((l: any) => 
+                          l.tipo && ['Google', 'Reclame', 'Glassdoor'].some(t => l.tipo.includes(t))
+                        ).length || 0}
+                      </p>
+                      <p className="text-xs text-muted-foreground">eletrônicos</p>
+                    </div>
+
+                    <div className="bg-white dark:bg-slate-800 p-3 rounded-lg border">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-2xl">📰</span>
+                        <span className="font-semibold text-sm">Notícias</span>
+                      </div>
+                      <p className="text-2xl font-bold text-orange-600">
+                        {(mergedData.presencaDigital?.noticias || mergedData.enrichment?.news || []).length}
+                      </p>
+                      <p className="text-xs text-muted-foreground">recentes</p>
+                    </div>
+
+                    <div className="bg-white dark:bg-slate-800 p-3 rounded-lg border">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-2xl">⚖️</span>
+                        <span className="font-semibold text-sm">Jurídico</span>
+                      </div>
+                      <p className="text-2xl font-bold text-red-600">
+                        {mergedData.presencaDigital?.jusbrasil ? '1' : '0'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">fontes</p>
+                    </div>
+                  </div>
+
                   {/* Indicadores de Qualidade da Presença Digital */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pb-4 border-b">
                     <SmartTooltip 
@@ -604,37 +680,91 @@ export function PreviewModal({
                     </div>
                   )}
 
-                  {/* Marketplaces */}
-                  {mergedData.presencaDigital?.marketplaces && mergedData.presencaDigital.marketplaces.length > 0 && (
+                  {/* CATEGORIA 2: Marketplaces B2B */}
+                  {mergedData.presencaDigital?.marketplaces && mergedData.presencaDigital.marketplaces.filter((m: any) => 
+                    ['B2Brazil', 'Alibaba', 'Shopee', 'GlobSupplies', 'TradeKey', 'EC21', 'TradeFord', 'ExportHub'].includes(m.plataforma)
+                  ).length > 0 && (
                     <div className="pt-3 border-t">
-                      <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2">
-                        🛒 Marketplaces e E-commerce ({mergedData.presencaDigital.marketplaces.length})
+                      <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2 flex items-center gap-2">
+                        🛒 CATEGORIA 2: Marketplaces B2B - Portais Internacionais
+                        <Badge className="bg-blue-600 text-white">
+                          {mergedData.presencaDigital.marketplaces.filter((m: any) => 
+                            ['B2Brazil', 'Alibaba', 'Shopee', 'GlobSupplies', 'TradeKey', 'EC21', 'TradeFord', 'ExportHub'].includes(m.plataforma)
+                          ).length}
+                        </Badge>
                       </p>
-                      <ul className="space-y-1.5">
-                        {mergedData.presencaDigital.marketplaces.map((mp: any, idx: number) => (
-                          <li key={idx} className="flex items-start gap-2">
-                            <Badge variant="outline" className="text-xs">
-                              {mp.plataforma}
-                            </Badge>
-                            <a
-                              href={mp.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-sm text-primary hover:underline flex-1"
-                            >
-                              {mp.loja}
-                            </a>
-                          </li>
+                      <div className="bg-blue-50 dark:bg-blue-950 rounded-lg p-3 space-y-2">
+                        <p className="text-xs text-blue-700 dark:text-blue-300 mb-2">
+                          📦 Portais: <strong>Alibaba, Shopee, B2B Brasil, GlobSupplies, TradeKey, EC21, TradeFord, ExportHub, AliExpress, Shein</strong>
+                        </p>
+                        {mergedData.presencaDigital.marketplaces
+                          .filter((m: any) => ['B2Brazil', 'Alibaba', 'Shopee', 'GlobSupplies', 'TradeKey', 'EC21', 'TradeFord', 'ExportHub'].includes(m.plataforma))
+                          .map((mp: any, idx: number) => (
+                            <div key={idx} className="flex items-start gap-2 bg-white dark:bg-slate-800 p-2 rounded border">
+                              <Badge variant="outline" className="text-xs bg-blue-100 text-blue-700 border-blue-300">
+                                {mp.plataforma}
+                              </Badge>
+                              <a
+                                href={mp.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm text-primary hover:underline flex-1"
+                              >
+                                {mp.loja}
+                              </a>
+                            </div>
                         ))}
-                      </ul>
+                      </div>
                     </div>
                   )}
 
-                  {/* Jusbrasil */}
+                  {/* CATEGORIA 3: Marketplaces B2C */}
+                  {mergedData.presencaDigital?.marketplaces && mergedData.presencaDigital.marketplaces.filter((m: any) => 
+                    ['Mercado Livre', 'Amazon', 'Americanas', 'Magazine Luiza', 'Shopee'].includes(m.plataforma)
+                  ).length > 0 && (
+                    <div className="pt-3 border-t">
+                      <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2 flex items-center gap-2">
+                        🛍️ CATEGORIA 3: Marketplaces B2C - Varejo Nacional
+                        <Badge className="bg-purple-600 text-white">
+                          {mergedData.presencaDigital.marketplaces.filter((m: any) => 
+                            ['Mercado Livre', 'Amazon', 'Americanas', 'Magazine Luiza'].includes(m.plataforma)
+                          ).length}
+                        </Badge>
+                      </p>
+                      <div className="bg-purple-50 dark:bg-purple-950 rounded-lg p-3 space-y-2">
+                        <p className="text-xs text-purple-700 dark:text-purple-300 mb-2">
+                          🛒 Lojas: <strong>Mercado Livre, Amazon, Americanas, Submarino, Magazine Luiza, Shopee</strong>
+                        </p>
+                        {mergedData.presencaDigital.marketplaces
+                          .filter((m: any) => ['Mercado Livre', 'Amazon', 'Americanas', 'Magazine Luiza'].includes(m.plataforma))
+                          .map((mp: any, idx: number) => (
+                            <div key={idx} className="flex items-start gap-2 bg-white dark:bg-slate-800 p-2 rounded border">
+                              <Badge variant="outline" className="text-xs bg-purple-100 text-purple-700 border-purple-300">
+                                {mp.plataforma}
+                              </Badge>
+                              <a
+                                href={mp.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm text-primary hover:underline flex-1"
+                              >
+                                {mp.loja}
+                              </a>
+                            </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* CATEGORIA 6: Jurídico (Jusbrasil) */}
                   {mergedData.presencaDigital?.jusbrasil && (
                     <div className="pt-3 border-t">
-                      <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2">
-                        ⚖️ Jusbrasil - Histórico Jurídico
+                      <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2 flex items-center gap-2">
+                        ⚖️ CATEGORIA 6: Histórico Jurídico
+                        <Badge className="bg-red-600 text-white">Jusbrasil</Badge>
+                      </p>
+                      <p className="text-xs text-red-700 dark:text-red-300 mb-3 bg-red-50 dark:bg-red-950 p-2 rounded">
+                        ⚠️ Processos, sócios, certidões e protestos
                       </p>
                       <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-3">
                         <a
@@ -672,40 +802,90 @@ export function PreviewModal({
                     </div>
                   )}
 
-                  {/* Outros Links */}
-                  {mergedData.presencaDigital?.outrosLinks && mergedData.presencaDigital.outrosLinks.length > 0 && (
+                  {/* CATEGORIA 4: Portais Eletrônicos */}
+                  {mergedData.presencaDigital?.outrosLinks && mergedData.presencaDigital.outrosLinks.filter((l: any) => 
+                    l.tipo && ['Google', 'Reclame', 'Glassdoor', 'Indeed', 'TripAdvisor'].some(t => l.tipo.includes(t))
+                  ).length > 0 && (
                     <div className="pt-3 border-t">
-                      <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2">
-                        🔗 Outros Links Relevantes ({mergedData.presencaDigital.outrosLinks.length})
+                      <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2 flex items-center gap-2">
+                        🌐 CATEGORIA 4: Portais Eletrônicos e Reputação
+                        <Badge className="bg-green-600 text-white">
+                          {mergedData.presencaDigital.outrosLinks.filter((l: any) => 
+                            l.tipo && ['Google', 'Reclame', 'Glassdoor'].some(t => l.tipo.includes(t))
+                          ).length}
+                        </Badge>
                       </p>
-                      <ul className="space-y-1.5">
-                        {mergedData.presencaDigital.outrosLinks.map((link: any, idx: number) => (
-                          <li key={idx}>
-                            <div className="flex items-start gap-2">
-                              <Badge variant="secondary" className="text-xs">
+                      <div className="bg-green-50 dark:bg-green-950 rounded-lg p-3 space-y-2">
+                        <p className="text-xs text-green-700 dark:text-green-300 mb-2">
+                          📍 Portais: <strong>Google Meu Negócio, Reclame Aqui, Glassdoor, Trustpilot, Consumidor.gov</strong>
+                        </p>
+                        {mergedData.presencaDigital.outrosLinks
+                          .filter((l: any) => l.tipo && ['Google', 'Reclame', 'Glassdoor', 'Indeed', 'TripAdvisor'].some(t => l.tipo.includes(t)))
+                          .map((link: any, idx: number) => (
+                            <div key={idx} className="flex items-start gap-2 bg-white dark:bg-slate-800 p-2 rounded border">
+                              <Badge variant="outline" className="text-xs bg-green-100 text-green-700 border-green-300">
                                 {link.tipo}
                               </Badge>
                               <a
                                 href={link.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-xs text-primary hover:underline flex-1"
+                                className="text-sm text-primary hover:underline flex-1"
                               >
                                 {link.titulo}
                               </a>
                             </div>
-                          </li>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Outros Links Gerais (fallback para links não categorizados) */}
+                  {mergedData.presencaDigital?.outrosLinks && mergedData.presencaDigital.outrosLinks.filter((l: any) => 
+                    !l.tipo || !['Google', 'Reclame', 'Glassdoor', 'Indeed', 'TripAdvisor'].some(t => l.tipo.includes(t))
+                  ).length > 0 && (
+                    <div className="pt-3 border-t">
+                      <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2">
+                        🔗 Outros Links Relevantes ({mergedData.presencaDigital.outrosLinks.filter((l: any) => 
+                          !l.tipo || !['Google', 'Reclame', 'Glassdoor'].some(t => l.tipo.includes(t))
+                        ).length})
+                      </p>
+                      <ul className="space-y-1.5">
+                        {mergedData.presencaDigital.outrosLinks
+                          .filter((l: any) => !l.tipo || !['Google', 'Reclame', 'Glassdoor', 'Indeed', 'TripAdvisor'].some(t => l.tipo.includes(t)))
+                          .map((link: any, idx: number) => (
+                            <li key={idx}>
+                              <div className="flex items-start gap-2">
+                                <Badge variant="secondary" className="text-xs">
+                                  {link.tipo || 'Geral'}
+                                </Badge>
+                                <a
+                                  href={link.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-primary hover:underline flex-1"
+                                >
+                                  {link.titulo}
+                                </a>
+                              </div>
+                            </li>
                         ))}
                       </ul>
                     </div>
                   )}
 
-                  {/* Notícias */}
+                  {/* CATEGORIA 5: Notícias Recentes */}
                   {(mergedData.presencaDigital?.noticias || mergedData.enrichment?.news) && 
                    (mergedData.presencaDigital?.noticias?.length > 0 || mergedData.enrichment?.news?.length > 0) && (
                     <div className="pt-3 border-t">
-                      <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2">
-                        📰 Notícias Recentes ({(mergedData.presencaDigital?.noticias || mergedData.enrichment?.news)?.length})
+                      <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2 flex items-center gap-2">
+                        📰 CATEGORIA 5: Notícias Recentes
+                        <Badge className="bg-orange-600 text-white">
+                          {(mergedData.presencaDigital?.noticias || mergedData.enrichment?.news)?.length}
+                        </Badge>
+                      </p>
+                      <p className="text-xs text-orange-700 dark:text-orange-300 mb-3 bg-orange-50 dark:bg-orange-950 p-2 rounded">
+                        📅 Últimos 12 meses • Fontes confiáveis • Menções verificadas
                       </p>
                       <ul className="space-y-2">
                         {(mergedData.presencaDigital?.noticias || mergedData.enrichment?.news || []).map((news: any, index: number) => (
