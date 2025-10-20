@@ -9,12 +9,12 @@ const ADD = (arr:DetectedItem[]|undefined, item:DetectedItem) => {
 };
 
 const K = {
-  ERP: [/TOTVS|Protheus|RM|Datasul/i, /SAP|S/4HANA|Business One|B1|R3/i, /Oracle E-Business|Oracle Cloud ERP/i, /Microsoft Dynamics 365 (?:FO|Finance|Operations|Business Central)/i],
+  ERP: [/TOTVS|Protheus|RM|Datasul/i, /SAP|S\/4HANA|Business One|B1|R3/i, /Oracle E-Business|Oracle Cloud ERP/i, /Microsoft Dynamics 365 (?:FO|Finance|Operations|Business Central)/i],
   CRM: [/Salesforce|SFDC/i, /Dynamics 365 CRM|Dynamics CRM/i, /RD Station/i, /HubSpot/i, /Pipedrive/i],
   CLOUD: [/AWS|Amazon Web Services/i, /Azure/i, /Google Cloud|GCP/i, /Oracle Cloud Infrastructure|OCI/i],
   BI: [/Power BI/i, /Tableau/i, /Qlik/i, /Looker/i, /Data Studio/i],
   DB: [/PostgreSQL|Postgres/i, /MySQL/i, /SQL Server/i, /Oracle Database/i, /MongoDB/i],
-  INTEG: [/Mulesoft/i, /Dell Boomi/i, /Fluig/i, /Kafka/i, /RabbitMQ/i, /N8N|Make.com|Zapier/i],
+  INTEG: [/Mulesoft/i, /Dell Boomi/i, /Fluig/i, /Kafka/i, /RabbitMQ/i, /N8N|Make\.com|Zapier/i],
   SEC: [/Fortinet|FortiGate/i, /Palo Alto Networks/i, /Checkpoint/i, /CrowdStrike/i, /Okta/i, /Azure AD|Entra ID/i]
 };
 
