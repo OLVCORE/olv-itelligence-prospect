@@ -89,55 +89,27 @@ import {
 
 interface Company {
   id: string
-  cnpj: string
-  razao_social: string
-  nome_fantasia?: string
+  cnpj?: string
+  name: string
+  tradeName?: string
   capital?: number
-  status: string
-  last_analysis?: string
-  analysis_count?: number
-  created_at: string
-  updated_at: string
+  status?: string
+  domain?: string
+    createdAt: string
+  updatedAt: string
+  analyses?: any[]
 }
 
 interface IndividualSearchData {
   cnpj: string
   website: string
-  redesSociais: {
-    instagram: string
-    linkedin: string
-    facebook: string
-    youtube: string
-    twitter: string
-    threads: string
-  }
-  marketplacesB2B: {
-    alibaba: string
-    shopee: string
-    b2bBrasil: string
-    globSupplies: string
-    tradeKey: string
-    ec21: string
-  }
-  marketplacesB2C: {
-    mercadoLivre: string
-    amazon: string
-    americanas: string
-    magazineLuiza: string
-    submarino: string
-  }
-  portaisEletronicos: {
-    googleMeuNegocio: string
-    reclameAqui: string
-    glassdoor: string
-    b2bBrasil: string
-    meMercadoEletronico: string
-  }
+  redesSociais: string
+  marketplacesB2B: string
+  marketplacesB2C: string
+  portaisEletronicos: string
+  portaisSetor: string
   noticiasRecentes: string
-  juridico: {
-    jusbrasil: string
-    outros: string
-  }
+  juridico: string
 }
 
 export default function DashboardPage() {
@@ -156,41 +128,13 @@ export default function DashboardPage() {
   const [individualSearchData, setIndividualSearchData] = useState<IndividualSearchData>({
     cnpj: '',
     website: '',
-    redesSociais: {
-      instagram: '',
-      linkedin: '',
-      facebook: '',
-      youtube: '',
-      twitter: '',
-      threads: ''
-    },
-    marketplacesB2B: {
-      alibaba: '',
-      shopee: '',
-      b2bBrasil: '',
-      globSupplies: '',
-      tradeKey: '',
-      ec21: ''
-    },
-    marketplacesB2C: {
-      mercadoLivre: '',
-      amazon: '',
-      americanas: '',
-      magazineLuiza: '',
-      submarino: ''
-    },
-    portaisEletronicos: {
-      googleMeuNegocio: '',
-      reclameAqui: '',
-      glassdoor: '',
-      b2bBrasil: '',
-      meMercadoEletronico: ''
-    },
+    redesSociais: '',
+    marketplacesB2B: '',
+    marketplacesB2C: '',
+    portaisEletronicos: '',
+    portaisSetor: '',
     noticiasRecentes: '',
-    juridico: {
-      jusbrasil: '',
-      outros: ''
-    }
+    juridico: ''
   })
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(12)
@@ -205,14 +149,16 @@ export default function DashboardPage() {
     try {
       setLoading(true)
       const { data, error } = await supabase
-        .from('companies')
+        .from('Company')
         .select('*')
-        .order('created_at', { ascending: false })
+        .order('createdAt', { ascending: false })
 
       if (error) throw error
       setCompanies(data || [])
     } catch (error) {
       console.error('Erro ao carregar empresas:', error)
+      // Fallback para dados mock se Supabase falhar
+      setCompanies([])
     } finally {
       setLoading(false)
     }
@@ -282,7 +228,7 @@ export default function DashboardPage() {
 
   const filteredCompanies = companies.filter(company => {
     if (filterStatus !== 'all' && company.status !== filterStatus) return false
-    if (searchTerm && !company.razao_social.toLowerCase().includes(searchTerm.toLowerCase())) return false
+    if (searchTerm && !company.name.toLowerCase().includes(searchTerm.toLowerCase())) return false
     return true
   })
 
@@ -291,20 +237,20 @@ export default function DashboardPage() {
 
     switch (sortBy) {
       case 'name':
-        aValue = a.razao_social.toLowerCase()
-        bValue = b.razao_social.toLowerCase()
+        aValue = a.name.toLowerCase()
+        bValue = b.name.toLowerCase()
         break
       case 'capital':
         aValue = a.capital || 0
         bValue = b.capital || 0
         break
       case 'analysis':
-        aValue = a.analysis_count || 0
-        bValue = b.analysis_count || 0
+        aValue = a.analyses?.length || 0
+        bValue = b.analyses?.length || 0
         break
       case 'date':
-        aValue = new Date(a.created_at).getTime()
-        bValue = new Date(b.created_at).getTime()
+        aValue = new Date(a.createdAt).getTime()
+        bValue = new Date(b.createdAt).getTime()
         break
       default:
         return 0
@@ -361,303 +307,69 @@ export default function DashboardPage() {
             <Instagram className="h-4 w-4 text-pink-500" />
             <Label className="text-sm font-medium">📱 Redes Sociais</Label>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            <div className="space-y-1">
-              <Label htmlFor="instagram" className="text-xs">Instagram</Label>
-              <Input
-                id="instagram"
-                placeholder="@empresa_insta"
-                value={individualSearchData.redesSociais.instagram}
-                onChange={(e) => setIndividualSearchData(prev => ({
-                  ...prev,
-                  redesSociais: { ...prev.redesSociais, instagram: e.target.value }
-                }))}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="linkedin" className="text-xs">LinkedIn</Label>
-              <Input
-                id="linkedin"
-                placeholder="empresa-linkedin"
-                value={individualSearchData.redesSociais.linkedin}
-                onChange={(e) => setIndividualSearchData(prev => ({
-                  ...prev,
-                  redesSociais: { ...prev.redesSociais, linkedin: e.target.value }
-                }))}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="facebook" className="text-xs">Facebook</Label>
-              <Input
-                id="facebook"
-                placeholder="empresa.facebook"
-                value={individualSearchData.redesSociais.facebook}
-                onChange={(e) => setIndividualSearchData(prev => ({
-                  ...prev,
-                  redesSociais: { ...prev.redesSociais, facebook: e.target.value }
-                }))}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="youtube" className="text-xs">YouTube</Label>
-              <Input
-                id="youtube"
-                placeholder="@empresa_youtube"
-                value={individualSearchData.redesSociais.youtube}
-                onChange={(e) => setIndividualSearchData(prev => ({
-                  ...prev,
-                  redesSociais: { ...prev.redesSociais, youtube: e.target.value }
-                }))}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="twitter" className="text-xs">X/Twitter</Label>
-              <Input
-                id="twitter"
-                placeholder="@empresa_twitter"
-                value={individualSearchData.redesSociais.twitter}
-                onChange={(e) => setIndividualSearchData(prev => ({
-                  ...prev,
-                  redesSociais: { ...prev.redesSociais, twitter: e.target.value }
-                }))}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="threads" className="text-xs">Threads</Label>
-              <Input
-                id="threads"
-                placeholder="@empresa_threads"
-                value={individualSearchData.redesSociais.threads}
-                onChange={(e) => setIndividualSearchData(prev => ({
-                  ...prev,
-                  redesSociais: { ...prev.redesSociais, threads: e.target.value }
-                }))}
-              />
-            </div>
-          </div>
-        </div>
+          <Textarea
+            placeholder="@empresa_insta, empresa-linkedin, empresa.facebook, @empresa_youtube, @empresa_twitter, @empresa_threads"
+            value={individualSearchData.redesSociais}
+            onChange={(e) => setIndividualSearchData(prev => ({ ...prev, redesSociais: e.target.value }))}
+            rows={2}
+                />
+              </div>
 
         {/* Marketplaces B2B */}
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <ShoppingBag className="h-4 w-4 text-blue-500" />
             <Label className="text-sm font-medium">🛒 Marketplaces B2B</Label>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            <div className="space-y-1">
-              <Label htmlFor="alibaba" className="text-xs">Alibaba</Label>
-              <Input
-                id="alibaba"
-                placeholder="empresa.alibaba.com"
-                value={individualSearchData.marketplacesB2B.alibaba}
-                onChange={(e) => setIndividualSearchData(prev => ({
-                  ...prev,
-                  marketplacesB2B: { ...prev.marketplacesB2B, alibaba: e.target.value }
-                }))}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="shopee" className="text-xs">Shopee</Label>
-              <Input
-                id="shopee"
-                placeholder="shopee.com.br/shop/empresa"
-                value={individualSearchData.marketplacesB2B.shopee}
-                onChange={(e) => setIndividualSearchData(prev => ({
-                  ...prev,
-                  marketplacesB2B: { ...prev.marketplacesB2B, shopee: e.target.value }
-                }))}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="b2bBrasil" className="text-xs">B2B Brasil</Label>
-              <Input
-                id="b2bBrasil"
-                placeholder="b2bbrasil.com.br/empresa"
-                value={individualSearchData.marketplacesB2B.b2bBrasil}
-                onChange={(e) => setIndividualSearchData(prev => ({
-                  ...prev,
-                  marketplacesB2B: { ...prev.marketplacesB2B, b2bBrasil: e.target.value }
-                }))}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="globSupplies" className="text-xs">GlobSupplies</Label>
-              <Input
-                id="globSupplies"
-                placeholder="globalsupplies.com/empresa"
-                value={individualSearchData.marketplacesB2B.globSupplies}
-                onChange={(e) => setIndividualSearchData(prev => ({
-                  ...prev,
-                  marketplacesB2B: { ...prev.marketplacesB2B, globSupplies: e.target.value }
-                }))}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="tradeKey" className="text-xs">TradeKey</Label>
-              <Input
-                id="tradeKey"
-                placeholder="tradekey.com/empresa"
-                value={individualSearchData.marketplacesB2B.tradeKey}
-                onChange={(e) => setIndividualSearchData(prev => ({
-                  ...prev,
-                  marketplacesB2B: { ...prev.marketplacesB2B, tradeKey: e.target.value }
-                }))}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="ec21" className="text-xs">EC21</Label>
-              <Input
-                id="ec21"
-                placeholder="ec21.com/empresa"
-                value={individualSearchData.marketplacesB2B.ec21}
-                onChange={(e) => setIndividualSearchData(prev => ({
-                  ...prev,
-                  marketplacesB2B: { ...prev.marketplacesB2B, ec21: e.target.value }
-                }))}
-              />
-            </div>
-          </div>
-        </div>
+                    </div>
+          <Textarea
+            placeholder="empresa.alibaba.com, shopee.com.br/shop/empresa, b2bbrasil.com.br/empresa, globalsupplies.com/empresa, tradekey.com/empresa, ec21.com/empresa"
+            value={individualSearchData.marketplacesB2B}
+            onChange={(e) => setIndividualSearchData(prev => ({ ...prev, marketplacesB2B: e.target.value }))}
+            rows={2}
+          />
+              </div>
 
         {/* Marketplaces B2C */}
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Store className="h-4 w-4 text-green-500" />
             <Label className="text-sm font-medium">🛍️ Marketplaces B2C</Label>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            <div className="space-y-1">
-              <Label htmlFor="mercadoLivre" className="text-xs">Mercado Livre</Label>
-              <Input
-                id="mercadoLivre"
-                placeholder="mercadolivre.com.br/perfil/empresa"
-                value={individualSearchData.marketplacesB2C.mercadoLivre}
-                onChange={(e) => setIndividualSearchData(prev => ({
-                  ...prev,
-                  marketplacesB2C: { ...prev.marketplacesB2C, mercadoLivre: e.target.value }
-                }))}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="amazon" className="text-xs">Amazon</Label>
-              <Input
-                id="amazon"
-                placeholder="amazon.com.br/shops/empresa"
-                value={individualSearchData.marketplacesB2C.amazon}
-                onChange={(e) => setIndividualSearchData(prev => ({
-                  ...prev,
-                  marketplacesB2C: { ...prev.marketplacesB2C, amazon: e.target.value }
-                }))}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="americanas" className="text-xs">Americanas</Label>
-              <Input
-                id="americanas"
-                placeholder="americanas.com.br/loja/empresa"
-                value={individualSearchData.marketplacesB2C.americanas}
-                onChange={(e) => setIndividualSearchData(prev => ({
-                  ...prev,
-                  marketplacesB2C: { ...prev.marketplacesB2C, americanas: e.target.value }
-                }))}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="magazineLuiza" className="text-xs">Magazine Luiza</Label>
-              <Input
-                id="magazineLuiza"
-                placeholder="magazineluiza.com.br/loja/empresa"
-                value={individualSearchData.marketplacesB2C.magazineLuiza}
-                onChange={(e) => setIndividualSearchData(prev => ({
-                  ...prev,
-                  marketplacesB2C: { ...prev.marketplacesB2C, magazineLuiza: e.target.value }
-                }))}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="submarino" className="text-xs">Submarino</Label>
-              <Input
-                id="submarino"
-                placeholder="submarino.com.br/loja/empresa"
-                value={individualSearchData.marketplacesB2C.submarino}
-                onChange={(e) => setIndividualSearchData(prev => ({
-                  ...prev,
-                  marketplacesB2C: { ...prev.marketplacesB2C, submarino: e.target.value }
-                }))}
-              />
-            </div>
-          </div>
-        </div>
+                </div>
+          <Textarea
+            placeholder="mercadolivre.com.br/perfil/empresa, amazon.com.br/shops/empresa, americanas.com.br/loja/empresa, magazineluiza.com.br/loja/empresa, submarino.com.br/loja/empresa"
+            value={individualSearchData.marketplacesB2C}
+            onChange={(e) => setIndividualSearchData(prev => ({ ...prev, marketplacesB2C: e.target.value }))}
+            rows={2}
+          />
+                  </div>
 
         {/* Portais Eletrônicos */}
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Globe className="h-4 w-4 text-purple-500" />
             <Label className="text-sm font-medium">🌐 Portais Eletrônicos</Label>
+                </div>
+          <Textarea
+            placeholder="g.page/empresa, reclameaqui.com.br/empresa, glassdoor.com.br/empresa, b2bbrasil.com.br/empresa, me.com.br/empresa"
+            value={individualSearchData.portaisEletronicos}
+            onChange={(e) => setIndividualSearchData(prev => ({ ...prev, portaisEletronicos: e.target.value }))}
+            rows={2}
+          />
+              </div>
+
+        {/* Portais do Setor */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Building2 className="h-4 w-4 text-indigo-500" />
+            <Label className="text-sm font-medium">🏢 Portais do Setor/Sindicatos</Label>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            <div className="space-y-1">
-              <Label htmlFor="googleMeuNegocio" className="text-xs">Google Meu Negócio</Label>
-              <Input
-                id="googleMeuNegocio"
-                placeholder="g.page/empresa"
-                value={individualSearchData.portaisEletronicos.googleMeuNegocio}
-                onChange={(e) => setIndividualSearchData(prev => ({
-                  ...prev,
-                  portaisEletronicos: { ...prev.portaisEletronicos, googleMeuNegocio: e.target.value }
-                }))}
-              />
+          <Textarea
+            placeholder="sbinee.com.br, abimac.com.br, sindicatos específicos do setor, associações comerciais, federações"
+            value={individualSearchData.portaisSetor}
+            onChange={(e) => setIndividualSearchData(prev => ({ ...prev, portaisSetor: e.target.value }))}
+            rows={2}
+          />
             </div>
-            <div className="space-y-1">
-              <Label htmlFor="reclameAqui" className="text-xs">Reclame Aqui</Label>
-              <Input
-                id="reclameAqui"
-                placeholder="reclameaqui.com.br/empresa"
-                value={individualSearchData.portaisEletronicos.reclameAqui}
-                onChange={(e) => setIndividualSearchData(prev => ({
-                  ...prev,
-                  portaisEletronicos: { ...prev.portaisEletronicos, reclameAqui: e.target.value }
-                }))}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="glassdoor" className="text-xs">Glassdoor</Label>
-              <Input
-                id="glassdoor"
-                placeholder="glassdoor.com.br/empresa"
-                value={individualSearchData.portaisEletronicos.glassdoor}
-                onChange={(e) => setIndividualSearchData(prev => ({
-                  ...prev,
-                  portaisEletronicos: { ...prev.portaisEletronicos, glassdoor: e.target.value }
-                }))}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="b2bBrasilPortal" className="text-xs">B2B Brasil Portal</Label>
-              <Input
-                id="b2bBrasilPortal"
-                placeholder="b2bbrasil.com.br/empresa"
-                value={individualSearchData.portaisEletronicos.b2bBrasil}
-                onChange={(e) => setIndividualSearchData(prev => ({
-                  ...prev,
-                  portaisEletronicos: { ...prev.portaisEletronicos, b2bBrasil: e.target.value }
-                }))}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="meMercadoEletronico" className="text-xs">ME Mercado Eletrônico</Label>
-              <Input
-                id="meMercadoEletronico"
-                placeholder="me.com.br/empresa"
-                value={individualSearchData.portaisEletronicos.meMercadoEletronico}
-                onChange={(e) => setIndividualSearchData(prev => ({
-                  ...prev,
-                  portaisEletronicos: { ...prev.portaisEletronicos, meMercadoEletronico: e.target.value }
-                }))}
-              />
-            </div>
-          </div>
-        </div>
 
         {/* Notícias Recentes */}
         <div className="space-y-3">
@@ -666,7 +378,7 @@ export default function DashboardPage() {
             <Label className="text-sm font-medium">📰 Notícias Recentes (Últimos 12 meses)</Label>
           </div>
           <Textarea
-            placeholder="Digite palavras-chave para busca de notícias (ex: empresa, produto, tecnologia)"
+            placeholder="Digite palavras-chave para busca de notícias (ex: empresa, produto, tecnologia, inovação)"
             value={individualSearchData.noticiasRecentes}
             onChange={(e) => setIndividualSearchData(prev => ({ ...prev, noticiasRecentes: e.target.value }))}
             rows={3}
@@ -678,38 +390,18 @@ export default function DashboardPage() {
           <div className="flex items-center gap-2">
             <Scale className="h-4 w-4 text-red-500" />
             <Label className="text-sm font-medium">⚖️ Jurídico</Label>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label htmlFor="jusbrasil" className="text-xs">Jusbrasil</Label>
-              <Input
-                id="jusbrasil"
-                placeholder="jusbrasil.com.br/empresa"
-                value={individualSearchData.juridico.jusbrasil}
-                onChange={(e) => setIndividualSearchData(prev => ({
-                  ...prev,
-                  juridico: { ...prev.juridico, jusbrasil: e.target.value }
-                }))}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="juridicoOutros" className="text-xs">Outros Portais Jurídicos</Label>
-              <Input
-                id="juridicoOutros"
-                placeholder="Outros portais jurídicos relevantes"
-                value={individualSearchData.juridico.outros}
-                onChange={(e) => setIndividualSearchData(prev => ({
-                  ...prev,
-                  juridico: { ...prev.juridico, outros: e.target.value }
-                }))}
-              />
-            </div>
-          </div>
-        </div>
+                  </div>
+          <Textarea
+            placeholder="jusbrasil.com.br/empresa, outros portais jurídicos relevantes, processos, ações, sentenças"
+            value={individualSearchData.juridico}
+            onChange={(e) => setIndividualSearchData(prev => ({ ...prev, juridico: e.target.value }))}
+            rows={2}
+          />
+                        </div>
 
         {/* Botão de Busca */}
         <div className="flex justify-end pt-4">
-          <Button
+                          <Button
             onClick={handleIndividualSearch}
             disabled={loading}
             className="bg-blue-600 hover:bg-blue-700 text-white px-8"
@@ -725,7 +417,7 @@ export default function DashboardPage() {
                 Analisar Empresa
               </>
             )}
-          </Button>
+                          </Button>
         </div>
       </CardContent>
     </Card>
@@ -752,10 +444,10 @@ export default function DashboardPage() {
             <li>Selecione as empresas que deseja analisar com prioridade</li>
             <li>O sistema processará todas as empresas automaticamente</li>
           </ol>
-        </div>
-        
+                      </div>
+                    
         <div className="flex gap-3">
-          <Button
+                    <Button
             onClick={() => {
               const { downloadCSVTemplate } = require('@/lib/utils/csv-template')
               downloadCSVTemplate()
@@ -774,7 +466,7 @@ export default function DashboardPage() {
           >
             <Upload className="h-4 w-4 mr-2" />
             Upload CSV
-          </Button>
+                    </Button>
         </div>
       </CardContent>
     </Card>
@@ -802,15 +494,15 @@ export default function DashboardPage() {
                 <Badge variant={company.status === 'active' ? 'default' : 'secondary'}>
                   {company.status === 'active' ? 'ATIVA' : 'INATIVA'}
                 </Badge>
-              </div>
-            </div>
+                  </div>
+                </div>
 
             <h3 className="font-semibold text-lg mb-2 line-clamp-2">
-              {company.razao_social}
+              {company.name}
             </h3>
             
             <p className="text-sm text-gray-600 mb-2">
-              CNPJ: {company.cnpj}
+              CNPJ: {company.cnpj || 'N/D'}
             </p>
 
             <div className="space-y-2 mb-4">
@@ -823,7 +515,7 @@ export default function DashboardPage() {
               
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Análises:</span>
-                <span className="font-semibold">{company.analysis_count || 0}</span>
+                <span className="font-semibold">{company.analyses?.length || 0}</span>
               </div>
             </div>
 
@@ -836,7 +528,7 @@ export default function DashboardPage() {
               className="w-full bg-blue-600 hover:bg-blue-700 text-white"
               disabled={loading}
             >
-              {loading ? (
+                {loading ? (
                 <>
                   <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
                   Gerando...
@@ -861,10 +553,10 @@ export default function DashboardPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4 flex-1">
-                <input
-                  type="checkbox"
+                                <input
+                                  type="checkbox"
                   checked={selectedCompanies.includes(company.id)}
-                  onChange={(e) => {
+                                  onChange={(e) => {
                     if (e.target.checked) {
                       setSelectedCompanies(prev => [...prev, company.id])
                     } else {
@@ -876,27 +568,27 @@ export default function DashboardPage() {
                 
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-1">
-                    <h3 className="font-semibold text-lg">{company.razao_social}</h3>
+                    <h3 className="font-semibold text-lg">{company.name}</h3>
                     <Badge variant={company.status === 'active' ? 'default' : 'secondary'}>
                       {company.status === 'active' ? 'ATIVA' : 'INATIVA'}
-                    </Badge>
-                  </div>
+                              </Badge>
+                                </div>
                   
                   <div className="grid grid-cols-3 gap-4 text-sm text-gray-600">
                     <div>
-                      <span className="font-medium">CNPJ:</span> {company.cnpj}
-                    </div>
+                      <span className="font-medium">CNPJ:</span> {company.cnpj || 'N/D'}
+                            </div>
                     <div>
                       <span className="font-medium">Capital:</span> {company.capital ? formatCurrency(company.capital) : 'N/D'}
-                    </div>
+                          </div>
                     <div>
-                      <span className="font-medium">Análises:</span> {company.analysis_count || 0}
-                    </div>
-                  </div>
-                </div>
-              </div>
+                      <span className="font-medium">Análises:</span> {company.analyses?.length || 0}
+                            </div>
+                            </div>
+                            </div>
+                          </div>
               
-              <Button
+                          <Button
                 onClick={() => {
                   setCurrentCompany(company)
                   setSearchTerm(company.cnpj)
@@ -913,12 +605,12 @@ export default function DashboardPage() {
                     Relatório
                   </>
                 )}
-              </Button>
+                          </Button>
             </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
   )
 
   return (
@@ -952,11 +644,11 @@ export default function DashboardPage() {
 
           <TabsContent value="individual">
             {renderIndividualSearchForm()}
-          </TabsContent>
+              </TabsContent>
 
           <TabsContent value="massa">
             {renderMassaSearchInstructions()}
-          </TabsContent>
+              </TabsContent>
         </Tabs>
 
         {/* Controles de Gestão */}
@@ -997,7 +689,7 @@ export default function DashboardPage() {
                 >
                   <RefreshCw className="h-4 w-4" />
                 </Button>
-              </div>
+          </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -1014,8 +706,8 @@ export default function DashboardPage() {
                   <option value="active">Ativas</option>
                   <option value="inactive">Inativas</option>
                 </select>
-              </div>
-              
+      </div>
+
               <div className="flex items-center gap-2">
                 <Label className="text-sm">Ordenar por:</Label>
                 <select
@@ -1029,13 +721,13 @@ export default function DashboardPage() {
                   <option value="date">Data</option>
                 </select>
               </div>
-            </div>
+              </div>
 
             {/* Lista de Empresas */}
             {loading ? (
               <div className="flex justify-center py-8">
                 <RefreshCw className="h-8 w-8 animate-spin text-blue-600" />
-              </div>
+            </div>
             ) : paginatedCompanies.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <Building2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -1048,7 +740,7 @@ export default function DashboardPage() {
                 {/* Paginação */}
                 {totalPages > 1 && (
                   <div className="flex items-center justify-center gap-2 mt-6">
-                    <Button
+            <Button
                       onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                       disabled={currentPage === 1}
                       variant="outline"
@@ -1068,8 +760,8 @@ export default function DashboardPage() {
                       size="sm"
                     >
                       <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </div>
+            </Button>
+          </div>
                 )}
               </>
             )}
