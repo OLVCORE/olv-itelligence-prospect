@@ -635,3 +635,24 @@ model IngestRun {
   @@index([companyId, startedAt], map: "idx_ingest_company_started")
 }
 
+
+model IngestLock {
+  id         String   @id @default(cuid())
+  companyId  String   @unique
+  lockedAt   DateTime @default(now())
+  holder     String?
+  note       String?
+}
+
+model ApiAuditLog {
+  id         String   @id @default(cuid())
+  ts         DateTime @default(now())
+  actor      String?  // sistema|cron|api|user:...
+  action     String
+  target     String?
+  meta       Json?
+  ip         String?
+  route      String?
+  level      String?  // info|warn|error
+  @@index([ts], map: "idx_api_audit_ts")
+}

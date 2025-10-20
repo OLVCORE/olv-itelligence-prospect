@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
+import { tryLockCompany, releaseLock } from '@/lib/server/locks';
 type Monitor = {
   id: string; companyId: string; vendor: 'TOTVS'|'OLV'|'CUSTOM'|string;
   domain?: string | null; linkedinUrl?: string | null; phantomAgentId?: string | null;
@@ -55,7 +56,14 @@ export async function runScheduledReingest(opts?:{
   for (const chunk of chunks) {
     await Promise.all(chunk.map(async (mon, idx) => {
       await sleep(delayMs * idx);
-      const run = await processOneMonitor(sb, mon, { verifyEmails });
+      const got = await tryLockCompany(mon.companyId, 'cron');
+      let run;
+      if (got) {
+        try { run = await processOneMonitor(sb, mon, { verifyEmails }); }
+        finally { await releaseLock(mon.companyId); }
+      } else {
+        run = { monitorId: mon.id, companyId: mon.companyId, status: 'skipped_locked' };
+      }
       results.push(run);
     }));
   }
