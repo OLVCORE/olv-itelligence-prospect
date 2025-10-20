@@ -36,6 +36,7 @@ import { CompanyCard } from "@/components/CompanyCard"
 import { SearchBar } from "@/components/SearchBar"
 import { BenchmarkComparisonModal } from "@/components/modals/BenchmarkComparisonModal"
 import { PreviewModal } from "@/components/modals/PreviewModal"
+import { BulkUploadModal } from "@/components/modals/BulkUploadModal"
 import { useMultiSelect } from "@/hooks/useMultiSelect"
 import { formatCurrency } from "@/lib/utils/format"
 // REMOVIDO: Imports de mock-data
@@ -48,6 +49,7 @@ import {
   Plus,
   RefreshCw,
   BarChart3,
+  Upload,
   Layers,
   Users,
   DollarSign,
@@ -154,6 +156,7 @@ function DashboardContent() {
   const [showComparisonModal, setShowComparisonModal] = useState(false)
   const [showPreviewModal, setShowPreviewModal] = useState(false)
   const [previewData, setPreviewData] = useState<any>(null)
+  const [showBulkUploadModal, setShowBulkUploadModal] = useState(false)
   
   // Estados para empresas do Supabase
   const [companies, setCompanies] = useState<Company[]>([])
@@ -523,6 +526,16 @@ function DashboardContent() {
                     </Button>
 
                     <Button
+                      onClick={() => setShowBulkUploadModal(true)}
+                      variant="default"
+                      size="sm"
+                      className="bg-purple-600 hover:bg-purple-700 text-white"
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      Upload CSV
+                    </Button>
+
+                    <Button
                       onClick={loadCompanies}
                       variant="outline"
                       size="sm"
@@ -763,6 +776,16 @@ function DashboardContent() {
           setShowPreviewModal(false)
           setPreviewData(null)
           await loadCompanies()
+        }}
+      />
+
+      {/* Modal de Upload em Massa */}
+      <BulkUploadModal
+        isOpen={showBulkUploadModal}
+        onClose={() => setShowBulkUploadModal(false)}
+        onComplete={() => {
+          setShowBulkUploadModal(false)
+          loadCompanies()
         }}
       />
     </div>
