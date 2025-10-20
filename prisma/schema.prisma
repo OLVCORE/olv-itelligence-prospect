@@ -49,10 +49,14 @@ model Project {
   organizationId String
   name           String
   description    String?
+  vendor         String       @default("TOTVS") // TOTVS | OLV | CUSTOM
+  cnpjQuota      Int          @default(100)
+  cnpjQuotaUsed  Int          @default(0)
   companies      Company[]
   canvases       Canvas[]
   reports        Report[]
   alerts         Alert[]
+  usageScans     UsageCompanyScan[]
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -82,6 +86,7 @@ model Company {
   benchmarks   Benchmark[]
   reports      Report[]
   analyses     Analysis[]
+  people       Person[]
 }
 
 model TechStack {
@@ -227,5 +232,116 @@ model PreviewCache {
   @@index([jobId])
   @@index([cnpj])
   @@index([expiresAt])
+}
+
+// ==========================================
+// BILLING & QUOTAS (M8)
+// ==========================================
+model UsageCompanyScan {
+  id         String   @id @default(cuid())
+  projectId  String
+  cnpj       String
+  createdAt  DateTime @default(now())
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  @@index([projectId, cnpj, createdAt])
+}
+
+// ==========================================
+// DIGITAL PROFILING - IDENTITY RESOLUTION
+// ==========================================
+model Person {
+  id              String            @id @default(cuid())
+  companyId       String?
+  name            String
+  role            String?
+  email           String?
+  phone           String?
+  linkedinUrl     String?
+  company         Company?          @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  identityProfiles IdentityProfile[]
+  personaFeatures PersonaFeatures?
+  playbooks       Playbook[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  
+  @@index([companyId])
+  @@index([email])
+}
+
+model IdentityProfile {
+  id          String          @id @default(cuid())
+  personId    String
+  network     String          // linkedin | twitter | instagram | youtube | github | medium
+  handle      String?
+  url         String
+  confidence  Float           @default(0.0) // 0.0 - 1.0
+  status      String          @default("pending") // pending | probable | confirmed
+  metadata    String?         // JSON: { photo_url, bio, location, company_name, cross_links[] }
+  person      Person          @relation(fields: [personId], references: [id], onDelete: Cascade)
+  posts       IdentityPost[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  
+  @@unique([personId, network, url])
+  @@index([personId, status])
+  @@index([network, status])
+}
+
+model IdentityPost {
+  id          String          @id @default(cuid())
+  profileId   String
+  network     String
+  postedAt    DateTime
+  language    String?
+  text        String
+  link        String?
+  metrics     String?         // JSON: { likes, shares, comments }
+  topics      String[]        // Array de tópicos classificados
+  intent      String?         // inform | ask | complain | buying_signal
+  sentiment   String?         // positive | neutral | negative
+  profile     IdentityProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  createdAt   DateTime        @default(now())
+  
+  @@index([profileId, postedAt])
+  @@index([network, postedAt])
+  @@index([topics])
+  @@index([intent])
+}
+
+model PersonaFeatures {
+  id              String   @id @default(cuid())
+  personId        String   @unique
+  topics          String[] // Array de tópicos principais
+  objections      String[] // Array de objeções identificadas
+  tone            String?  // formal | technical | direct | humor
+  activitySlots   String?  // JSON: [{ day, hours[] }]
+  channelPref     String[] // Array de canais preferidos
+  dores           String[] // Array de dores citadas
+  gatilhos        String[] // Array de gatilhos de valor
+  person          Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([personId])
+}
+
+model Playbook {
+  id              String   @id @default(cuid())
+  personId        String
+  vendor          String   // TOTVS | OLV | CUSTOM
+  opening         String   // Abertura personalizada
+  valueProp       String   // Proposta de valor
+  caseLink        String?  // Link para case relevante
+  cta             String   // Call to action
+  productsTotvs   String[] // Array de produtos TOTVS sugeridos
+  packagesOlv     String[] // Array de pacotes OLV sugeridos
+  lastRefreshedAt DateTime @default(now())
+  person          Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([personId, vendor])
+  @@index([lastRefreshedAt])
 }
 
