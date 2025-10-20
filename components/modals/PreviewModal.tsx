@@ -291,12 +291,7 @@ export function PreviewModal({
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Capital Social</p>
                   <p className="font-semibold text-sm">
-                    {formatCurrency(
-                      // GUARD: Se capital > 1M, pode estar multiplicado - dividir por 1000
-                      mergedData.receita.capital.valor > 1000000 
-                        ? mergedData.receita.capital.valor / 1000 
-                        : mergedData.receita.capital.valor
-                    )}
+                    {formatCurrency(mergedData.receita.capital.valor)}
                   </p>
                 </div>
               </div>

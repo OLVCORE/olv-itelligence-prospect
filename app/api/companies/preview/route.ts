@@ -355,7 +355,7 @@ export async function POST(req: Request) {
           motivo: receitaData.motivo_situacao,
         },
         capital: {
-          valor: receitaData.capital_social,
+          valor: capitalNumerico, // Usar valor numérico parseado
         },
         atividades: {
           principal: receitaData.atividade_principal,
