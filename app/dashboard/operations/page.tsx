@@ -9,7 +9,8 @@ async function fetchJSON(path:string){
 }
 
 export default async function OperationsPage(){
-  const [metrics, runs] = await Promise.all([
+  const [alerts, metrics, runs] = await Promise.all([
+    fetchJSON('/api/alerts/events'),
     fetchJSON('/api/ops/metrics'),
     fetchJSON('/api/ops/runs'),
   ]);
@@ -79,7 +80,41 @@ export default async function OperationsPage(){
             </tbody>
           </table>
         </div>
+      
+      {/* Últimos Alertas */}
+      <div className="rounded-2xl shadow p-4 bg-white dark:bg-gray-800">
+        <div className="mb-3 text-lg font-semibold">🔔 Últimos Alertas</div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left opacity-70">
+                <th className="py-2">Quando</th>
+                <th>Regra</th>
+                <th>Sev</th>
+                <th>Mensagem</th>
+                <th>Empresa</th>
+                <th>Vendor</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(alerts?.events||[]).slice(0,20).map((e:any)=>(
+                <tr key={e.id} className="border-t">
+                  <td className="py-2 text-xs">{new Date(e.ts).toLocaleString()}</td>
+                  <td className="text-xs">{e.ruleName}</td>
+                  <td className={e.severity==='critical'?'text-red-600 font-bold':(e.severity==='high'?'text-orange-600':'text-gray-600')}>
+                    {e.severity}
+                  </td>
+                  <td className="max-w-[420px] truncate" title={e.message}>{e.message}</td>
+                  <td className="text-xs">{e.companyId ? e.companyId.substring(0,10)+'...' : '—'}</td>
+                  <td className="text-xs">{e.vendor||'—'}</td>
+                </tr>
+              ))}
+              {(!alerts?.events?.length) && <tr><td colSpan={6} className="py-3 opacity-60">Sem alertas até o momento.</td></tr>}
+            </tbody>
+          </table>
+        </div>
       </div>
+</div>
     </div>
   )
 }

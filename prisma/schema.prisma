@@ -656,3 +656,47 @@ model ApiAuditLog {
   level      String?  // info|warn|error
   @@index([ts], map: "idx_api_audit_ts")
 }
+
+model AlertRule {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  severity    String   // critical|high|medium|low
+  enabled     Boolean  @default(true)
+  // expressão semântica aplicada no job
+  kind        String   // ingest_error | maturity_drop | slow_run | cron_gap | quota | stuck_lock
+  // parâmetros da regra
+  params      Json?
+  cooldownSec Int      @default(900) // dedupe window
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AlertChannel {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  type      String   // slack|email|webhook
+  target    String   // ex: slack:#olv-ops ou email:ops@...
+  enabled   Boolean  @default(true)
+  config    Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AlertEvent {
+  id        String   @id @default(cuid())
+  ts        DateTime @default(now())
+  ruleId    String
+  ruleName  String
+  severity  String
+  message   String
+  companyId String?
+  vendor    String?
+  runId     String?
+  meta      Json?
+  delivered Boolean  @default(false)
+  channels  Json?    // por onde foi disparado
+  createdAt DateTime @default(now())
+  @@index([ts], map: "idx_alert_ts")
+  @@index([ruleName, ts], map: "idx_rule_ts")
+}
