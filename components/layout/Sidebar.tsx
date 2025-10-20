@@ -4,6 +4,11 @@ import { useModuleContext } from "@/lib/contexts/ModuleContext"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import {
   LayoutDashboard,
   Layers,
   Users,
@@ -53,26 +58,35 @@ export function Sidebar({ open }: SidebarProps) {
           const isActive = activeModule === module.id
 
           return (
-            <Button
-              key={module.id}
-              variant={isActive ? "default" : "ghost"}
-              className={`
-                w-full justify-start gap-3 transition-all
-                ${isActive 
-                  ? 'bg-blue-600 text-white hover:bg-blue-700' 
-                  : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
-                }
-              `}
-              onClick={() => setActiveModule(module.id)}
-            >
-              <Icon className={`h-5 w-5 ${isActive ? 'text-white' : module.color}`} />
-              <span className="flex-1 text-left">{module.name}</span>
-              {isActive && (
-                <Badge className="bg-white/20 text-white text-[10px]">
-                  Ativo
-                </Badge>
-              )}
-            </Button>
+            <Tooltip key={module.id}>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={isActive ? "default" : "ghost"}
+                  className={`
+                    w-full justify-start gap-3 transition-all
+                    ${isActive 
+                      ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                      : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                    }
+                  `}
+                  onClick={() => {
+                    console.log(`[Sidebar] 🔄 Mudando para módulo: ${module.id}`)
+                    setActiveModule(module.id)
+                  }}
+                >
+                  <Icon className={`h-5 w-5 ${isActive ? 'text-white' : module.color}`} />
+                  <span className="flex-1 text-left">{module.name}</span>
+                  {isActive && (
+                    <Badge className="bg-white/20 text-white text-[10px]">
+                      Ativo
+                    </Badge>
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                <p>Acessar {module.name}</p>
+              </TooltipContent>
+            </Tooltip>
           )
         })}
       </div>
