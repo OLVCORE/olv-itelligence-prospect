@@ -804,19 +804,20 @@ export default function DashboardPage() {
           <CompanySearchModule />
         )}
 
-        {/* Controles de Gestão */}
-        <Card className="mb-6">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Building2 className="h-5 w-5 text-blue-600" />
-                  Empresas Cadastradas ({filteredCompanies.length})
-                </CardTitle>
-                <CardDescription>
-                  Gerencie e analise suas empresas
-                </CardDescription>
-              </div>
+        {/* Controles de Gestão - APENAS DASHBOARD */}
+        {activeModule === 'dashboard' && (
+          <Card className="mb-6 dark:bg-slate-800 dark:border-slate-700">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2 dark:text-white">
+                    <Building2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    Empresas Cadastradas ({filteredCompanies.length})
+                  </CardTitle>
+                  <CardDescription className="dark:text-gray-400">
+                    Gerencie e analise suas empresas
+                  </CardDescription>
+                </div>
               
               <div className="flex items-center gap-2">
                 <Button
@@ -849,11 +850,11 @@ export default function DashboardPage() {
             {/* Filtros */}
             <div className="flex items-center gap-4 mb-4">
               <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4" />
+                <Filter className="h-4 w-4 dark:text-gray-400" />
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value as 'all' | 'active' | 'inactive')}
-                  className="border rounded px-2 py-1 text-sm"
+                  className="border rounded px-2 py-1 text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                 >
                   <option value="all">Todas</option>
                   <option value="active">Ativas</option>
@@ -862,11 +863,11 @@ export default function DashboardPage() {
       </div>
 
               <div className="flex items-center gap-2">
-                <Label className="text-sm">Ordenar por:</Label>
+                <Label className="text-sm dark:text-gray-400">Ordenar por:</Label>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as 'name' | 'capital' | 'analysis' | 'date')}
-                  className="border rounded px-2 py-1 text-sm"
+                  className="border rounded px-2 py-1 text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                 >
                   <option value="name">Nome</option>
                   <option value="capital">Capital</option>
@@ -920,25 +921,7 @@ export default function DashboardPage() {
             )}
           </CardContent>
         </Card>
-
-        {/* FIT TOTVS Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5 text-green-600" />
-              FIT TOTVS
-            </CardTitle>
-            <CardDescription>
-              Análise de compatibilidade com soluções TOTVS
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center py-8 text-gray-500">
-              <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>Selecione uma empresa para analisar o FIT TOTVS</p>
-            </div>
-          </CardContent>
-        </Card>
+        )}
       </div>
 
       {/* Modals */}
