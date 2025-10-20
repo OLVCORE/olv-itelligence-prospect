@@ -28,7 +28,7 @@ import {
 import { TechStackModule } from "@/components/modules/TechStackModule"
 import { DecisionMakersModule } from "@/components/modules/DecisionMakersModule"
 import { FinancialModule } from "@/components/modules/FinancialModule"
-import { MaturityModule } from "@/components/modules/MaturityModule"
+import MaturityModule from "@/components/modules/MaturityModule"
 import { BenchmarkModule } from "@/components/modules/BenchmarkModule"
 import { FitTotvsModule } from "@/components/modules/FitTotvsModule"
 import { PlaybooksModule } from "@/components/modules/PlaybooksModule"

@@ -93,6 +93,7 @@ model Company {
   updatedAt       DateTime    @updatedAt
   project         Project?    @relation(fields: [projectId], references: [id], onDelete: Cascade)
   stacks          TechStack[]
+  maturity        CompanyTechMaturity[]
   contacts        Contact[]
   benchmarks      Benchmark[]
   reports         Report[]
@@ -115,6 +116,21 @@ model TechStack {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+model CompanyTechMaturity {
+  id                 String   @id @default(cuid())
+  companyId          String
+  vendor             String   // "TOTVS" | "OLV" | "CUSTOM"
+  sources            Json     // { builtwith?:{}, similartech?:{}, headers?:{}, jobs?:{} }
+  scores             Json     // { infra:0..100, systems:0..100, data:0..100, security:0..100, automation:0..100, culture:0..100, overall:0..100 }
+  detectedStack      Json     // { erp?:[], crm?:[], cloud?:[], bi?:[], db?:[], integrations?:[] } + confidences
+  fitRecommendations Json     // { products:[], olv_packs:[], rationale:[] }
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  company            Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, vendor])
 }
 
 model Contact {

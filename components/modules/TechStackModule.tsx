@@ -78,18 +78,45 @@ export function TechStackModule({ companyId, company, data = [], companyName = "
     
     setIsAnalyzing(true)
     try {
-      const response = await fetch('/api/tech-stack', {
+      // 1. Analisar Tech Stack
+      const techStackResponse = await fetch('/api/tech-stack', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ companyId })
       })
       
-      const result = await response.json()
+      const techStackResult = await techStackResponse.json()
       
-      if (result.success) {
-        setTechStackData(result.techStack)
+      if (techStackResult.success) {
+        setTechStackData(techStackResult.techStack)
         setLastAnalyzed(new Date().toISOString())
-        console.log('[Tech Stack Module] ✅ Análise concluída:', result.summary)
+        console.log('[Tech Stack Module] ✅ Tech Stack analisado:', techStackResult.summary)
+
+        // 2. Calcular Maturidade Digital
+        const maturityResponse = await fetch('/api/maturity', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            projectId: 'default-project',
+            companyId,
+            vendor: 'TOTVS',
+            detectedStack: techStackResult.techStack,
+            sources: {
+              builtwith: techStackResult.summary?.sources?.builtwith,
+              similartech: techStackResult.summary?.sources?.similartech,
+              dns: techStackResult.summary?.sources?.dns,
+              jobs: techStackResult.summary?.sources?.jobs,
+              google: techStackResult.summary?.sources?.google
+            }
+          })
+        })
+
+        const maturityResult = await maturityResponse.json()
+        
+        if (maturityResult.success) {
+          console.log('[Tech Stack Module] ✅ Maturidade calculada:', maturityResult.maturity.summary)
+          // Aqui podemos adicionar estado para mostrar maturidade se necessário
+        }
       }
     } catch (error) {
       console.error('Erro ao analisar tech stack:', error)

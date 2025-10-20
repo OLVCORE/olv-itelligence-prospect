@@ -1,375 +1,529 @@
-"use client"
+'use client'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
+import { useState, useEffect } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import { Separator } from '@/components/ui/separator'
 import { 
-  Gauge,
-  Info,
-  TrendingUp,
-  CheckCircle2,
-  AlertCircle,
+  TrendingUp, 
+  TrendingDown, 
+  CheckCircle, 
+  AlertCircle, 
+  Clock,
+  Target,
+  DollarSign,
+  Calendar,
   Zap,
   Shield,
   Database,
-  Cloud,
-  Cpu,
-  Users
-} from "lucide-react"
-import { 
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
+  Cog,
+  Users,
+  BarChart3
+} from 'lucide-react'
 
-interface MaturityDimension {
-  name: string
-  score: number
-  description: string
-  status: string
-  recommendations: string[]
+interface MaturityScores {
+  infrastructure: number
+  systems: number
+  data: number
+  security: number
+  automation: number
+  culture: number
+  overall: number
+}
+
+interface VendorFitRecommendation {
+  product: string
+  rationale: string
+  confidence: number
+  estimatedROI: number
+  migrationComplexity: 'Low' | 'Medium' | 'High'
+  timeline: string
+}
+
+interface VendorFit {
+  recommendations: VendorFitRecommendation[]
+  totalROI: number
+  migrationPath: string[]
+  competitiveAdvantage: string[]
 }
 
 interface MaturityData {
-  overall: number
-  dimensions: {
-    governance: number
-    processes: number
-    technology: number
-    people: number
-    data: number
-    culture: number
+  scores: MaturityScores
+  vendorFit: VendorFit
+  summary: {
+    overallScore: number
+    maturityLevel: string
+    totalRecommendations: number
+    estimatedTotalROI: number
+    migrationPath: string[]
   }
-  recommendations?: string[]
-  aiInsights?: string
-  evolutionTrend?: string
-  industryComparison?: string
+  lastAnalyzed?: string
 }
 
 interface MaturityModuleProps {
-  companyId?: string
-  companyName?: string
+  companyId: string | null
 }
 
-export function MaturityModule({ companyId, companyName }: MaturityModuleProps) {
-  // TODO: Calcular maturidade real baseado em análise da empresa - Sprint 2
-  const data: MaturityData = {
-    overall: 0,
-    dimensions: {
-      governance: 0,
-      processes: 0,
-      technology: 0,
-      people: 0,
-      data: 0,
-      culture: 0
-    },
-    recommendations: [],
-    aiInsights: '',
-    evolutionTrend: '',
-    industryComparison: ''
-  }
-  const getScoreColor = (score: number) => {
-    if (score >= 85) return "text-emerald-500"
-    if (score >= 70) return "text-blue-500"
-    if (score >= 55) return "text-yellow-500"
-    return "text-orange-500"
+export default function MaturityModule({ companyId }: MaturityModuleProps) {
+  const [maturityData, setMaturityData] = useState<MaturityData | null>(null)
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [lastAnalyzed, setLastAnalyzed] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (companyId) {
+      loadMaturityData()
+    }
+  }, [companyId])
+
+  const loadMaturityData = async () => {
+    if (!companyId) return
+    
+    try {
+      const response = await fetch(`/api/maturity?companyId=${companyId}&vendor=TOTVS`)
+      const result = await response.json()
+      
+      if (result.success && result.maturity) {
+        setMaturityData(result.maturity)
+        setLastAnalyzed(result.maturity.lastAnalyzed)
+        console.log('[Maturity Module] ✅ Dados carregados:', result.maturity.summary)
+      }
+    } catch (error) {
+      console.error('Erro ao carregar maturidade:', error)
+    }
   }
 
-  const getStatusIcon = (score: number) => {
-    if (score >= 85) return <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-    if (score >= 70) return <Zap className="h-5 w-5 text-blue-500" />
-    return <AlertCircle className="h-5 w-5 text-yellow-500" />
+  const analyzeMaturity = async () => {
+    if (!companyId) return
+    
+    setIsAnalyzing(true)
+    try {
+      // Primeiro buscar tech stack atual
+      const techStackResponse = await fetch('/api/tech-stack', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ companyId })
+      })
+      
+      const techStackResult = await techStackResponse.json()
+      
+      if (techStackResult.success) {
+        // Agora calcular maturidade
+        const maturityResponse = await fetch('/api/maturity', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            projectId: 'default-project',
+            companyId,
+            vendor: 'TOTVS',
+            detectedStack: techStackResult.techStack,
+            sources: {
+              builtwith: techStackResult.summary?.sources?.builtwith,
+              similartech: techStackResult.summary?.sources?.similartech,
+              dns: techStackResult.summary?.sources?.dns,
+              jobs: techStackResult.summary?.sources?.jobs,
+              google: techStackResult.summary?.sources?.google
+            }
+          })
+        })
+
+        const maturityResult = await maturityResponse.json()
+        
+        if (maturityResult.success) {
+          setMaturityData(maturityResult.maturity)
+          setLastAnalyzed(new Date().toISOString())
+          console.log('[Maturity Module] ✅ Análise concluída:', maturityResult.maturity.summary)
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao analisar maturidade:', error)
+    } finally {
+      setIsAnalyzing(false)
+    }
+  }
+
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return 'text-emerald-600'
+    if (score >= 60) return 'text-blue-600'
+    if (score >= 40) return 'text-yellow-600'
+    return 'text-red-600'
+  }
+
+  const getScoreBgColor = (score: number) => {
+    if (score >= 80) return 'bg-emerald-100'
+    if (score >= 60) return 'bg-blue-100'
+    if (score >= 40) return 'bg-yellow-100'
+    return 'bg-red-100'
+  }
+
+  const getComplexityColor = (complexity: string) => {
+    switch (complexity) {
+      case 'Low': return 'bg-green-100 text-green-800'
+      case 'Medium': return 'bg-yellow-100 text-yellow-800'
+      case 'High': return 'bg-red-100 text-red-800'
+      default: return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  const getComplexityIcon = (complexity: string) => {
+    switch (complexity) {
+      case 'Low': return <CheckCircle className="h-4 w-4" />
+      case 'Medium': return <Clock className="h-4 w-4" />
+      case 'High': return <AlertCircle className="h-4 w-4" />
+      default: return <AlertCircle className="h-4 w-4" />
+    }
+  }
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value)
+  }
+
+  if (!companyId) {
+    return (
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5" />
+            Maturidade Digital
+          </CardTitle>
+          <CardDescription>
+            Análise de maturidade digital e recomendações de vendor fit
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground mb-4">
+              Selecione uma empresa para analisar sua maturidade digital
+            </p>
+            <Button onClick={() => window.location.href = '/dashboard'}>
+              Ir para Dashboard
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
     <div className="space-y-6">
-      {/* Header com Explicação */}
-      <Card className="bg-gradient-to-br from-indigo-900/30 to-slate-800/30 border-slate-700/50">
+      {/* Header */}
+      <Card>
         <CardHeader>
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <CardTitle className="text-2xl text-white flex items-center gap-2">
-                Maturidade Digital e Automação
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Info className="h-5 w-5 text-indigo-400" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-md">
-                      <p className="font-semibold mb-2">O que é Maturidade Digital?</p>
-                      <p className="text-sm">
-                        Mede o nível de digitalização da empresa em 6 pilares críticos. 
-                        Score de 0-100 calculado através de média ponderada baseada no 
-                        stack tecnológico detectado, processos automatizados e cultura.
-                      </p>
-                      <p className="text-sm mt-2 font-semibold">Para que serve?</p>
-                      <ul className="text-sm list-disc pl-4 mt-1">
-                        <li>Identificar gaps e oportunidades de modernização</li>
-                        <li>Calcular fit e prontidão para novas soluções</li>
-                        <li>Priorizar prospects por maturidade</li>
-                        <li>Personalizar proposta baseada no estágio atual</li>
-                      </ul>
-                      <p className="text-sm mt-2 font-semibold">Correlação com outros módulos:</p>
-                      <ul className="text-sm list-disc pl-4 mt-1">
-                        <li><strong>Tech Stack:</strong> Base principal do cálculo</li>
-                        <li><strong>Fit TOTVS:</strong> Peso de 20% no score final</li>
-                        <li><strong>Benchmark:</strong> Comparação setorial de maturidade</li>
-                        <li><strong>Relatórios:</strong> Roadmap de transformação digital</li>
-                      </ul>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                Maturidade Digital
               </CardTitle>
-              <CardDescription className="text-slate-300 mt-2">
-                Análise de maturidade em <strong>6 dimensões</strong>: Infraestrutura, Sistemas, Dados, 
-                Segurança, Automação e Cultura. Score baseado em <strong>evidências reais</strong> do 
-                stack tecnológico e processos identificados.
+              <CardDescription>
+                Análise de maturidade digital e recomendações de vendor fit
               </CardDescription>
             </div>
-            <div className="flex gap-2">
-              <Badge variant="outline" className={`border-indigo-500 ${getScoreColor(data.overall)} bg-indigo-500/10`}>
-                <Gauge className="h-3 w-3 mr-1" />
-                Score: {data.overall}/100
-              </Badge>
-              <Badge variant="outline" className="border-emerald-500 text-emerald-400 bg-emerald-500/10">
-                <TrendingUp className="h-3 w-3 mr-1" />
-                {data.evolutionTrend}
-              </Badge>
+            <div className="flex items-center gap-2">
+              {lastAnalyzed && (
+                <Badge variant="outline" className="text-xs">
+                  Última análise: {new Date(lastAnalyzed).toLocaleDateString('pt-BR')}
+                </Badge>
+              )}
+              <Button 
+                onClick={analyzeMaturity} 
+                disabled={isAnalyzing}
+                className="flex items-center gap-2"
+              >
+                {isAnalyzing ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Analisando...
+                  </>
+                ) : (
+                  <>
+                    <Zap className="h-4 w-4" />
+                    Analisar Maturidade
+                  </>
+                )}
+              </Button>
             </div>
           </div>
         </CardHeader>
       </Card>
 
-      {/* Score Geral com Gauge Visual */}
-      <Card className="bg-slate-800/50 border-slate-700/50">
-        <CardContent className="pt-6">
-          <div className="flex flex-col items-center">
-            <div className="relative w-48 h-48">
-              {/* Gauge visual simulado */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center">
-                  <div className={`text-5xl font-bold ${getScoreColor(data.overall)}`}>
-                    {data.overall}
-                  </div>
-                  <p className="text-sm text-slate-400 mt-1">Maturidade Digital</p>
-                </div>
-              </div>
-              <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="45"
-                  fill="none"
-                  stroke="rgb(51, 65, 85)"
-                  strokeWidth="8"
-                />
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="45"
-                  fill="none"
-                  stroke={data.overall >= 85 ? "rgb(16, 185, 129)" : data.overall >= 70 ? "rgb(59, 130, 246)" : "rgb(234, 179, 8)"}
-                  strokeWidth="8"
-                  strokeDasharray={`${(data.overall / 100) * 283} 283`}
-                  strokeLinecap="round"
-                />
-              </svg>
-            </div>
-            <div className="grid grid-cols-3 gap-4 mt-6 w-full">
-              <div className="text-center">
-                <p className="text-xs text-slate-400">Nível</p>
-                <p className="text-sm font-semibold text-white">
-                  {data.overall >= 85 ? "Excelente" : data.overall >= 70 ? "Muito Bom" : data.overall >= 55 ? "Bom" : "Em Desenvolvimento"}
-                </p>
-              </div>
-              <div className="text-center">
-                <p className="text-xs text-slate-400">Tendência</p>
-                <p className="text-sm font-semibold text-emerald-400 flex items-center justify-center gap-1">
-                  <TrendingUp className="h-3 w-3" />
-                  {data.evolutionTrend}
-                </p>
-              </div>
-              <div className="text-center">
-                <p className="text-xs text-slate-400">vs. Setor</p>
-                <p className="text-sm font-semibold text-blue-400">{data.industryComparison}</p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 6 Dimensões da Maturidade */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {Object.entries(data.dimensions || {}).map(([key, score], idx) => {
-          const dimensionInfo = {
-            governance: { name: 'Governança', icon: Shield, description: 'Gestão e controles' },
-            processes: { name: 'Processos', icon: Cpu, description: 'Automação e eficiência' },
-            technology: { name: 'Tecnologia', icon: Cloud, description: 'Stack e infraestrutura' },
-            people: { name: 'Pessoas', icon: Users, description: 'Capacitação da equipe' },
-            data: { name: 'Dados', icon: Database, description: 'Qualidade e governança' },
-            culture: { name: 'Cultura', icon: Zap, description: 'Inovação e transformação' }
-          }
-          const info = dimensionInfo[key as keyof typeof dimensionInfo] || { name: key, icon: Info, description: '' }
-          const Icon = info.icon
-          return (
-          <Card key={idx} className="bg-slate-800/50 border-slate-700/50 hover:bg-slate-800/70 transition-all">
+      {maturityData ? (
+        <>
+          {/* Overall Score */}
+          <Card>
             <CardHeader>
-              <div className="flex justify-between items-start">
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-indigo-900/30 border border-indigo-700/30 flex items-center justify-center text-indigo-400">
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <div className="flex-1">
-                    <CardTitle className="text-lg text-white flex items-center gap-2">
-                      {info.name}
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <Info className="h-4 w-4 text-slate-400" />
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-xs">
-                            <p className="text-sm">{info.description}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </CardTitle>
-                    <p className="text-sm text-slate-400 mt-1">{info.description}</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  {getStatusIcon(score)}
-                  <div className={`text-2xl font-bold ${getScoreColor(score)} mt-1`}>
-                    {score}
-                  </div>
-                </div>
-              </div>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="h-5 w-5" />
+                Score Geral de Maturidade
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              {/* Progress Bar */}
-              <div>
-                <div className="flex justify-between text-xs text-slate-400 mb-1">
-                  <span>Score</span>
-                  <span>{score}/100</span>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="text-center">
+                  <div className={`inline-flex items-center justify-center w-24 h-24 rounded-full ${getScoreBgColor(maturityData.scores.overall)} mb-4`}>
+                    <span className={`text-3xl font-bold ${getScoreColor(maturityData.scores.overall)}`}>
+                      {maturityData.scores.overall}
+                    </span>
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">Score Geral</h3>
+                  <Badge variant="outline" className="text-sm">
+                    {maturityData.summary.maturityLevel}
+                  </Badge>
                 </div>
-                <Progress value={score} />
-              </div>
-
-              {/* Status */}
-              <div>
-                <Badge className={`${
-                  score >= 85 ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" :
-                  score >= 70 ? "bg-blue-500/20 text-blue-400 border-blue-500/30" :
-                  score >= 55 ? "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" :
-                  "bg-orange-500/20 text-orange-400 border-orange-500/30"
-                } border`}>
-                  {score >= 85 ? 'Excelente' : score >= 70 ? 'Muito Bom' : score >= 55 ? 'Bom' : 'Em Desenvolvimento'}
-                </Badge>
-              </div>
-
-              {/* Empty State */}
-              {score === 0 && (
-                <div className="bg-slate-700/30 border border-slate-600/30 rounded-lg p-3">
-                  <p className="text-xs text-slate-400 italic text-center">
-                    Aguardando análise completa da empresa
+                
+                <div className="text-center">
+                  <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-blue-100 mb-4">
+                    <DollarSign className="h-12 w-12 text-blue-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">ROI Estimado</h3>
+                  <p className="text-2xl font-bold text-green-600">
+                    {formatCurrency(maturityData.summary.estimatedTotalROI)}
                   </p>
                 </div>
-              )}
+
+                <div className="text-center">
+                  <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-purple-100 mb-4">
+                    <TrendingUp className="h-12 w-12 text-purple-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">Recomendações</h3>
+                  <p className="text-2xl font-bold text-purple-600">
+                    {maturityData.summary.totalRecommendations}
+                  </p>
+                </div>
+              </div>
             </CardContent>
           </Card>
-          )
-        })}
-      </div>
 
-      {/* Insights de IA e Roadmap */}
-      <Card className="bg-gradient-to-br from-blue-900/30 to-purple-900/30 border-blue-700/50">
-        <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
-            <Zap className="h-5 w-5 text-blue-400" />
-            Análise Preditiva e Roadmap de Transformação
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <p className="text-slate-300 leading-relaxed">{data.aiInsights}</p>
-          </div>
-
-          {/* Roadmap Recomendado */}
-          <div>
-            <p className="font-semibold text-white mb-3">Roadmap Recomendado por IA:</p>
-            <div className="space-y-2">
-              <div className="flex items-start gap-3 bg-slate-800/50 border border-slate-700/50 rounded-lg p-3">
-                <div className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold text-sm flex-shrink-0">
-                  1
+          {/* Detailed Scores */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Análise Detalhada por Dimensão</CardTitle>
+              <CardDescription>
+                Avaliação em 6 dimensões críticas da maturidade digital
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Infraestrutura */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Cog className="h-4 w-4 text-blue-600" />
+                    <span className="font-medium">Infraestrutura</span>
+                    <Badge variant="outline" className={`ml-auto ${getScoreColor(maturityData.scores.infrastructure)}`}>
+                      {maturityData.scores.infrastructure}
+                    </Badge>
+                  </div>
+                  <Progress value={maturityData.scores.infrastructure} className="h-2" />
+                  <p className="text-xs text-muted-foreground">
+                    Cloud, CDN, DevOps, Monitoramento
+                  </p>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-white">Curto Prazo (0-6 meses)</p>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Implementar RPA em processos manuais • Expandir uso de Power BI • 
-                    Capacitar equipe em automação
+
+                {/* Sistemas */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Database className="h-4 w-4 text-green-600" />
+                    <span className="font-medium">Sistemas</span>
+                    <Badge variant="outline" className={`ml-auto ${getScoreColor(maturityData.scores.systems)}`}>
+                      {maturityData.scores.systems}
+                    </Badge>
+                  </div>
+                  <Progress value={maturityData.scores.systems} className="h-2" />
+                  <p className="text-xs text-muted-foreground">
+                    ERP, CRM, BI, Integrações
+                  </p>
+                </div>
+
+                {/* Dados */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4 text-purple-600" />
+                    <span className="font-medium">Dados</span>
+                    <Badge variant="outline" className={`ml-auto ${getScoreColor(maturityData.scores.data)}`}>
+                      {maturityData.scores.data}
+                    </Badge>
+                  </div>
+                  <Progress value={maturityData.scores.data} className="h-2" />
+                  <p className="text-xs text-muted-foreground">
+                    Analytics, Governança, Qualidade
+                  </p>
+                </div>
+
+                {/* Segurança */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-4 w-4 text-red-600" />
+                    <span className="font-medium">Segurança</span>
+                    <Badge variant="outline" className={`ml-auto ${getScoreColor(maturityData.scores.security)}`}>
+                      {maturityData.scores.security}
+                    </Badge>
+                  </div>
+                  <Progress value={maturityData.scores.security} className="h-2" />
+                  <p className="text-xs text-muted-foreground">
+                    SSL, Firewall, Identity Management
+                  </p>
+                </div>
+
+                {/* Automação */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-yellow-600" />
+                    <span className="font-medium">Automação</span>
+                    <Badge variant="outline" className={`ml-auto ${getScoreColor(maturityData.scores.automation)}`}>
+                      {maturityData.scores.automation}
+                    </Badge>
+                  </div>
+                  <Progress value={maturityData.scores.automation} className="h-2" />
+                  <p className="text-xs text-muted-foreground">
+                    RPA, Workflow, BPM
+                  </p>
+                </div>
+
+                {/* Cultura */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4 text-indigo-600" />
+                    <span className="font-medium">Cultura</span>
+                    <Badge variant="outline" className={`ml-auto ${getScoreColor(maturityData.scores.culture)}`}>
+                      {maturityData.scores.culture}
+                    </Badge>
+                  </div>
+                  <Progress value={maturityData.scores.culture} className="h-2" />
+                  <p className="text-xs text-muted-foreground">
+                    Ferramentas Digitais, Inovação
                   </p>
                 </div>
               </div>
-              <div className="flex items-start gap-3 bg-slate-800/50 border border-slate-700/50 rounded-lg p-3">
-                <div className="w-8 h-8 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold text-sm flex-shrink-0">
-                  2
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-white">Médio Prazo (6-12 meses)</p>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Integrar sistemas legados • Implementar Data Governance • 
-                    Modernizar aplicações críticas
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3 bg-slate-800/50 border border-slate-700/50 rounded-lg p-3">
-                <div className="w-8 h-8 rounded-full bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-400 font-bold text-sm flex-shrink-0">
-                  3
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-white">Longo Prazo (12-24 meses)</p>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Expandir uso de IA/ML • Implementar Zero Trust • 
-                    Cultura de experimentação e inovação
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
 
-      {/* Legenda */}
-      <Card className="bg-slate-800/30 border-slate-700/50">
-        <CardHeader>
-          <CardTitle className="text-lg text-white">Como interpretar o Score de Maturidade?</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-300">
-            <div>
-              <p className="font-semibold mb-2">Níveis de Maturidade:</p>
-              <ul className="space-y-1">
-                <li><strong className="text-emerald-500">85-100:</strong> Excelente - Líder digital</li>
-                <li><strong className="text-blue-500">70-84:</strong> Muito Bom - Maturidade alta</li>
-                <li><strong className="text-yellow-500">55-69:</strong> Bom - Em desenvolvimento</li>
-                <li><strong className="text-orange-500">&lt;55:</strong> Regular - Oportunidades significativas</li>
-              </ul>
-            </div>
-            <div>
-              <p className="font-semibold mb-2">Cálculo do Score:</p>
-              <ul className="space-y-1">
-                <li>• Infraestrutura (20%): Cloud, servidores, rede</li>
-                <li>• Sistemas (20%): ERP, CRM, BI</li>
-                <li>• Dados (15%): Analytics, ML, Data Lake</li>
-                <li>• Segurança (20%): SOC, compliance, certificações</li>
-                <li>• Automação (15%): RPA, workflows</li>
-                <li>• Cultura (10%): Capacitação, inovação</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          {/* Vendor Fit Recommendations */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="h-5 w-5" />
+                Recomendações TOTVS/OLV
+              </CardTitle>
+              <CardDescription>
+                Sugestões de produtos e serviços baseadas na análise de maturidade
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {maturityData.vendorFit.recommendations.map((rec, index) => (
+                  <div key={index} className="border rounded-lg p-4 space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-lg mb-2">{rec.product}</h4>
+                        <p className="text-muted-foreground mb-3">{rec.rationale}</p>
+                        
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                          <div className="flex items-center gap-2">
+                            <Target className="h-4 w-4 text-blue-600" />
+                            <span>Confiança: {rec.confidence}%</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <DollarSign className="h-4 w-4 text-green-600" />
+                            <span>ROI: {formatCurrency(rec.estimatedROI)}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-purple-600" />
+                            <span>{rec.timeline}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {getComplexityIcon(rec.migrationComplexity)}
+                            <Badge className={getComplexityColor(rec.migrationComplexity)}>
+                              {rec.migrationComplexity}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {maturityData.vendorFit.recommendations.length === 0 && (
+                  <div className="text-center py-8">
+                    <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">
+                      Nenhuma recomendação específica encontrada para esta empresa.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Migration Path */}
+          {maturityData.vendorFit.migrationPath.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5" />
+                  Caminho de Migração Sugerido
+                </CardTitle>
+                <CardDescription>
+                  Sequência recomendada de implementação
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {maturityData.vendorFit.migrationPath.map((step, index) => (
+                    <div key={index} className="flex items-center gap-3">
+                      <div className="flex-shrink-0 w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-semibold">
+                        {index + 1}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium">{step}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Competitive Advantages */}
+          {maturityData.vendorFit.competitiveAdvantage.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  Vantagens Competitivas Identificadas
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {maturityData.vendorFit.competitiveAdvantage.map((advantage, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+                      <span>{advantage}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </>
+      ) : (
+        <Card>
+          <CardContent className="text-center py-8">
+            <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Nenhuma análise de maturidade encontrada</h3>
+            <p className="text-muted-foreground mb-4">
+              Execute a análise de maturidade digital para ver recomendações personalizadas
+            </p>
+            <Button onClick={analyzeMaturity} disabled={isAnalyzing}>
+              {isAnalyzing ? 'Analisando...' : 'Iniciar Análise'}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
-
