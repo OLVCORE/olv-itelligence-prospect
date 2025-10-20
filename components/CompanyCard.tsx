@@ -69,7 +69,7 @@ export function CompanyCard({
               <div className="flex justify-between items-start gap-2">
                 <div className="min-w-0 flex-1">
                   <CardTitle className="text-white text-base sm:text-lg truncate">
-                    {company.fantasia || company.razao}
+                    {company.tradeName || company.name || company.fantasia || company.razao}
                   </CardTitle>
                   <CardDescription className="text-slate-400 font-mono text-[10px] sm:text-xs truncate">
                     {formatCNPJ(company.cnpj)}
@@ -84,15 +84,15 @@ export function CompanyCard({
               <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
                 <div className="flex items-center gap-2 text-slate-300">
                   <MapPin className="h-4 w-4 text-blue-400" />
-                  {company.cidade}/{company.uf}
+                  {company.cidade || company.location || 'N/D'}/{company.uf || 'N/D'}
                 </div>
                 <div className="flex items-center gap-2 text-slate-300">
                   <Building2 className="h-4 w-4 text-purple-400" />
-                  Porte: {formatCompanySize(company.porte)}
+                  Capital: {formatCurrency(company.capital)}
                 </div>
                 <div className="flex items-center gap-2 text-slate-300">
                   <Activity className="h-4 w-4 text-green-400" />
-                  {formatDate(company.lastAnalyzed)}
+                  {formatDate(company.createdAt || company.lastAnalyzed)}
                 </div>
               </div>
               <div className="flex gap-2 mt-3 sm:mt-4">

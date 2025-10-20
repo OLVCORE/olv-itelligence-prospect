@@ -588,7 +588,7 @@ export default function DashboardPage() {
   const renderCompanyGrid = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       {paginatedCompanies.map((company) => (
-        <Card key={company.id} className="hover:shadow-lg transition-shadow">
+        <Card key={company.id} className="hover:shadow-lg transition-shadow dark:bg-slate-800 dark:border-slate-700">
           <CardContent className="p-4">
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-2">
@@ -604,31 +604,31 @@ export default function DashboardPage() {
                   }}
                   className="rounded"
                 />
-                <Badge variant={company.status === 'active' ? 'default' : 'secondary'}>
-                  {company.status === 'active' ? 'ATIVA' : 'INATIVA'}
+                <Badge variant={company.status === 'ATIVA' || company.status === 'Ativo' ? 'default' : 'secondary'}>
+                  {company.status || 'ATIVA'}
                 </Badge>
                   </div>
                 </div>
 
-            <h3 className="font-semibold text-lg mb-2 line-clamp-2">
-              {company.name}
+            <h3 className="font-semibold text-lg mb-2 line-clamp-2 dark:text-white">
+              {company.tradeName || company.name}
             </h3>
             
-            <p className="text-sm text-gray-600 mb-2">
-              CNPJ: {company.cnpj || 'N/D'}
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+              CNPJ: {formatCNPJ(company.cnpj)}
             </p>
 
             <div className="space-y-2 mb-4">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Capital:</span>
-                <span className="font-semibold">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Capital:</span>
+                <span className="font-semibold dark:text-white">
                   {company.capital ? formatCurrency(company.capital) : 'N/D'}
                 </span>
               </div>
               
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Análises:</span>
-                <span className="font-semibold">{company.analyses?.length || 0}</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">Cadastrado:</span>
+                <span className="font-semibold dark:text-white text-xs">{formatDate(company.createdAt)}</span>
               </div>
             </div>
 
