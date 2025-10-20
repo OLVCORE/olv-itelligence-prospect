@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     })
 
     // 2. Gerar playbook baseado em vendor
-    const playbook = this.generatePlaybook(person, persona, vendor)
+    const playbook = generatePlaybook(person, persona, vendor)
 
     // 3. Salvar no banco
     const { data: savedPlaybook, error: playbookErr } = await supabaseAdmin
@@ -102,11 +102,12 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     )
   }
+}
 
-  /**
-   * Gerar playbook personalizado
-   */
-  private generatePlaybook(person: any, persona: any, vendor: string): any {
+/**
+ * Gerar playbook personalizado
+ */
+function generatePlaybook(person: any, persona: any, vendor: string): any {
     const name = person.name.split(' ')[0] // Primeiro nome
     const topics = persona.topics || []
     const dores = persona.dores || []
