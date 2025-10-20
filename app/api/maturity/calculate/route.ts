@@ -1,76 +1,32 @@
-import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase/admin'
-import { computeMaturity } from '@/lib/maturity/tech-maturity'
-import { suggestFit } from '@/lib/maturity/vendor-fit'
-
-export async function POST(req: Request) {
+import { NextRequest, NextResponse } from 'next/server';
+import { computeMaturity } from '@/lib/maturity/tech-maturity';
+import { suggestFit } from '@/lib/maturity/vendor-fit';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
+export const runtime = 'nodejs';
+export async function POST(req: NextRequest) {
+  const { projectId, companyId, vendor, detectedStack, sources } = await req.json();
+  if (!projectId || !companyId || !vendor) {
+    return NextResponse.json({ ok:false, error:'projectId, companyId e vendor obrigatórios' }, { status:400 });
+  }
   try {
-    const { projectId, companyId, vendor, detectedStack, sources } = await req.json()
-
-    if (!companyId || !vendor) {
-      return NextResponse.json({
-        ok: false,
-        error: { code: 'MISSING_PARAMS', message: 'companyId e vendor são obrigatórios' }
-      }, { status: 400 })
-    }
-
-    console.log('[Maturity Calculate] 📊 Calculando para:', companyId, vendor)
-
-    // Calcular scores baseado em stack detectado
-    const scores = computeMaturity({
-      detectedStack: detectedStack || {},
-      signals: sources || {}
-    })
-
-    // Sugerir fit de vendor
-    const fit = suggestFit({
-      vendor: vendor as 'TOTVS' | 'OLV' | 'CUSTOM',
-      detectedStack: detectedStack || {},
-      scores
-    })
-
-    // Persistir no banco (UPSERT)
-    const maturityData = {
-      companyId,
-      vendor,
-      sources: JSON.stringify(sources || {}),
-      scores: JSON.stringify(scores),
-      detectedStack: JSON.stringify(detectedStack || {}),
-      fitRecommendations: JSON.stringify(fit),
-      updatedAt: new Date().toISOString()
-    }
-
-    const { data: saved, error: saveError } = await supabaseAdmin
-      .from('CompanyTechMaturity')
-      .upsert(maturityData, {
-        onConflict: 'companyId,vendor'
-      })
-      .select()
-      .single()
-
-    if (saveError) {
-      console.error('[Maturity Calculate] Erro ao salvar:', saveError)
-      // Não falha - retorna dados mesmo se não salvar
-    } else {
-      console.log('[Maturity Calculate] ✅ Salvo no banco')
-    }
-
-    return NextResponse.json({
-      ok: true,
-      scores,
-      fit,
-      saved: !!saved
-    })
-  } catch (error: any) {
-    console.error('[Maturity Calculate] Erro:', error.message)
-    
-    return NextResponse.json({
-      ok: false,
-      error: {
-        code: 'CALCULATION_ERROR',
-        message: error.message
+    const scores = computeMaturity({ detectedStack, signals: sources });
+    const fit = suggestFit({ vendor, detectedStack, scores });
+    try {
+      const sb = supabaseAdmin();
+      const { data: existing } = await sb.from('CompanyTechMaturity')
+        .select('id').eq('companyId', companyId).eq('vendor', vendor).maybeSingle();
+      if (existing?.id) {
+        await sb.from('CompanyTechMaturity').update({
+          sources, scores, detectedStack, fitRecommendations: fit, updatedAt: new Date().toISOString()
+        }).eq('id', existing.id);
+      } else {
+        await sb.from('CompanyTechMaturity').insert({
+          companyId, vendor, sources, scores, detectedStack, fitRecommendations: fit
+        });
       }
-    }, { status: 500 })
+    } catch {}
+    return NextResponse.json({ ok:true, scores, fit });
+  } catch (e:any) {
+    return NextResponse.json({ ok:false, error:String(e?.message||e) }, { status:500 });
   }
 }
-

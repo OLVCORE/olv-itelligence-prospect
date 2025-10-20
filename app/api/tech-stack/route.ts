@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin'
 import { techStackDetector } from '@/lib/services/tech-stack-detector'
 
 export const runtime = 'nodejs'
+export const maxDuration = 20 // Tech stack detection: 20s
 
 export async function POST(req: Request) {
   try {

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { scalableSearchService } from '@/lib/services/scalable-search'
 import { BulkSearchRequest, SearchFields } from '@/lib/types/search-fields'
 
+export const runtime = 'nodejs'
+export const maxDuration = 60 // Bulk search with multiple companies: 60s
+
 export async function POST(request: NextRequest) {
   try {
     console.log('[API /bulk-search] 🚀 Recebendo requisição de busca em massa')

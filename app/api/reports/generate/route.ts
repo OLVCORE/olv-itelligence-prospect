@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase/admin"
 import { aiReportGenerator } from "@/lib/ai/report-generator"
 
+export const runtime = 'nodejs'
+export const maxDuration = 60 // AI report generation: 60s
+
 // Função para buscar dados reais da empresa
 async function getCompanyData(companyId: string) {
   console.log('[Reports] Buscando empresa com ID:', companyId)

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 
 export const runtime = 'nodejs'
+export const maxDuration = 20 // Identity resolution: 20s
 
 interface ResolveRequest {
   personId?: string

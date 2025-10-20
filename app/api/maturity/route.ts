@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin'
 import { maturityCalculator, vendorFitCalculator } from '@/lib/services/maturity-calculator'
 
 export const runtime = 'nodejs'
+export const maxDuration = 15 // Maturity calculation: 15s
 
 interface MaturityRequest {
   projectId: string

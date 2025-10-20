@@ -5,6 +5,9 @@ import { openai } from "@/lib/services/openai"
 import { googleSearch } from "@/lib/services/google-search"
 import { prisma } from "@/lib/db"
 
+export const runtime = 'nodejs'
+export const maxDuration = 60 // Análise completa com múltiplas APIs: 60s
+
 /**
  * POST /api/analyze/complete
  * 

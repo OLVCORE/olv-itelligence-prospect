@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { receitaWS } from "@/lib/services/receitaws"
 
+export const runtime = 'nodejs'
+export const maxDuration = 15 // ReceitaWS + simple analysis: 15s
+
 /**
  * POST /api/analyze/simple
  * 

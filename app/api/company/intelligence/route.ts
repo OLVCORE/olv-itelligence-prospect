@@ -5,6 +5,7 @@ import { contactEnrichment } from '@/lib/services/contact-enrichment'
 import { vendorMatching } from '@/lib/services/vendor-matching'
 
 export const runtime = 'nodejs'
+export const maxDuration = 60 // Sales Navigator scraping + enrichment: 60s
 
 /**
  * POST /api/company/intelligence

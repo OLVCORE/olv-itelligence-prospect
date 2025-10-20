@@ -5,6 +5,7 @@ import { propensityScorer } from '@/lib/services/propensity-scorer'
 import { cadenceManager } from '@/lib/services/cadence-manager'
 
 export const runtime = 'nodejs'
+export const maxDuration = 30 // AI analysis: 30s
 
 interface AIAnalysisRequest {
   companyId: string

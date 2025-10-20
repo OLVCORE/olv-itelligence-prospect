@@ -5,6 +5,7 @@ import { nlpClassifier } from '@/lib/services/nlp-classifier'
 import { personaExtractor } from '@/lib/services/persona-extractor'
 
 export const runtime = 'nodejs'
+export const maxDuration = 30 // Persona analysis with network scanning: 30s
 
 /**
  * POST /api/persona/analyze

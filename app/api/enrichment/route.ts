@@ -9,6 +9,9 @@ import {
   calculateConfidence
 } from "@/lib/enrichment"
 
+export const runtime = 'nodejs'
+export const maxDuration = 30 // Multiple enrichment operations: 30s
+
 export async function POST(request: NextRequest) {
   // Demo: sem autenticação por enquanto
 

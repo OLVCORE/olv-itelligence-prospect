@@ -1,52 +1,24 @@
-import { NextResponse } from 'next/server'
-import { fetchHeaders } from '@/lib/integrations/http-headers'
-import { supabaseAdmin } from '@/lib/supabase/admin'
-
-export async function POST(req: Request) {
+import { NextRequest, NextResponse } from 'next/server';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
+export const runtime = 'nodejs';
+export async function POST(req: NextRequest) {
+  const { url, companyId } = await req.json();
+  if (!url) return NextResponse.json({ ok:false, error:'url obrigatória' }, { status:400 });
   try {
-    const { url, companyId } = await req.json()
-
-    if (!url) {
-      return NextResponse.json({
-        ok: false,
-        error: { code: 'MISSING_URL', message: 'url é obrigatório' }
-      }, { status: 400 })
-    }
-
-    const data = await fetchHeaders(url)
-
-    // UPSERT TechSignals se tiver companyId
-    if (companyId && data.detectedTech && data.detectedTech.length > 0) {
-      for (const tech of data.detectedTech) {
-        await supabaseAdmin.from('TechSignals').insert({
-          companyId,
-          kind: 'header',
-          key: tech.technology,
-          value: tech.evidence,
-          confidence: tech.confidence,
-          source: 'http_headers',
-          url: data.url,
-          fetchedAt: new Date().toISOString()
-        })
+    const head = await fetch(url, { method:'HEAD', redirect:'follow' });
+    const headers = {};
+    head.headers.forEach((v, k) => headers[k.toLowerCase()] = v);
+    try {
+      if (companyId) {
+        const sb = supabaseAdmin();
+        await sb.from('TechSignals').insert({
+          companyId, kind:'http_header', key:'headers', value: headers,
+          confidence:70, source:'http_headers', url, fetchedAt: new Date().toISOString()
+        });
       }
-      
-      console.log('[HTTP Headers] ✅', data.detectedTech.length, 'sinais salvos para:', companyId)
-    }
-
-    return NextResponse.json({
-      ok: true,
-      data
-    })
-  } catch (error: any) {
-    console.error('[API HTTP Headers] Erro:', error.message)
-    
-    return NextResponse.json({
-      ok: false,
-      error: {
-        code: 'HEADERS_ERROR',
-        message: error.message
-      }
-    }, { status: 502 })
+    } catch {}
+    return NextResponse.json({ ok:true, headers });
+  } catch (e:any) {
+    return NextResponse.json({ ok:false, error:String(e?.message||e) }, { status:500 });
   }
 }
-

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { RealAnalysisEngine } from '@/lib/real-analysis-engine'
 import { prisma } from '@/lib/db'
 
+export const runtime = 'nodejs'
+export const maxDuration = 30 // RealAnalysisEngine: 30s
+
 export async function POST(request: NextRequest) {
   try {
     const { companyId } = await request.json()
