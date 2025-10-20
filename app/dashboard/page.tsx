@@ -638,10 +638,44 @@ export default function DashboardPage() {
 
             <div className="space-y-2">
               <Button
-                onClick={() => {
+                onClick={async () => {
+                  setLoading(true)
                   setCurrentCompany(company)
-                  setSearchTerm(company.cnpj)
-                  handleSearch()
+                  try {
+                    console.log('[Dashboard] Gerando relatório para:', company.name)
+                    const response = await fetch('/api/reports/generate', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        companyId: company.id,
+                        sections: ['overview', 'financial', 'techStack', 'decisionMakers', 'maturity', 'vendorFit']
+                      })
+                    })
+                    
+                    const data = await response.json()
+                    
+                    if (data.success || data.reportUrl) {
+                      console.log('[Dashboard] ✅ Relatório gerado com sucesso')
+                      // Download do relatório
+                      if (data.reportUrl) {
+                        window.open(data.reportUrl, '_blank')
+                      } else if (data.pdfBase64) {
+                        const link = document.createElement('a')
+                        link.href = `data:application/pdf;base64,${data.pdfBase64}`
+                        link.download = `relatorio-${company.name}-${new Date().toISOString().split('T')[0]}.pdf`
+                        link.click()
+                      }
+                      alert('Relatório gerado com sucesso!')
+                    } else {
+                      console.error('[Dashboard] Erro ao gerar relatório:', data.error)
+                      alert('Erro ao gerar relatório: ' + (data.error || 'Erro desconhecido'))
+                    }
+                  } catch (error: any) {
+                    console.error('[Dashboard] Erro ao gerar relatório:', error)
+                    alert('Erro ao gerar relatório: ' + error.message)
+                  } finally {
+                    setLoading(false)
+                  }
                 }}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                 disabled={loading}
