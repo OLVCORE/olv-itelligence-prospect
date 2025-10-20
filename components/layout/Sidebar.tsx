@@ -46,12 +46,12 @@ export function Sidebar({ open }: SidebarProps) {
     <aside className={`
       fixed left-0 top-16 h-[calc(100vh-4rem)] 
       bg-slate-800/90 backdrop-blur-xl border-r border-slate-700/50 
-      overflow-y-auto z-40 transition-all duration-300 ease-in-out
+      overflow-y-auto z-40 transition-all duration-300 ease-in-out group
       ${open ? 'w-64' : 'w-16 hover:w-64'}
     `}>
       <div className="p-4 space-y-2">
         <div className="mb-4">
-          <h2 className={`text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0'}`}>
+          <h2 className={`text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
             Módulos Inteligentes
           </h2>
         </div>
@@ -78,15 +78,11 @@ export function Sidebar({ open }: SidebarProps) {
                 }}
               >
                 <Icon className={`h-5 w-5 ${isActive ? 'text-white' : module.color} ${!open ? 'mx-auto' : ''}`} />
-                {open && (
-                  <>
-                    <span className="flex-1 text-left">{module.name}</span>
-                    {isActive && (
-                      <Badge className="bg-white/20 text-white text-[10px]">
-                        Ativo
-                      </Badge>
-                    )}
-                  </>
+                <span className={`flex-1 text-left transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>{module.name}</span>
+                {isActive && (
+                  <Badge className={`bg-white/20 text-white text-[10px] transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                    Ativo
+                  </Badge>
                 )}
               </Button>
               
@@ -103,7 +99,7 @@ export function Sidebar({ open }: SidebarProps) {
 
       {/* Footer */}
       <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-700/50 bg-slate-800/95">
-        <div className={`text-xs text-slate-400 text-center transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0'}`}>
+        <div className={`text-xs text-slate-400 text-center transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
           <p>OLV Intelligence v2.0</p>
           <p className="text-[10px] text-slate-500 mt-1">Sistema de Prospecção B2B</p>
         </div>

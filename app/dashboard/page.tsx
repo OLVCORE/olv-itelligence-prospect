@@ -753,7 +753,7 @@ export default function DashboardPage() {
       />
       <Sidebar open={sidebarOpen} />
       
-      <div className={`container mx-auto px-4 py-8 transition-all ${sidebarOpen ? 'ml-64' : 'ml-0'}`}>
+      <div className={`container mx-auto responsive-padding transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'} pt-16`}>
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">

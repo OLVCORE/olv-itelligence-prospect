@@ -77,8 +77,16 @@ export async function POST(req: Request) {
     console.log('[API] 💾 Gravando no Supabase...')
 
     // Obter ou criar projeto padrão (resolve FK obrigatória)
-    const projectId = await getDefaultProjectId()
-    console.log('[API] ✅ ProjectId obtido:', projectId)
+    let projectId: string
+    try {
+      projectId = await getDefaultProjectId()
+      console.log('[API] ✅ ProjectId obtido:', projectId)
+    } catch (error: any) {
+      console.error('[API] ❌ Erro ao obter ProjectId:', error)
+      // Fallback: usar ID fixo para não quebrar o sistema
+      projectId = 'default-project-id'
+      console.log('[API] ⚠️ Usando ProjectId fallback:', projectId)
+    }
 
     // Parse capital (string → number) com fallback 0
     const capitalNum = Number(

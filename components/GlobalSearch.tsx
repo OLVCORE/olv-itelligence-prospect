@@ -57,24 +57,24 @@ export function GlobalSearch({ className = "" }: GlobalSearchProps) {
 
   return (
     <div className={`flex items-center gap-2 ${className}`}>
-      <div className="relative flex-1 max-w-md">
+      <div className="relative flex-1 max-w-xs sm:max-w-md">
         <Input
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           onKeyPress={handleKeyPress}
-          placeholder="Digite CNPJ para buscar empresa..."
-          className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 pr-10"
+          placeholder="CNPJ..."
+          className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 pr-10 responsive-input"
         />
         <Button
           onClick={handleSearch}
           disabled={isSearching || !searchQuery.trim()}
           size="sm"
-          className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 bg-blue-600 hover:bg-blue-700"
+          className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 sm:h-8 sm:w-8 p-0 bg-blue-600 hover:bg-blue-700"
         >
           {isSearching ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
           ) : (
-            <Search className="h-4 w-4" />
+            <Search className="h-3 w-3 sm:h-4 sm:w-4" />
           )}
         </Button>
       </div>
