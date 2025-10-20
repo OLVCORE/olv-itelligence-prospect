@@ -9,10 +9,13 @@ export function normalizeCnpj(cnpj: string | undefined | null): string {
 
 export function isValidCnpj(cnpj: string | undefined | null): boolean {
   const normalized = normalizeCnpj(cnpj)
+  
+  // Aceitar qualquer CNPJ de 14 dígitos (sem validação de dígito verificador)
+  // Isso permite buscar empresas reais mesmo com CNPJs que podem ter pequenos erros
   if (normalized.length !== 14) return false
   
-  // Validação básica de CNPJ
-  if (/^(\d)\1+$/.test(normalized)) return false // Todos dígitos iguais
+  // Apenas verificar se não são todos dígitos iguais
+  if (/^(\d)\1+$/.test(normalized)) return false
   
   return true
 }

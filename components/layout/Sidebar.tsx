@@ -42,13 +42,16 @@ interface SidebarProps {
 export function Sidebar({ open }: SidebarProps) {
   const { activeModule, setActiveModule } = useModuleContext()
 
-  if (!open) return null
-
   return (
-    <aside className="fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-slate-800/90 backdrop-blur-xl border-r border-slate-700/50 overflow-y-auto z-40">
+    <aside className={`
+      fixed left-0 top-16 h-[calc(100vh-4rem)] 
+      bg-slate-800/90 backdrop-blur-xl border-r border-slate-700/50 
+      overflow-y-auto z-40 transition-all duration-300 ease-in-out
+      ${open ? 'w-64' : 'w-16 hover:w-64'}
+    `}>
       <div className="p-4 space-y-2">
         <div className="mb-4">
-          <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+          <h2 className={`text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0'}`}>
             Módulos Inteligentes
           </h2>
         </div>
@@ -58,42 +61,49 @@ export function Sidebar({ open }: SidebarProps) {
           const isActive = activeModule === module.id
 
           return (
-            <Tooltip key={module.id}>
-              <TooltipTrigger asChild>
-                <Button
-                  variant={isActive ? "default" : "ghost"}
-                  className={`
-                    w-full justify-start gap-3 transition-all
-                    ${isActive 
-                      ? 'bg-blue-600 text-white hover:bg-blue-700' 
-                      : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
-                    }
-                  `}
-                  onClick={() => {
-                    console.log(`[Sidebar] 🔄 Mudando para módulo: ${module.id}`)
-                    setActiveModule(module.id)
-                  }}
-                >
-                  <Icon className={`h-5 w-5 ${isActive ? 'text-white' : module.color}`} />
-                  <span className="flex-1 text-left">{module.name}</span>
-                  {isActive && (
-                    <Badge className="bg-white/20 text-white text-[10px]">
-                      Ativo
-                    </Badge>
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                <p>Acessar {module.name}</p>
-              </TooltipContent>
-            </Tooltip>
+            <div key={module.id} className="relative group">
+              <Button
+                variant={isActive ? "default" : "ghost"}
+                className={`
+                  w-full justify-start gap-3 transition-all duration-200 ease-in-out
+                  ${isActive 
+                    ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                    : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                  }
+                  ${!open ? 'justify-center px-2' : ''}
+                `}
+                onClick={() => {
+                  console.log(`[Sidebar] 🔄 Mudando para módulo: ${module.id}`)
+                  setActiveModule(module.id)
+                }}
+              >
+                <Icon className={`h-5 w-5 ${isActive ? 'text-white' : module.color} ${!open ? 'mx-auto' : ''}`} />
+                {open && (
+                  <>
+                    <span className="flex-1 text-left">{module.name}</span>
+                    {isActive && (
+                      <Badge className="bg-white/20 text-white text-[10px]">
+                        Ativo
+                      </Badge>
+                    )}
+                  </>
+                )}
+              </Button>
+              
+              {/* Tooltip para quando sidebar está fechada */}
+              {!open && (
+                <div className="absolute left-16 top-0 bg-slate-700 text-white px-3 py-2 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 whitespace-nowrap">
+                  {module.name}
+                </div>
+              )}
+            </div>
           )
         })}
       </div>
 
       {/* Footer */}
       <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-700/50 bg-slate-800/95">
-        <div className="text-xs text-slate-400 text-center">
+        <div className={`text-xs text-slate-400 text-center transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0'}`}>
           <p>OLV Intelligence v2.0</p>
           <p className="text-[10px] text-slate-500 mt-1">Sistema de Prospecção B2B</p>
         </div>

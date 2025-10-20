@@ -69,7 +69,8 @@ export function CompanySearchModule() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          query: searchQuery
+          cnpj: searchType === "cnpj" ? searchQuery : undefined,
+          website: searchType === "website" ? searchQuery : undefined
         })
       })
 

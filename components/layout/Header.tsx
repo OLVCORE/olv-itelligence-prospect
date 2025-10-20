@@ -26,6 +26,7 @@ import {
 import { ModeToggle } from "@/components/ModeToggle"
 import { ProjectSwitcher } from "@/components/ProjectSwitcher"
 import { VendorSelector } from "@/components/VendorSelector"
+import { GlobalSearch } from "@/components/GlobalSearch"
 
 interface HeaderProps {
   onToggleSidebar?: () => void
@@ -89,6 +90,11 @@ export function Header({ onToggleSidebar, sidebarOpen = true }: HeaderProps) {
               <h1 className="text-sm sm:text-lg font-semibold text-white">OLV Intelligence</h1>
               <p className="text-[10px] sm:text-xs text-slate-400">Sistema de Prospecção</p>
             </div>
+          </div>
+
+          {/* Global Search */}
+          <div className="hidden md:block ml-4">
+            <GlobalSearch />
           </div>
 
           {/* Project Switcher + Vendor Selector */}
