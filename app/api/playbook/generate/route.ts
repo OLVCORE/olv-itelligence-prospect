@@ -185,6 +185,5 @@ function generatePlaybook(person: any, persona: any, vendor: string): any {
       productsTotvs,
       packagesOlv
     }
-  }
 }
 
