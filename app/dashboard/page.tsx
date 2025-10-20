@@ -35,7 +35,9 @@ import { CompanySearchModule } from "@/components/modules/CompanySearchModule"
 import { CompanyCard } from "@/components/CompanyCard"
 import { SearchBar } from "@/components/SearchBar"
 import { BenchmarkComparisonModal } from "@/components/modals/BenchmarkComparisonModal"
+import { PreviewModal } from "@/components/modals/PreviewModal"
 import { useMultiSelect } from "@/hooks/useMultiSelect"
+import { formatCurrency } from "@/lib/utils/format"
 // REMOVIDO: Imports de mock-data
 // Sistema agora usa dados REAIS de APIs
 import {
@@ -150,6 +152,8 @@ function DashboardContent() {
   // Multi-select para benchmark comparativo
   const multiSelect = useMultiSelect()
   const [showComparisonModal, setShowComparisonModal] = useState(false)
+  const [showPreviewModal, setShowPreviewModal] = useState(false)
+  const [previewData, setPreviewData] = useState<any>(null)
   
   // Estados para empresas do Supabase
   const [companies, setCompanies] = useState<Company[]>([])
@@ -253,6 +257,20 @@ function DashboardContent() {
     console.log('[Dashboard] Selected company:', selectedCompany?.fantasia || 'Nenhuma empresa selecionada')
   }, [activeTab, selectedCompany])
 
+  // Escutar evento para abrir PreviewModal
+  useEffect(() => {
+    const handleOpenPreviewModal = (event: CustomEvent) => {
+      setPreviewData(event.detail.previewData)
+      setShowPreviewModal(true)
+    }
+
+    window.addEventListener('openPreviewModal', handleOpenPreviewModal as EventListener)
+    
+    return () => {
+      window.removeEventListener('openPreviewModal', handleOpenPreviewModal as EventListener)
+    }
+  }, [])
+
   const handleCompanyClick = (company: Company) => {
     // Selecionar empresa diretamente sem modal
     selectCompany({
@@ -281,6 +299,38 @@ function DashboardContent() {
       lastAnalyzed: company.analyses?.[0]?.createdAt || '',
       capitalSocial: company.capital?.toString() || '0'
     })
+  }
+
+  const generatePreview = async (cnpj: string) => {
+    try {
+      console.log('[Dashboard] 📄 Gerando preview para CNPJ:', cnpj)
+      
+      const response = await fetch('/api/companies/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cnpj, useAI: true, forceRefresh: true })
+      })
+
+      if (!response.ok) {
+        throw new Error(`Erro ${response.status}: ${response.statusText}`)
+      }
+
+      const data = await response.json()
+      
+      if (data.status === 'success') {
+        // Abrir PreviewModal com os dados
+        const event = new CustomEvent('openPreviewModal', { 
+          detail: { previewData: data.data } 
+        })
+        window.dispatchEvent(event)
+      } else {
+        console.error('[Dashboard] ❌ Erro ao gerar preview:', data.message)
+        alert(`Erro: ${data.message}`)
+      }
+    } catch (error: any) {
+      console.error('[Dashboard] ❌ Erro ao gerar preview:', error.message)
+      alert(`Erro ao gerar relatório: ${error.message}`)
+    }
   }
 
   if (isCheckingAuth) {
@@ -522,7 +572,7 @@ function DashboardContent() {
                             <div className="flex justify-between text-sm">
                               <span className="text-gray-600">Capital:</span>
                               <span className="font-semibold">
-                                {company.capital ? `R$ ${(company.capital / 1000).toFixed(0)}k` : '—'}
+                                {company.capital ? formatCurrency(company.capital) : '—'}
                               </span>
                             </div>
                             <div className="flex justify-between text-sm">
@@ -537,16 +587,8 @@ function DashboardContent() {
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation()
-                              // Abrir PreviewModal diretamente com CNPJ
-                              const searchBar = document.querySelector('input[placeholder*="CNPJ"]') as HTMLInputElement
-                              if (searchBar) {
-                                searchBar.value = company.cnpj
-                                // Disparar evento de busca
-                                const searchButton = document.querySelector('button[type="submit"]') as HTMLButtonElement
-                                if (searchButton) {
-                                  searchButton.click()
-                                }
-                              }
+                              // Gerar preview diretamente via API
+                              generatePreview(company.cnpj)
                             }}
                           >
                             <RefreshCw className="h-4 w-4 mr-2" />
@@ -670,6 +712,13 @@ function DashboardContent() {
         isOpen={showComparisonModal}
         onClose={() => setShowComparisonModal(false)}
         companies={multiSelect.getComparisonData()}
+      />
+
+      {/* Modal de Preview */}
+      <PreviewModal
+        isOpen={showPreviewModal}
+        onClose={() => setShowPreviewModal(false)}
+        previewData={previewData}
       />
     </div>
   )
