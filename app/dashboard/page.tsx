@@ -282,20 +282,6 @@ function DashboardContent() {
       capitalSocial: company.capital?.toString() || '0'
     })
   }
-  
-  const handleAnalyzeCompany = async (company: Company) => {
-    // Abrir SearchBar com CNPJ para gerar NOVO relatório
-    const searchBar = document.querySelector('input[placeholder*="CNPJ"]') as HTMLInputElement
-    if (searchBar) {
-      searchBar.value = company.cnpj
-      searchBar.dispatchEvent(new Event('input', { bubbles: true }))
-      // Trigger busca automática
-      const form = searchBar.closest('form')
-      if (form) {
-        form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
-      }
-    }
-  }
 
   if (isCheckingAuth) {
     return <LoadingState />
@@ -483,9 +469,8 @@ function DashboardContent() {
                         className={`hover:shadow-lg transition-all ${
                           multiSelect.isSelected(company.id) 
                             ? 'ring-2 ring-blue-500 bg-blue-50' 
-                            : 'cursor-pointer'
+                            : ''
                         }`}
-                        onClick={() => handleCompanyClick(company)}
                       >
                         <CardHeader>
                           <div className="flex justify-between items-start">
@@ -552,7 +537,16 @@ function DashboardContent() {
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation()
-                              handleAnalyzeCompany(company)
+                              // Abrir PreviewModal diretamente com CNPJ
+                              const searchBar = document.querySelector('input[placeholder*="CNPJ"]') as HTMLInputElement
+                              if (searchBar) {
+                                searchBar.value = company.cnpj
+                                // Disparar evento de busca
+                                const searchButton = document.querySelector('button[type="submit"]') as HTMLButtonElement
+                                if (searchButton) {
+                                  searchButton.click()
+                                }
+                              }
                             }}
                           >
                             <RefreshCw className="h-4 w-4 mr-2" />
