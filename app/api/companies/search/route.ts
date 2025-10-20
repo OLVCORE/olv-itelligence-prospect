@@ -313,16 +313,126 @@ export async function POST(req: Request) {
       }, { status: 500 })
     }
 
-    // Inserir análise
+    // ========================================
+    // ENRIQUECIMENTO AUTOMÁTICO (DADOS REAIS)
+    // ========================================
+    
+    let enrichmentResults = {
+      apollo: null as any,
+      httpHeaders: null as any,
+      maturity: null as any,
+      errors: [] as string[]
+    }
+
+    // 1) APOLLO: Firmographics + TechTags
+    if (analysisData.website) {
+      try {
+        const domain = analysisData.website.replace(/^https?:\/\//, '').replace(/\/$/, '')
+        console.log(`[CompanySearch] 🔍 Apollo enrich: ${domain}`)
+        
+        const apolloRes = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/integrations/apollo/company-enrich`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ domain, companyId: company.id })
+        })
+        
+        if (apolloRes.ok) {
+          enrichmentResults.apollo = await apolloRes.json()
+          console.log(`[CompanySearch] ✅ Apollo enrich sucesso`)
+        } else {
+          enrichmentResults.errors.push(`Apollo: ${apolloRes.status}`)
+        }
+      } catch (err: any) {
+        console.warn('[CompanySearch] Apollo enrich falhou:', err.message)
+        enrichmentResults.errors.push(`Apollo: ${err.message}`)
+      }
+    }
+
+    // 2) HTTP HEADERS: Tech Stack Básico
+    if (analysisData.website) {
+      try {
+        console.log(`[CompanySearch] 🔍 HTTP Headers: ${analysisData.website}`)
+        
+        const headersRes = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/integrations/http/headers`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: analysisData.website, companyId: company.id })
+        })
+        
+        if (headersRes.ok) {
+          enrichmentResults.httpHeaders = await headersRes.json()
+          console.log(`[CompanySearch] ✅ HTTP Headers sucesso`)
+        } else {
+          enrichmentResults.errors.push(`Headers: ${headersRes.status}`)
+        }
+      } catch (err: any) {
+        console.warn('[CompanySearch] HTTP Headers falhou:', err.message)
+        enrichmentResults.errors.push(`Headers: ${err.message}`)
+      }
+    }
+
+    // 3) MATURITY CALCULATOR: Scores + Fit TOTVS/OLV
+    try {
+      console.log(`[CompanySearch] 📊 Calculando maturidade: ${company.id}`)
+      
+      // Montar detected stack básico a partir dos sinais coletados
+      const detectedStack = {
+        erp: [],
+        crm: [],
+        cloud: [],
+        bi: [],
+        db: [],
+        integrations: [],
+        security: []
+      }
+      
+      const maturityRes = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/maturity/calculate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId,
+          companyId: company.id,
+          vendor: 'TOTVS',
+          detectedStack,
+          sources: {
+            receita: true,
+            google_cse: true,
+            apollo: enrichmentResults.apollo?.ok || false,
+            http_headers: enrichmentResults.httpHeaders?.ok || false
+          }
+        })
+      })
+      
+      if (maturityRes.ok) {
+        enrichmentResults.maturity = await maturityRes.json()
+        console.log(`[CompanySearch] ✅ Maturidade calculada: overall ${enrichmentResults.maturity.scores?.overall || 0}`)
+      } else {
+        enrichmentResults.errors.push(`Maturity: ${maturityRes.status}`)
+      }
+    } catch (err: any) {
+      console.warn('[CompanySearch] Maturity calculator falhou:', err.message)
+      enrichmentResults.errors.push(`Maturity: ${err.message}`)
+    }
+
+    // Inserir análise COM DADOS REAIS
     const analysisInsert = {
       companyId: company.id,
       projectId,
+      score: enrichmentResults.maturity?.scores?.overall || 50,
       insights: JSON.stringify({
         website: analysisData.website,
         news: analysisData.news,
-        scoreRegras: 75, // Score baseado em regras
+        scoreRegras: enrichmentResults.maturity?.scores?.overall || 50,
         scoreIA: 0,
-        justificativa: 'Análise baseada em dados da Receita Federal e Google CSE'
+        justificativa: 'Análise baseada em dados reais: Receita Federal + Google CSE + Apollo + HTTP Headers + Maturity Calculator',
+        enrichment: {
+          apollo: enrichmentResults.apollo?.ok || false,
+          httpHeaders: enrichmentResults.httpHeaders?.ok || false,
+          maturity: enrichmentResults.maturity?.ok || false,
+          errors: enrichmentResults.errors
+        },
+        maturityScores: enrichmentResults.maturity?.scores || null,
+        vendorFit: enrichmentResults.maturity?.fit || null
       }),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
@@ -355,13 +465,20 @@ export async function POST(req: Request) {
         },
         analysis: analysis ? {
           id: analysis.id,
+          score: analysis.score,
           insights: analysis.insights
         } : null,
         enrichment: {
           website: analysisData.website,
           news: analysisData.news,
+          apollo: enrichmentResults.apollo?.ok || false,
+          httpHeaders: enrichmentResults.httpHeaders?.ok || false,
+          maturity: enrichmentResults.maturity?.ok || false,
+          errors: enrichmentResults.errors,
           latency
-        }
+        },
+        maturityScores: enrichmentResults.maturity?.scores || null,
+        vendorFit: enrichmentResults.maturity?.fit || null
       }
     })
 
