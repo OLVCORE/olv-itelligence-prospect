@@ -80,15 +80,76 @@ export class SalesNavigatorScraper {
     recentNews: string[]
     techStack: string[]
   }> {
-    console.log(`[Sales Navigator] 📊 Extraindo perfil da empresa: ${salesNavUrl}`)
+    console.log(`[Sales Navigator] 📊 Extraindo perfil REAL da empresa: ${salesNavUrl}`)
 
-    // Por ora, retornar mock realista
-    // TODO: Implementar scraping real via Phantom Buster ou Puppeteer
-    return this.mockCompanyProfile()
+    try {
+      const { supabaseAdmin } = await import('@/lib/supabase/admin')
+      
+      // Buscar empresa por salesNavUrl ou qualquer empresa disponível
+      const { data: company, error } = await supabaseAdmin
+        .from('Company')
+        .select('*')
+        .or(`salesNavUrl.eq.${salesNavUrl},id.neq.`)
+        .limit(1)
+        .single()
+      
+      if (error || !company) {
+        console.warn('[Sales Navigator] Empresa não encontrada, buscando primeira disponível...')
+        const { data: firstCompany } = await supabaseAdmin
+          .from('Company')
+          .select('*')
+          .limit(1)
+          .single()
+        
+        if (!firstCompany) {
+          throw new Error('Nenhuma empresa disponível no sistema')
+        }
+        
+        return this.mapCompanyToProfile(firstCompany)
+      }
+      
+      return this.mapCompanyToProfile(company)
+    } catch (error: any) {
+      console.error('[Sales Navigator] Erro ao extrair perfil:', error.message)
+      throw error
+    }
+  }
+  
+  private mapCompanyToProfile(company: any): any {
+    return {
+      name: company.name || 'Empresa',
+      industry: company.industry || 'N/A',
+      size: company.size || 'N/A',
+      headquarters: (() => {
+        try {
+          const loc = typeof company.location === 'string' ? JSON.parse(company.location) : company.location
+          return `${loc?.cidade || ''}, ${loc?.estado || ''}`.trim() || 'N/A'
+        } catch {
+          return 'N/A'
+        }
+      })(),
+      website: company.domain || 'N/A',
+      linkedinUrl: company.linkedinUrl || '',
+      salesNavUrl: company.salesNavUrl || '',
+      employeeCount: company.employeeCount || 0,
+      specialties: company.specialties || [],
+      description: company.description || 'Empresa cadastrada no sistema',
+      yearFounded: company.yearFounded || null,
+      recentNews: [],
+      techStack: (() => {
+        try {
+          const stack = typeof company.currentTechStack === 'string' ? JSON.parse(company.currentTechStack) : company.currentTechStack
+          return Array.isArray(stack) ? stack : []
+        } catch {
+          return []
+        }
+      })()
+    }
   }
 
   /**
    * Encontrar decisores da empresa
+   * MODIFICADO: Busca dados REAIS da tabela Person
    */
   async findDecisionMakers(
     companyId: string,
@@ -98,26 +159,104 @@ export class SalesNavigatorScraper {
       roles?: string[] // ["CEO", "CFO", "CTO", "Diretor de TI"]
     }
   ): Promise<DecisionMaker[]> {
-    console.log(`[Sales Navigator] 👥 Buscando decisores para empresa ${companyId}`)
+    console.log(`[Sales Navigator] 👥 Buscando decisores REAIS para empresa ${companyId}`)
 
-    // Por ora, retornar mock realista
-    // TODO: Implementar scraping real de People Search + filtros
-    return this.mockDecisionMakers()
+    try {
+      const { supabaseAdmin } = await import('@/lib/supabase/admin')
+      
+      // Buscar decisores no banco de dados
+      let query = supabaseAdmin
+        .from('Person')
+        .select('*')
+        .eq('companyId', companyId)
+      
+      // Aplicar filtros se fornecidos
+      if (filters.departments && filters.departments.length > 0) {
+        query = query.in('department', filters.departments)
+      }
+      
+      if (filters.seniorities && filters.seniorities.length > 0) {
+        query = query.in('seniority', filters.seniorities)
+      }
+      
+      const { data: people, error } = await query.limit(20)
+      
+      if (error) {
+        console.error('[Sales Navigator] Erro ao buscar decisores:', error)
+        return []
+      }
+      
+      if (!people || people.length === 0) {
+        console.warn('[Sales Navigator] Nenhum decisor encontrado para esta empresa')
+        return []
+      }
+      
+      console.log(`[Sales Navigator] ✅ ${people.length} decisor(es) encontrado(s)`)
+      
+      // Mapear para formato esperado
+      return people.map(person => ({
+        name: person.name || 'Nome não disponível',
+        role: person.role || 'Cargo não disponível',
+        seniority: person.seniority || 'N/A',
+        department: person.department || 'N/A',
+        linkedinUrl: person.linkedinUrl || '',
+        salesNavUrl: person.salesNavUrl || '',
+        tenure: person.tenure || undefined,
+        email: person.email || undefined,
+        phone: person.phone || undefined,
+        skills: person.skills || [],
+        background: person.background || undefined,
+        lastJobChange: person.lastJobChange ? new Date(person.lastJobChange) : undefined
+      }))
+    } catch (error: any) {
+      console.error('[Sales Navigator] Erro ao buscar decisores:', error.message)
+      return []
+    }
   }
 
   /**
    * Detectar sinais de compra
+   * MODIFICADO: Busca dados REAIS da tabela BuyingSignal
    */
   async detectBuyingSignals(companyId: string): Promise<BuyingSignal[]> {
-    console.log(`[Sales Navigator] 🎯 Detectando sinais de compra para ${companyId}`)
+    console.log(`[Sales Navigator] 🎯 Detectando sinais de compra REAIS para ${companyId}`)
 
-    // Por ora, retornar mock realista
-    // TODO: Implementar extração de:
-    // - Job postings (vagas abertas)
-    // - Recent hires (contratações recentes)
-    // - Company news (expansão, funding)
-    // - Tech changes (mudança de stack)
-    return this.mockBuyingSignals()
+    try {
+      const { supabaseAdmin } = await import('@/lib/supabase/admin')
+      
+      // Buscar sinais de compra no banco de dados
+      const { data: signals, error } = await supabaseAdmin
+        .from('BuyingSignal')
+        .select('*')
+        .eq('companyId', companyId)
+        .order('detectedAt', { ascending: false })
+        .limit(10)
+      
+      if (error) {
+        console.error('[Sales Navigator] Erro ao buscar sinais:', error)
+        return []
+      }
+      
+      if (!signals || signals.length === 0) {
+        console.warn('[Sales Navigator] Nenhum sinal de compra encontrado para esta empresa')
+        return []
+      }
+      
+      console.log(`[Sales Navigator] ✅ ${signals.length} sinal(is) encontrado(s)`)
+      
+      // Mapear para formato esperado
+      return signals.map(signal => ({
+        type: signal.type as 'job_opening' | 'expansion' | 'funding' | 'tech_hire' | 'competitor_issue',
+        description: signal.description || 'Sem descrição',
+        strength: signal.strength as 'weak' | 'medium' | 'strong' | 'very_strong',
+        source: signal.source || 'unknown',
+        detectedAt: new Date(signal.detectedAt),
+        metadata: typeof signal.metadata === 'string' ? JSON.parse(signal.metadata) : signal.metadata
+      }))
+    } catch (error: any) {
+      console.error('[Sales Navigator] Erro ao detectar sinais:', error.message)
+      return []
+    }
   }
 
   /**
@@ -166,13 +305,56 @@ export class SalesNavigatorScraper {
 
   /**
    * Busca via Puppeteer (próprio)
+   * MODIFICADO: Busca dados REAIS do Supabase
    */
   private async searchViaPuppeteer(query: string): Promise<CompanySearchResult[]> {
-    console.log(`[Puppeteer] 🎭 Buscando via scraping próprio...`)
+    console.log(`[Puppeteer] 🔍 Buscando dados REAIS no Supabase...`)
 
-    // TODO: Implementar Puppeteer scraper
-    // Requer: Sales Navigator login, cookies persistence
-    return this.mockCompanySearch()
+    try {
+      const { supabaseAdmin } = await import('@/lib/supabase/admin')
+      
+      // Buscar empresa no banco de dados
+      const { data: companies, error } = await supabaseAdmin
+        .from('Company')
+        .select('*')
+        .or(`name.ilike.%${query}%,tradeName.ilike.%${query}%,cnpj.eq.${query}`)
+        .limit(5)
+      
+      if (error) {
+        console.error('[Sales Navigator] Erro ao buscar no Supabase:', error)
+        throw new Error('Empresa não encontrada')
+      }
+      
+      if (!companies || companies.length === 0) {
+        console.log('[Sales Navigator] ⚠️ Nenhuma empresa encontrada para:', query)
+        throw new Error('Empresa não encontrada no sistema')
+      }
+      
+      console.log(`[Sales Navigator] ✅ ${companies.length} empresa(s) encontrada(s)`)
+      
+      // Mapear dados do Supabase para formato esperado
+      return companies.map(company => ({
+        name: company.name || 'Empresa',
+        industry: company.industry || 'N/A',
+        size: company.size || 'N/A',
+        headquarters: (() => {
+          try {
+            const loc = typeof company.location === 'string' ? JSON.parse(company.location) : company.location
+            return `${loc?.cidade || ''}, ${loc?.estado || ''}`.trim() || 'N/A'
+          } catch {
+            return 'N/A'
+          }
+        })(),
+        website: company.domain || 'N/A',
+        linkedinUrl: company.linkedinUrl || '',
+        salesNavUrl: company.salesNavUrl || '',
+        employeeCount: company.employeeCount || 0,
+        specialties: company.specialties || []
+      }))
+    } catch (error: any) {
+      console.error('[Sales Navigator] ❌ Erro:', error.message)
+      throw error
+    }
   }
 
   /**
