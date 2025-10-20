@@ -680,14 +680,14 @@ export default function DashboardPage() {
   const renderCompanyList = () => (
     <div className="space-y-3">
       {paginatedCompanies.map((company) => (
-        <Card key={company.id} className="hover:shadow-md transition-shadow">
+        <Card key={company.id} className="hover:shadow-md transition-shadow dark:bg-slate-800 dark:border-slate-700">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4 flex-1">
-                                <input
-                                  type="checkbox"
+                <input
+                  type="checkbox"
                   checked={selectedCompanies.includes(company.id)}
-                                  onChange={(e) => {
+                  onChange={(e) => {
                     if (e.target.checked) {
                       setSelectedCompanies(prev => [...prev, company.id])
                     } else {
@@ -699,27 +699,27 @@ export default function DashboardPage() {
                 
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-1">
-                    <h3 className="font-semibold text-lg">{company.name}</h3>
-                    <Badge variant={company.status === 'active' ? 'default' : 'secondary'}>
-                      {company.status === 'active' ? 'ATIVA' : 'INATIVA'}
-                              </Badge>
-                                </div>
+                    <h3 className="font-semibold text-lg dark:text-white">{company.tradeName || company.name}</h3>
+                    <Badge variant={company.status === 'ATIVA' || company.status === 'Ativo' ? 'default' : 'secondary'}>
+                      {company.status || 'ATIVA'}
+                    </Badge>
+                  </div>
                   
-                  <div className="grid grid-cols-3 gap-4 text-sm text-gray-600">
+                  <div className="grid grid-cols-3 gap-4 text-sm text-gray-600 dark:text-gray-400">
                     <div>
-                      <span className="font-medium">CNPJ:</span> {company.cnpj || 'N/D'}
-                            </div>
+                      <span className="font-medium">CNPJ:</span> {formatCNPJ(company.cnpj)}
+                    </div>
                     <div>
                       <span className="font-medium">Capital:</span> {company.capital ? formatCurrency(company.capital) : 'N/D'}
-                          </div>
+                    </div>
                     <div>
-                      <span className="font-medium">Análises:</span> {company.analyses?.length || 0}
-                            </div>
-                            </div>
-                            </div>
-                          </div>
+                      <span className="font-medium">Cadastrado:</span> {formatDate(company.createdAt)}
+                    </div>
+                  </div>
+                </div>
+              </div>
               
-                          <Button
+              <Button
                 onClick={() => {
                   setCurrentCompany(company)
                   setSearchTerm(company.cnpj)
@@ -736,12 +736,12 @@ export default function DashboardPage() {
                     Relatório
                   </>
                 )}
-                          </Button>
+              </Button>
             </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
   )
 
   return (
