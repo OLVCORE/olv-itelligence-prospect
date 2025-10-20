@@ -4,6 +4,10 @@ import { supabaseAdmin } from '@/lib/supabase/admin'
 import { getDefaultProjectId } from '@/lib/projects/get-default-project'
 import { normalizeCnpj, isValidCnpj, normalizeDomain } from '@/lib/utils/cnpj'
 
+// CONFIGURAÇÃO CRÍTICA: Limitar timeout para 5 segundos (busca rápida)
+export const maxDuration = 5;
+export const runtime = 'nodejs';
+
 // Schema de validação
 const searchSchema = z.object({
   cnpj: z.string().optional(),
@@ -64,39 +68,32 @@ async function fetchReceitaWS(cnpj: string): Promise<any> {
 
   const url = `https://receitaws.com.br/v1/cnpj/${cnpj}`
   
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    try {
-      console.log(`[CompanySearch] Tentativa ${attempt}/3 para ReceitaWS: ${cnpj}`)
-      
-      const response = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${token}` },
-        signal: AbortSignal.timeout(8000)
-      })
+  // APENAS 1 TENTATIVA para evitar timeout (total máximo: 3s)
+  try {
+    console.log(`[CompanySearch] Buscando ReceitaWS: ${cnpj}`)
+    
+    const response = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${token}` },
+      signal: AbortSignal.timeout(3000) // 3s timeout
+    })
 
-      if (!response.ok) {
-        throw new Error(`ReceitaWS HTTP ${response.status}`)
-      }
-
-      const data = await response.json()
-      
-      if (data.status === 'ERROR') {
-        throw new Error(data.message || 'CNPJ não encontrado na ReceitaWS')
-      }
-
-      receitaBreaker.recordSuccess()
-      console.log(`[CompanySearch] ReceitaWS sucesso: ${data.nome}`)
-      return data
-    } catch (error: any) {
-      console.error(`[CompanySearch] ReceitaWS tentativa ${attempt} falhou:`, error.message)
-      
-      if (attempt === 3) {
-        receitaBreaker.recordFailure()
-        throw error
-      }
-      
-      // Backoff exponencial
-      await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000))
+    if (!response.ok) {
+      throw new Error(`ReceitaWS HTTP ${response.status}`)
     }
+
+    const data = await response.json()
+    
+    if (data.status === 'ERROR') {
+      throw new Error(data.message || 'CNPJ não encontrado na ReceitaWS')
+    }
+
+    receitaBreaker.recordSuccess()
+    console.log(`[CompanySearch] ReceitaWS sucesso: ${data.nome}`)
+    return data
+  } catch (error: any) {
+    console.error(`[CompanySearch] ReceitaWS falhou:`, error.message)
+    receitaBreaker.recordFailure()
+    throw error
   }
 }
 
@@ -125,7 +122,7 @@ async function fetchGoogleCSE(companyName: string, cnpj?: string): Promise<any> 
     const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cseId}&q=${encodeURIComponent(query)}&num=5`
     
     const response = await fetch(url, {
-      signal: AbortSignal.timeout(5000)
+      signal: AbortSignal.timeout(2000) // 2s timeout (reduzido de 5s)
     })
 
     if (!response.ok) {

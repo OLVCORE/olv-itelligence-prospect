@@ -1,6 +1,12 @@
 {
   "regions": ["gru1"],
   "functions": {
+    "app/api/companies/search/route.ts": {
+      "maxDuration": 5
+    },
+    "app/api/companies/enrich/route.ts": {
+      "maxDuration": 60
+    },
     "app/api/**/*.ts": {
       "maxDuration": 10
     }
