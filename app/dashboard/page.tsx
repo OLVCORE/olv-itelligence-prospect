@@ -28,6 +28,7 @@ import {
 import { TechStackModule } from "@/components/modules/TechStackModule"
 import { DecisionMakersModule } from "@/components/modules/DecisionMakersModule"
 import { FinancialModule } from "@/components/modules/FinancialModule"
+import { MaturityModule } from "@/components/modules/MaturityModule"
 import AIAnalysisModule from "@/components/modules/AIAnalysisModule"
 import { BenchmarkModule } from "@/components/modules/BenchmarkModule"
 import { FitTotvsModule } from "@/components/modules/FitTotvsModule"
@@ -178,23 +179,29 @@ export default function DashboardPage() {
 
     try {
       setLoading(true)
+      // Detectar se é CNPJ ou website
+      const isCnpj = /^\d{14}$|^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/.test(searchTerm.trim())
+      
       const response = await fetch('/api/companies/preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          cnpj: searchTerm,
-          useCrossReference: true,
-          individualSearchData: searchMode === 'individual' ? individualSearchData : undefined
+          query: searchTerm.trim(),
+          mode: isCnpj ? 'cnpj' : 'website'
         })
       })
 
-      if (!response.ok) throw new Error('Erro na busca')
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error?.message || 'Erro na busca')
+      }
 
       const data = await response.json()
       setPreviewData(data)
       setShowPreviewModal(true)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro na busca:', error)
+      alert('Erro: ' + error.message)
     } finally {
       setLoading(false)
     }
@@ -208,24 +215,30 @@ export default function DashboardPage() {
 
     try {
       setLoading(true)
+      // Priorizar CNPJ se ambos estiverem preenchidos
+      const query = individualSearchData.cnpj.trim() || individualSearchData.website.trim()
+      const mode = individualSearchData.cnpj.trim() ? 'cnpj' : 'website'
+      
       const response = await fetch('/api/companies/preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          cnpj: individualSearchData.cnpj,
-          website: individualSearchData.website,
-          useCrossReference: true,
-          individualSearchData: individualSearchData
+          query,
+          mode
         })
       })
 
-      if (!response.ok) throw new Error('Erro na busca individual')
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error?.message || 'Erro na busca individual')
+      }
 
       const data = await response.json()
       setPreviewData(data)
       setShowPreviewModal(true)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro na busca individual:', error)
+      alert('Erro: ' + error.message)
     } finally {
       setLoading(false)
     }
@@ -647,6 +660,7 @@ export default function DashboardPage() {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({
+                        templateId: 'executive-report-v1',
                         companyId: company.id,
                         sections: ['overview', 'financial', 'techStack', 'decisionMakers', 'maturity', 'vendorFit']
                       })

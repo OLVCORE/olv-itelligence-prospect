@@ -287,20 +287,24 @@ export async function POST(req: Request) {
       updatedAt: new Date().toISOString()
     }
 
-    // Inserir empresa
+    // Inserir ou atualizar empresa (upsert para evitar duplicatas)
     const { data: company, error: companyError } = await supabaseAdmin
       .from('Company')
-      .insert(companyInsert)
+      .upsert(companyInsert, {
+        onConflict: 'cnpj',
+        ignoreDuplicates: false
+      })
       .select()
       .single()
 
     if (companyError) {
-      console.error('[CompanySearch] Erro ao inserir empresa:', companyError)
+      console.error('[CompanySearch] Erro ao salvar empresa:', companyError)
+      console.error('[CompanySearch] Detalhes:', JSON.stringify(companyError, null, 2))
       return NextResponse.json({
         ok: false,
         error: {
           code: 'DATABASE_ERROR',
-          message: 'Erro ao salvar empresa no banco de dados'
+          message: `Erro ao salvar empresa: ${companyError.message || 'Erro desconhecido'}`
         }
       }, { status: 500 })
     }
