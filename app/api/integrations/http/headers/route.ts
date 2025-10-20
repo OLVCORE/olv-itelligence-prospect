@@ -10,7 +10,7 @@ export async function POST(req: NextRequest){
     if (companyId){
       const sb = supabaseAdmin();
       await sb.from('TechSignals').insert({
-        companyId, kind:'http_header', key:'headers', value: JSON.stringify(headers),
+        companyId, kind:'http_header', key:'headers', value: headers,
         confidence:70, source:'http_headers', url, fetchedAt: new Date().toISOString()
       });
     }

@@ -23,13 +23,7 @@ export async function POST(req: NextRequest){
   if (!detectedStack) {
     // carregar evidências e montar stack automaticamente
     const { data: ts } = await sb.from('TechSignals').select('*').eq('companyId', companyId);
-    const evidence = (ts||[]).map(t=>{
-      let value = t.value;
-      if (typeof value === 'string') {
-        try { value = JSON.parse(value); } catch {}
-      }
-      return { key:t.key, value, source:t.source, kind:t.kind };
-    });
+    const evidence = (ts||[]).map(t=>({ key:t.key, value:t.value, source:t.source, kind:t.kind }));
     const { data: fg } = await sb.from('Firmographics').select('*').eq('companyId', companyId).order('fetchedAt',{ascending:false}).limit(1).maybeSingle();
     const techTags = fg?.techTags ?? null;
     detectedStack = buildDetectedStackFromEvidence(evidence, techTags);
