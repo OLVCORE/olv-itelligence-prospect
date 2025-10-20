@@ -8,6 +8,105 @@ import { SEARCH_ASSERTIVE, FAST_MODE } from '@/lib/config/feature-flags'
 import { validateLink, validateJusbrasil as validateJusbr, validateMarketplaceB2B } from '@/lib/search/validators/link-validation'
 import { searchCompanyWebsite, searchCompanyNews } from '../search/orchestrator'
 
+// Função para gerar termos de busca multi-dimensionais
+function generateMultiDimensionalSearchTerms(
+  razao: string,
+  fantasia?: string,
+  website?: string,
+  socios?: string[]
+): {
+  primary: string[]      // Termos principais (razao + fantasia)
+  secondary: string[]    // Termos secundários (sócios + variações)
+  domains: string[]      // Domínios extraídos
+  variations: string[]    // Variações de nomes
+} {
+  const terms = {
+    primary: [] as string[],
+    secondary: [] as string[],
+    domains: [] as string[],
+    variations: [] as string[]
+  }
+
+  // TERMOS PRIMÁRIOS (razao + fantasia)
+  if (razao) {
+    terms.primary.push(razao)
+    // Extrair palavras-chave da razão social
+    const razaoWords = razao.split(' ').filter(word => 
+      word.length > 3 && 
+      !['LTDA', 'S.A', 'EIRELI', 'ME', 'EPP'].includes(word.toUpperCase())
+    )
+    terms.primary.push(...razaoWords)
+  }
+
+  if (fantasia && fantasia !== razao) {
+    terms.primary.push(fantasia)
+    // Extrair palavras-chave da fantasia
+    const fantasiaWords = fantasia.split(' ').filter(word => word.length > 2)
+    terms.primary.push(...fantasiaWords)
+  }
+
+  // DOMÍNIOS EXTRAÍDOS
+  if (website) {
+    try {
+      const url = new URL(website.startsWith('http') ? website : `https://${website}`)
+      const hostname = url.hostname.replace('www.', '')
+      terms.domains.push(hostname)
+      
+      // Extrair nome do domínio (sem .com.br)
+      const domainName = hostname.split('.')[0]
+      if (domainName && domainName.length > 2) {
+        terms.variations.push(domainName)
+      }
+    } catch (e) {
+      console.warn('[DigitalPresence] ⚠️ Erro ao extrair domínio:', e)
+    }
+  }
+
+  // TERMOS SECUNDÁRIOS (sócios)
+  if (socios && socios.length > 0) {
+    socios.forEach(socio => {
+      if (socio && socio.length > 3) {
+        terms.secondary.push(socio)
+        // Extrair primeiro nome do sócio
+        const firstName = socio.split(' ')[0]
+        if (firstName && firstName.length > 2) {
+          terms.secondary.push(firstName)
+        }
+      }
+    })
+  }
+
+  // VARIAÇÕES E SINÔNIMOS
+  terms.primary.forEach(term => {
+    // Versão sem acentos
+    const withoutAccents = term.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    if (withoutAccents !== term) {
+      terms.variations.push(withoutAccents)
+    }
+    
+    // Versão em minúsculas
+    const lowercase = term.toLowerCase()
+    if (lowercase !== term) {
+      terms.variations.push(lowercase)
+    }
+  })
+
+  // Remover duplicatas
+  terms.primary = [...new Set(terms.primary)]
+  terms.secondary = [...new Set(terms.secondary)]
+  terms.domains = [...new Set(terms.domains)]
+  terms.variations = [...new Set(terms.variations)]
+
+  console.log('[DigitalPresence] 🎯 ESTRATÉGIAS GERADAS:', {
+    primary: terms.primary.length,
+    secondary: terms.secondary.length,
+    domains: terms.domains.length,
+    variations: terms.variations.length
+  })
+
+  return terms
+}
+
 interface DigitalPresence {
   website: {
     url: string
@@ -165,7 +264,8 @@ export async function fetchDigitalPresence(
   companyName: string,
   cnpj: string,
   fantasia?: string,
-  website?: string
+  website?: string,
+  socios?: string[] // Novos dados dos sócios para busca mais abrangente
 ): Promise<DigitalPresence> {
   // Extrair domínio do website para validação (se fornecido)
   let domain: string | undefined = undefined
@@ -186,6 +286,17 @@ export async function fetchDigitalPresence(
   }
 
   console.log('[DigitalPresence] 🔍 Buscando presença digital para:', companyName)
+  console.log('[DigitalPresence] 📊 DADOS DISPONÍVEIS:', {
+    razao: companyName,
+    fantasia: fantasia || 'N/A',
+    website: website || 'N/A',
+    socios: socios?.length || 0,
+    cnpj: cnpj
+  })
+
+  // GERAR ESTRATÉGIAS MULTI-DIMENSIONAIS
+  const searchTerms = generateMultiDimensionalSearchTerms(companyName, fantasia, website, socios)
+  console.log('[DigitalPresence] 🎯 TERMOS DE BUSCA GERADOS:', searchTerms)
 
   const results: DigitalPresence = {
     website: null,
@@ -226,7 +337,7 @@ export async function fetchDigitalPresence(
     // 2. Redes sociais (busca limitada)
     if (Date.now() - startTime < maxTime) {
       console.log('[DigitalPresence] 📱 Buscando redes sociais...')
-      results.redesSociais = await findSocialMedia(companyName, cnpj, fantasia, domain)
+      results.redesSociais = await findSocialMedia(companyName, cnpj, fantasia, domain, socios)
     }
 
     // 3. Jusbrasil (importante para empresas brasileiras)
@@ -368,10 +479,11 @@ async function findSocialMedia(
   companyName: string,
   cnpj: string,
   fantasia?: string,
-  domain?: string
+  domain?: string,
+  socios?: string[]
 ): Promise<DigitalPresence['redesSociais']> {
-  console.log('[DigitalPresence] 📱 INICIANDO BUSCA DE REDES SOCIAIS')
-  console.log('[DigitalPresence] 📝 Params:', { companyName, cnpj, fantasia, domain })
+  console.log('[DigitalPresence] 📱 INICIANDO BUSCA DE REDES SOCIAIS MULTI-DIMENSIONAL')
+  console.log('[DigitalPresence] 📝 Params:', { companyName, cnpj, fantasia, domain, socios: socios?.length || 0 })
   console.log('[DigitalPresence] 🔑 GOOGLE_API_KEY presente?', !!process.env.GOOGLE_API_KEY)
   console.log('[DigitalPresence] 🔑 GOOGLE_CSE_ID presente?', !!process.env.GOOGLE_CSE_ID)
   
@@ -379,6 +491,10 @@ async function findSocialMedia(
   const cseId = process.env.GOOGLE_CSE_ID!
 
   const redesSociais: DigitalPresence['redesSociais'] = {}
+
+  // GERAR TERMOS MULTI-DIMENSIONAIS
+  const searchTerms = generateMultiDimensionalSearchTerms(companyName, fantasia, domain, socios)
+  console.log('[DigitalPresence] 🎯 USANDO TERMOS MULTI-DIMENSIONAIS:', searchTerms)
 
   // MODO RÁPIDO: reduz estratégias para evitar timeout
   console.log('[DigitalPresence] ⚡ FAST_MODE ativo?', FAST_MODE)

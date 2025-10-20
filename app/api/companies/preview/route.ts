@@ -115,7 +115,8 @@ export async function POST(req: Request) {
         receitaData.nome || '',
         resolvedCnpj,
         receitaData.fantasia,
-        undefined
+        undefined,
+        receitaData.qsa?.map((socio: any) => socio.nome) || []
       )
       
       const elapsedAfterDigital = Date.now() - startTime
