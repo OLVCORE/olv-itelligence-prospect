@@ -24,6 +24,8 @@ import {
   X
 } from "lucide-react"
 import { ModeToggle } from "@/components/ModeToggle"
+import { ProjectSwitcher } from "@/components/ProjectSwitcher"
+import { VendorSelector } from "@/components/VendorSelector"
 
 interface HeaderProps {
   onToggleSidebar?: () => void
@@ -87,6 +89,12 @@ export function Header({ onToggleSidebar, sidebarOpen = true }: HeaderProps) {
               <h1 className="text-sm sm:text-lg font-semibold text-white">OLV Intelligence</h1>
               <p className="text-[10px] sm:text-xs text-slate-400">Sistema de Prospecção</p>
             </div>
+          </div>
+
+          {/* Project Switcher + Vendor Selector */}
+          <div className="hidden lg:flex items-center gap-3 ml-4">
+            <ProjectSwitcher />
+            <VendorSelector />
           </div>
         </div>
 
