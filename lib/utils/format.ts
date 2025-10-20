@@ -33,8 +33,8 @@ export function formatCurrency(
     return 'N/D'
   }
 
-  // Validar range (0 < capital <= 1e12 trilhão)
-  if (numValue < 0 || numValue > 1e12) {
+  // Validar range (0 < capital <= 1e15 - até 1 quadrilhão)
+  if (numValue < 0 || numValue > 1e15) {
     console.warn('[Format] Valor fora do range válido:', numValue)
     return 'N/D'
   }

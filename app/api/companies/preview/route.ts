@@ -28,22 +28,16 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json()
-    const { cnpj: rawCnpj, website: rawWebsite, useAI = false, forceRefresh = false, useCrossReference = true } = body
+    const { cnpj: rawCnpj, website: rawWebsite, useAI = false, forceRefresh = false, useCrossReference = true, individualSearchData } = body
 
     console.log('[API /preview] 📥 Request:', { cnpj: rawCnpj, website: rawWebsite, useAI, forceRefresh })
 
     let resolvedCnpj = normalizeCnpj(rawCnpj)
 
-    // Se tem website mas não tem CNPJ, precisa desambiguar primeiro
+    // Se tem website mas não tem CNPJ, usar website diretamente
     if (!resolvedCnpj && rawWebsite) {
-      return NextResponse.json(
-        {
-          status: 'disambiguation',
-          message: 'Website fornecido. Use /api/companies/resolve primeiro para escolher o CNPJ.',
-          hint: 'Chame POST /api/companies/resolve com {"website":"..."} e escolha um CNPJ',
-        },
-        { status: 422 }
-      )
+      console.log('[API /preview] 🔍 Usando website diretamente:', rawWebsite)
+      resolvedCnpj = rawWebsite // Usar website como identificador
     }
 
     // Validar CNPJ

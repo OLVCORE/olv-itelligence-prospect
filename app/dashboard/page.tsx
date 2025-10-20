@@ -269,8 +269,8 @@ export default function DashboardPage() {
 
   const renderIndividualSearchForm = () => (
     <Card className="mb-6 dark:bg-slate-800 dark:border-slate-700">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 dark:text-white">
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-2 dark:text-white text-lg">
           <Search className="h-5 w-5 text-blue-600 dark:text-blue-400" />
           Pesquisa Individual Avançada
         </CardTitle>
@@ -278,133 +278,236 @@ export default function DashboardPage() {
           Preencha os campos abaixo para uma análise completa e personalizada
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4">
         {/* CNPJ e Website */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="cnpj">CNPJ</Label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <Label htmlFor="cnpj" className="text-sm font-medium dark:text-gray-200">CNPJ</Label>
             <Input
               id="cnpj"
               placeholder="00.000.000/0000-00"
               value={individualSearchData.cnpj}
               onChange={(e) => setIndividualSearchData(prev => ({ ...prev, cnpj: e.target.value }))}
+              className="h-9"
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="website">Website</Label>
+          <div className="space-y-1">
+            <Label htmlFor="website" className="text-sm font-medium dark:text-gray-200">Website</Label>
             <Input
               id="website"
               placeholder="empresa.com.br"
               value={individualSearchData.website}
               onChange={(e) => setIndividualSearchData(prev => ({ ...prev, website: e.target.value }))}
+              className="h-9"
             />
           </div>
         </div>
 
-        {/* Redes Sociais */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Instagram className="h-4 w-4 text-pink-500" />
-            <Label className="text-sm font-medium">📱 Redes Sociais</Label>
-          </div>
-          <Textarea
-            placeholder="@empresa_insta, empresa-linkedin, empresa.facebook, @empresa_youtube, @empresa_twitter, @empresa_threads"
-            value={individualSearchData.redesSociais}
-            onChange={(e) => setIndividualSearchData(prev => ({ ...prev, redesSociais: e.target.value }))}
-            rows={2}
-                />
-              </div>
-
-        {/* Marketplaces B2B */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <ShoppingBag className="h-4 w-4 text-blue-500" />
-            <Label className="text-sm font-medium">🛒 Marketplaces B2B</Label>
-                    </div>
-          <Textarea
-            placeholder="empresa.alibaba.com, shopee.com.br/shop/empresa, b2bbrasil.com.br/empresa, globalsupplies.com/empresa, tradekey.com/empresa, ec21.com/empresa"
-            value={individualSearchData.marketplacesB2B}
-            onChange={(e) => setIndividualSearchData(prev => ({ ...prev, marketplacesB2B: e.target.value }))}
-            rows={2}
-          />
-              </div>
-
-        {/* Marketplaces B2C */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Store className="h-4 w-4 text-green-500" />
-            <Label className="text-sm font-medium">🛍️ Marketplaces B2C</Label>
-                </div>
-          <Textarea
-            placeholder="mercadolivre.com.br/perfil/empresa, amazon.com.br/shops/empresa, americanas.com.br/loja/empresa, magazineluiza.com.br/loja/empresa, submarino.com.br/loja/empresa"
-            value={individualSearchData.marketplacesB2C}
-            onChange={(e) => setIndividualSearchData(prev => ({ ...prev, marketplacesB2C: e.target.value }))}
-            rows={2}
-          />
-                  </div>
-
-        {/* Portais Eletrônicos */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Globe className="h-4 w-4 text-purple-500" />
-            <Label className="text-sm font-medium">🌐 Portais Eletrônicos</Label>
-                </div>
-          <Textarea
-            placeholder="g.page/empresa, reclameaqui.com.br/empresa, glassdoor.com.br/empresa, b2bbrasil.com.br/empresa, me.com.br/empresa"
-            value={individualSearchData.portaisEletronicos}
-            onChange={(e) => setIndividualSearchData(prev => ({ ...prev, portaisEletronicos: e.target.value }))}
-            rows={2}
-          />
-              </div>
-
-        {/* Portais do Setor */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Building2 className="h-4 w-4 text-indigo-500" />
-            <Label className="text-sm font-medium">🏢 Portais do Setor/Sindicatos</Label>
-          </div>
-          <Textarea
-            placeholder="sbinee.com.br, abimac.com.br, sindicatos específicos do setor, associações comerciais, federações"
-            value={individualSearchData.portaisSetor}
-            onChange={(e) => setIndividualSearchData(prev => ({ ...prev, portaisSetor: e.target.value }))}
-            rows={2}
-          />
+        {/* Grid de Categorias Compactas */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {/* Redes Sociais */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Instagram className="h-4 w-4 text-pink-500" />
+              <Label className="text-sm font-medium dark:text-gray-200">📱 Redes Sociais</Label>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-4 w-4 p-0">
+                    <SearchIcon className="h-3 w-3 text-gray-400" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs max-w-xs">
+                    Digite handles/links das redes sociais separados por vírgula. 
+                    Ex: @empresa_insta, empresa-linkedin, empresa.facebook
+                  </p>
+                </TooltipContent>
+              </Tooltip>
             </div>
-
-        {/* Notícias Recentes */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Newspaper className="h-4 w-4 text-orange-500" />
-            <Label className="text-sm font-medium">📰 Notícias Recentes (Últimos 12 meses)</Label>
+            <Textarea
+              placeholder="@empresa_insta, empresa-linkedin, empresa.facebook, @empresa_youtube, @empresa_twitter, @empresa_threads"
+              value={individualSearchData.redesSociais}
+              onChange={(e) => setIndividualSearchData(prev => ({ ...prev, redesSociais: e.target.value }))}
+              rows={2}
+              className="text-sm"
+            />
           </div>
-          <Textarea
-            placeholder="Digite palavras-chave para busca de notícias (ex: empresa, produto, tecnologia, inovação)"
-            value={individualSearchData.noticiasRecentes}
-            onChange={(e) => setIndividualSearchData(prev => ({ ...prev, noticiasRecentes: e.target.value }))}
-            rows={3}
-          />
+
+          {/* Marketplaces B2B */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <ShoppingBag className="h-4 w-4 text-blue-500" />
+              <Label className="text-sm font-medium dark:text-gray-200">🛒 Marketplaces B2B</Label>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-4 w-4 p-0">
+                    <SearchIcon className="h-3 w-3 text-gray-400" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs max-w-xs">
+                    Links de marketplaces B2B onde a empresa vende. 
+                    Ex: empresa.alibaba.com, shopee.com.br/shop/empresa
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <Textarea
+              placeholder="empresa.alibaba.com, shopee.com.br/shop/empresa, b2bbrasil.com.br/empresa, globalsupplies.com/empresa, tradekey.com/empresa, ec21.com/empresa"
+              value={individualSearchData.marketplacesB2B}
+              onChange={(e) => setIndividualSearchData(prev => ({ ...prev, marketplacesB2B: e.target.value }))}
+              rows={2}
+              className="text-sm"
+            />
+          </div>
+
+          {/* Marketplaces B2C */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Store className="h-4 w-4 text-green-500" />
+              <Label className="text-sm font-medium dark:text-gray-200">🛍️ Marketplaces B2C</Label>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-4 w-4 p-0">
+                    <SearchIcon className="h-3 w-3 text-gray-400" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs max-w-xs">
+                    Links de marketplaces B2C onde a empresa vende para consumidores finais. 
+                    Ex: mercadolivre.com.br/perfil/empresa
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <Textarea
+              placeholder="mercadolivre.com.br/perfil/empresa, amazon.com.br/shops/empresa, americanas.com.br/loja/empresa, magazineluiza.com.br/loja/empresa, submarino.com.br/loja/empresa"
+              value={individualSearchData.marketplacesB2C}
+              onChange={(e) => setIndividualSearchData(prev => ({ ...prev, marketplacesB2C: e.target.value }))}
+              rows={2}
+              className="text-sm"
+            />
+          </div>
+
+          {/* Portais Eletrônicos */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Globe className="h-4 w-4 text-purple-500" />
+              <Label className="text-sm font-medium dark:text-gray-200">🌐 Portais Eletrônicos</Label>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-4 w-4 p-0">
+                    <SearchIcon className="h-3 w-3 text-gray-400" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs max-w-xs">
+                    Links de portais de negócios e avaliações. 
+                    Ex: g.page/empresa, reclameaqui.com.br/empresa
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <Textarea
+              placeholder="g.page/empresa, reclameaqui.com.br/empresa, glassdoor.com.br/empresa, b2bbrasil.com.br/empresa, me.com.br/empresa"
+              value={individualSearchData.portaisEletronicos}
+              onChange={(e) => setIndividualSearchData(prev => ({ ...prev, portaisEletronicos: e.target.value }))}
+              rows={2}
+              className="text-sm"
+            />
+          </div>
+
+          {/* Portais do Setor */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-indigo-500" />
+              <Label className="text-sm font-medium dark:text-gray-200">🏢 Portais do Setor</Label>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-4 w-4 p-0">
+                    <SearchIcon className="h-3 w-3 text-gray-400" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs max-w-xs">
+                    Links de sindicatos, associações e portais específicos do setor. 
+                    Ex: sbinee.com.br, abimac.com.br
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <Textarea
+              placeholder="sbinee.com.br, abimac.com.br, sindicatos específicos do setor, associações comerciais, federações"
+              value={individualSearchData.portaisSetor}
+              onChange={(e) => setIndividualSearchData(prev => ({ ...prev, portaisSetor: e.target.value }))}
+              rows={2}
+              className="text-sm"
+            />
+          </div>
+
+          {/* Notícias Recentes */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Newspaper className="h-4 w-4 text-orange-500" />
+              <Label className="text-sm font-medium dark:text-gray-200">📰 Notícias Recentes</Label>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-4 w-4 p-0">
+                    <SearchIcon className="h-3 w-3 text-gray-400" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs max-w-xs">
+                    Palavras-chave para buscar notícias dos últimos 12 meses. 
+                    Ex: empresa, produto, tecnologia, inovação
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <Textarea
+              placeholder="Digite palavras-chave para busca de notícias (ex: empresa, produto, tecnologia, inovação)"
+              value={individualSearchData.noticiasRecentes}
+              onChange={(e) => setIndividualSearchData(prev => ({ ...prev, noticiasRecentes: e.target.value }))}
+              rows={2}
+              className="text-sm"
+            />
+          </div>
+
+          {/* Jurídico */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Scale className="h-4 w-4 text-red-500" />
+              <Label className="text-sm font-medium dark:text-gray-200">⚖️ Jurídico</Label>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-4 w-4 p-0">
+                    <SearchIcon className="h-3 w-3 text-gray-400" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs max-w-xs">
+                    Links de portais jurídicos e informações legais. 
+                    Ex: jusbrasil.com.br/empresa, processos, ações
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <Textarea
+              placeholder="jusbrasil.com.br/empresa, outros portais jurídicos relevantes, processos, ações, sentenças"
+              value={individualSearchData.juridico}
+              onChange={(e) => setIndividualSearchData(prev => ({ ...prev, juridico: e.target.value }))}
+              rows={2}
+              className="text-sm"
+            />
+          </div>
         </div>
 
-        {/* Jurídico */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Scale className="h-4 w-4 text-red-500" />
-            <Label className="text-sm font-medium">⚖️ Jurídico</Label>
-                  </div>
-          <Textarea
-            placeholder="jusbrasil.com.br/empresa, outros portais jurídicos relevantes, processos, ações, sentenças"
-            value={individualSearchData.juridico}
-            onChange={(e) => setIndividualSearchData(prev => ({ ...prev, juridico: e.target.value }))}
-            rows={2}
-          />
-                        </div>
-
         {/* Botão de Busca */}
-        <div className="flex justify-end pt-4">
-                          <Button
+        <div className="flex justify-end pt-3">
+          <Button
             onClick={handleIndividualSearch}
             disabled={loading}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-8"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 h-9"
           >
             {loading ? (
               <>
@@ -417,7 +520,7 @@ export default function DashboardPage() {
                 Analisar Empresa
               </>
             )}
-                          </Button>
+          </Button>
         </div>
       </CardContent>
     </Card>
