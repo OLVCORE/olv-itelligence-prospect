@@ -1,21 +1,19 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { supabaseAdmin } from '@/lib/supabase/admin'
-import { getDefaultProjectId } from '@/lib/projects/get-default-project'
 import { normalizeCnpj, isValidCnpj, normalizeDomain } from '@/lib/utils/cnpj'
+import { receitaWS } from '@/lib/services/receitaws'
+import { fetchGoogleCSE } from '@/lib/services/google-cse'
+import { supabaseAdmin } from '@/lib/supabaseAdmin'
 
-// CONFIGURAÇÃO CRÍTICA: Limitar timeout para 5 segundos (busca rápida)
-export const maxDuration = 5;
-export const runtime = 'nodejs';
+export const runtime = 'nodejs'
+export const maxDuration = 15 // ReceitaWS + Google CSE: 15s
 
 // Schema de validação
 const searchSchema = z.object({
   cnpj: z.string().optional(),
-  website: z.string().optional()
+  website: z.string().optional(),
 }).refine(data => data.cnpj || data.website, {
-  message: "CNPJ ou website deve ser fornecido"
-}).refine(data => !(data.cnpj && data.website), {
-  message: "Forneça apenas CNPJ ou website, não ambos"
+  message: "É necessário fornecer CNPJ ou website"
 })
 
 // Circuit breaker simples
@@ -23,7 +21,7 @@ class CircuitBreaker {
   private failures = 0
   private lastFailure = 0
   private readonly threshold = 3
-  private readonly timeout = 30000 // 30s
+  private readonly timeout = 60000 // 60s
 
   isOpen(): boolean {
     if (this.failures >= this.threshold) {
@@ -31,7 +29,6 @@ class CircuitBreaker {
       if (now - this.lastFailure < this.timeout) {
         return true
       }
-      // Reset após timeout
       this.failures = 0
     }
     return false
@@ -50,108 +47,104 @@ class CircuitBreaker {
 const receitaBreaker = new CircuitBreaker()
 const googleBreaker = new CircuitBreaker()
 
-// Função para buscar dados da ReceitaWS com retry
-async function fetchReceitaWS(cnpj: string): Promise<any> {
-  const enabled = process.env.ENABLE_RECEITA !== 'false'
-  if (!enabled) {
-    throw new Error('Provider ReceitaWS desabilitado')
+// Retry com backoff exponencial
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  maxRetries: number,
+  initialDelay: number
+): Promise<T> {
+  let lastError: Error | null = null
+  
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn()
+    } catch (error: any) {
+      lastError = error
+      if (i < maxRetries - 1) {
+        const delay = initialDelay * Math.pow(2, i)
+        console.log(`[Retry] Tentativa ${i + 1} falhou, aguardando ${delay}ms...`)
+        await new Promise(resolve => setTimeout(resolve, delay))
+      }
+    }
   }
+  
+  throw lastError!
+}
 
+// Função para buscar dados da ReceitaWS com retry
+async function fetchReceitaData(cnpj: string) {
   if (receitaBreaker.isOpen()) {
     throw new Error('Provider ReceitaWS temporariamente indisponível')
   }
 
-  const token = process.env.RECEITAWS_API_TOKEN
-  if (!token) {
-    throw new Error('RECEITAWS_API_TOKEN não configurado')
-  }
-
-  const url = `https://receitaws.com.br/v1/cnpj/${cnpj}`
-  
-  // APENAS 1 TENTATIVA para evitar timeout (total máximo: 3s)
   try {
-    console.log(`[CompanySearch] Buscando ReceitaWS: ${cnpj}`)
+    console.log(`[CompanySearch] 📋 Buscando ReceitaWS: ${cnpj}`)
     
-    const response = await fetch(url, {
-      headers: { 'Authorization': `Bearer ${token}` },
-      signal: AbortSignal.timeout(3000) // 3s timeout
-    })
-
-    if (!response.ok) {
-      throw new Error(`ReceitaWS HTTP ${response.status}`)
-    }
-
-    const data = await response.json()
+    const data = await retryWithBackoff(
+      () => receitaWS.buscarPorCNPJ(cnpj),
+      3, // 3 tentativas
+      2000 // 2s inicial
+    )
     
-    if (data.status === 'ERROR') {
-      throw new Error(data.message || 'CNPJ não encontrado na ReceitaWS')
+    if (!data) {
+      throw new Error('CNPJ não encontrado na ReceitaWS')
     }
 
     receitaBreaker.recordSuccess()
-    console.log(`[CompanySearch] ReceitaWS sucesso: ${data.nome}`)
-    return data
+    console.log('[CompanySearch] ✅ Dados ReceitaWS recebidos:', data.nome)
+    
+    return receitaWS.converterParaFormatoInterno(data)
   } catch (error: any) {
-    console.error(`[CompanySearch] ReceitaWS falhou:`, error.message)
+    console.error('[CompanySearch] ❌ ReceitaWS falhou:', error.message)
     receitaBreaker.recordFailure()
     throw error
   }
 }
 
-// Função para buscar dados do Google CSE
-async function fetchGoogleCSE(companyName: string, cnpj?: string): Promise<any> {
-  const enabled = process.env.ENABLE_GOOGLE_CSE !== 'false'
-  if (!enabled) {
-    throw new Error('Provider Google CSE desabilitado')
-  }
-
+// Função para buscar presença digital
+async function fetchDigitalPresence(companyName: string, cnpj?: string) {
   if (googleBreaker.isOpen()) {
     throw new Error('Provider Google CSE temporariamente indisponível')
   }
 
-  const apiKey = process.env.GOOGLE_API_KEY
-  const cseId = process.env.GOOGLE_CSE_ID
-
-  if (!apiKey || !cseId) {
-    throw new Error('GOOGLE_API_KEY ou GOOGLE_CSE_ID não configurados')
-  }
-
   try {
-    console.log(`[CompanySearch] Buscando Google CSE: ${companyName}`)
+    console.log(`[CompanySearch] 🌐 Buscando presença digital: ${companyName}`)
     
-    const query = `${companyName} ${cnpj || ''}`.trim()
-    const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cseId}&q=${encodeURIComponent(query)}&num=5`
+    const data = await retryWithBackoff(
+      () => fetchGoogleCSE(companyName, cnpj),
+      2, // 2 tentativas
+      2000 // 2s inicial
+    )
     
-    const response = await fetch(url, {
-      signal: AbortSignal.timeout(2000) // 2s timeout (reduzido de 5s)
-    })
-
-    if (!response.ok) {
-      throw new Error(`Google CSE HTTP ${response.status}`)
-    }
-
-    const data = await response.json()
     googleBreaker.recordSuccess()
+    console.log('[CompanySearch] ✅ Presença digital:', {
+      website: data.website?.url || 'não encontrado',
+      news: data.news.length
+    })
     
-    console.log(`[CompanySearch] Google CSE sucesso: ${data.items?.length || 0} resultados`)
     return data
   } catch (error: any) {
-    console.error('[CompanySearch] Google CSE falhou:', error.message)
+    console.error('[CompanySearch] ⚠️ Google CSE falhou:', error.message)
     googleBreaker.recordFailure()
-    throw error
+    // Não throw - presença digital é opcional
+    return { website: null, news: [] }
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const startTime = Date.now()
   
   try {
     const body = await req.json()
-    console.log('[CompanySearch] Input recebido:', { cnpj: body.cnpj ? '***' : undefined, website: body.website })
+    console.log('[CompanySearch] 🔍 Busca iniciada:', { 
+      cnpj: body.cnpj?.substring(0, 5) + '...', 
+      website: body.website 
+    })
 
     // Validar input
     const validation = searchSchema.safeParse(body)
     if (!validation.success) {
-      console.log('[CompanySearch] Input inválido:', validation.error.issues)
+      console.log('[CompanySearch] ❌ Input inválido:', validation.error.issues)
       return NextResponse.json({
         ok: false,
         error: {
@@ -161,228 +154,196 @@ export async function POST(req: Request) {
       }, { status: 422 })
     }
 
-    const { cnpj, website } = validation.data
+    const { cnpj: inputCnpj, website } = validation.data
 
-    let companyData: any = null
-    let analysisData: any = null
-
-    if (cnpj) {
-      // Busca por CNPJ
-      const normalizedCnpj = normalizeCnpj(cnpj)
-      
-      if (!isValidCnpj(normalizedCnpj)) {
-        console.log('[CompanySearch] CNPJ inválido:', normalizedCnpj)
-        return NextResponse.json({
-          ok: false,
-          error: {
-            code: 'INVALID_CNPJ',
-            message: 'CNPJ inválido. Verifique os dígitos verificadores.'
-          }
-        }, { status: 422 })
-      }
-
-      try {
-        companyData = await fetchReceitaWS(normalizedCnpj)
-        
-        // Buscar dados complementares do Google CSE
-        try {
-          const googleData = await fetchGoogleCSE(companyData.nome, normalizedCnpj)
-          analysisData = {
-            website: googleData.items?.[0]?.link || null,
-            news: googleData.items?.slice(0, 3).map((item: any) => ({
-              title: item.title,
-              snippet: item.snippet,
-              link: item.link,
-              date: item.pagemap?.metatags?.[0]?.['article:published_time']
-            })) || []
-          }
-        } catch (googleError: any) {
-          console.warn('[CompanySearch] Google CSE falhou, continuando sem dados complementares:', googleError.message)
-          analysisData = { website: null, news: [] }
-        }
-      } catch (receitaError: any) {
-        console.error('[CompanySearch] ReceitaWS falhou:', receitaError.message)
-        return NextResponse.json({
-          ok: false,
-          error: {
-            code: 'PROVIDER_ERROR',
-            message: `Erro ao buscar dados da Receita Federal: ${receitaError.message}`
-          }
-        }, { status: 502 })
-      }
-    } else if (website) {
-      // Busca por website
-      const domain = normalizeDomain(website)
-      
-      try {
-        const googleData = await fetchGoogleCSE(domain)
-        
-        companyData = {
-          nome: domain,
-          fantasia: domain,
-          situacao: 'ATIVA',
-          website: `https://${domain}`
-        }
-        
-        analysisData = {
-          website: `https://${domain}`,
-          news: googleData.items?.slice(0, 3).map((item: any) => ({
-            title: item.title,
-            snippet: item.snippet,
-            link: item.link,
-            date: item.pagemap?.metatags?.[0]?.['article:published_time']
-          })) || []
-        }
-      } catch (googleError: any) {
-        console.error('[CompanySearch] Google CSE falhou:', googleError.message)
-        return NextResponse.json({
-          ok: false,
-          error: {
-            code: 'PROVIDER_ERROR',
-            message: `Erro ao buscar dados do website: ${googleError.message}`
-          }
-        }, { status: 502 })
-      }
-    }
-
-    // Obter projeto padrão
-    const projectId = await getDefaultProjectId()
-    console.log('[CompanySearch] ProjectId obtido:', projectId)
-
-    // Parse capital social
-    const capitalNum = Number(
-      (companyData.capital_social || '0')
-        .toString()
-        .replace(/[^\d,.-]/g, '')
-        .replace(',', '.')
-    ) || 0
-
-    // Gerar ID único para a empresa
-    const companyId = `comp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    // Normalizar e validar CNPJ se fornecido
+    let cnpj = inputCnpj ? normalizeCnpj(inputCnpj) : null
     
-    // Preparar dados para inserção
-    const companyInsert = {
-      id: companyId,
-      cnpj: cnpj ? normalizeCnpj(cnpj) : null,
-      name: companyData.nome || 'Empresa sem razão social',
-      tradeName: companyData.fantasia || null,
-      projectId,
-      capital: capitalNum,
-      size: companyData.porte || 'MÉDIO',
-      location: JSON.stringify({
-        cidade: companyData.municipio || '',
-        estado: companyData.uf || '',
-        endereco: companyData.logradouro || '',
-        numero: companyData.numero || '',
-        bairro: companyData.bairro || '',
-        cep: companyData.cep || ''
-      }),
-      financial: JSON.stringify({
-        porte: companyData.porte || 'MÉDIO',
-        situacao: companyData.situacao || 'ATIVA',
-        abertura: companyData.abertura || '',
-        naturezaJuridica: companyData.natureza_juridica || '',
-        capitalSocial: companyData.capital_social || '0'
-      }),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+    if (cnpj && !isValidCnpj(cnpj)) {
+      console.log('[CompanySearch] ❌ CNPJ inválido:', cnpj)
+      return NextResponse.json({
+        ok: false,
+        error: {
+          code: 'INVALID_CNPJ',
+          message: 'CNPJ inválido. Verifique os dígitos.'
+        }
+      }, { status: 422 })
     }
 
-    // Inserir ou atualizar empresa (upsert para evitar duplicatas)
-    const { data: company, error: companyError } = await supabaseAdmin
-      .from('Company')
-      .upsert(companyInsert, {
-        onConflict: 'cnpj',
-        ignoreDuplicates: false
-      })
-      .select()
-      .single()
+    // Se forneceu website mas não CNPJ, tentar resolver CNPJ
+    if (!cnpj && website) {
+      const domain = normalizeDomain(website)
+      console.log('[CompanySearch] 🔍 Tentando resolver CNPJ do website:', domain)
+      
+      // TODO: Implementar resolução de CNPJ via website
+      // Por enquanto, retornar erro amigável
+      return NextResponse.json({
+        ok: false,
+        error: {
+          code: 'CNPJ_REQUIRED',
+          message: 'Por favor, forneça o CNPJ da empresa. A busca por website será implementada em breve.'
+        }
+      }, { status: 422 })
+    }
 
-    if (companyError) {
-      console.error('[CompanySearch] Erro ao salvar empresa:', companyError)
-      console.error('[CompanySearch] Detalhes:', JSON.stringify(companyError, null, 2))
+    if (!cnpj) {
+      return NextResponse.json({
+        ok: false,
+        error: {
+          code: 'CNPJ_REQUIRED',
+          message: 'CNPJ é obrigatório'
+        }
+      }, { status: 422 })
+    }
+
+    // 1️⃣ Buscar dados cadastrais (ReceitaWS)
+    let receitaData: any
+    try {
+      receitaData = await fetchReceitaData(cnpj)
+    } catch (receitaError: any) {
+      console.error('[CompanySearch] ❌ Erro na ReceitaWS:', receitaError.message)
+      return NextResponse.json({
+        ok: false,
+        error: {
+          code: 'RECEITA_ERROR',
+          message: `Erro ao buscar dados cadastrais: ${receitaError.message}`
+        }
+      }, { status: 502 })
+    }
+
+    // 2️⃣ Buscar presença digital (Google CSE/Serper)
+    const digitalPresence = await fetchDigitalPresence(
+      receitaData.fantasia || receitaData.razao,
+      cnpj
+    )
+
+    // 3️⃣ Upsert no Supabase
+    const sb = supabaseAdmin()
+    const now = new Date().toISOString()
+
+    try {
+      console.log('[CompanySearch] 💾 Salvando no Supabase...')
+
+      // Verificar se empresa já existe
+      const { data: existing, error: selectError } = await sb
+        .from('Company')
+        .select('id')
+        .eq('cnpj', cnpj)
+        .maybeSingle()
+
+      if (selectError) {
+        console.error('[CompanySearch] ❌ Erro ao verificar empresa:', selectError)
+        throw selectError
+      }
+
+      let companyId: string
+
+      if (existing?.id) {
+        // Atualizar empresa existente
+        console.log('[CompanySearch] 🔄 Atualizando empresa existente:', existing.id)
+        
+        const { error: updateError } = await sb
+          .from('Company')
+          .update({
+            name: receitaData.razao,
+            tradeName: receitaData.fantasia || receitaData.razao,
+            capital: parseFloat(receitaData.capitalSocial.replace(/[^\d,]/g, '').replace(',', '.')) || 0,
+            status: receitaData.situacao,
+            domain: digitalPresence.website?.url,
+            cnae: receitaData.cnae,
+            cnaeDescription: receitaData.cnaeDescricao,
+            porte: receitaData.porte,
+            city: receitaData.cidade,
+            state: receitaData.uf,
+            address: `${receitaData.logradouro}, ${receitaData.numero}`,
+            updatedAt: now
+          })
+          .eq('id', existing.id)
+
+        if (updateError) {
+          console.error('[CompanySearch] ❌ Erro ao atualizar:', updateError)
+          throw updateError
+        }
+
+        companyId = existing.id
+      } else {
+        // Criar nova empresa
+        console.log('[CompanySearch] ➕ Criando nova empresa')
+        
+        const { data: newCompany, error: insertError } = await sb
+          .from('Company')
+          .insert({
+            cnpj,
+            name: receitaData.razao,
+            tradeName: receitaData.fantasia || receitaData.razao,
+            capital: parseFloat(receitaData.capitalSocial.replace(/[^\d,]/g, '').replace(',', '.')) || 0,
+            status: receitaData.situacao,
+            domain: digitalPresence.website?.url,
+            cnae: receitaData.cnae,
+            cnaeDescription: receitaData.cnaeDescricao,
+            porte: receitaData.porte,
+            city: receitaData.cidade,
+            state: receitaData.uf,
+            address: `${receitaData.logradouro}, ${receitaData.numero}`,
+            createdAt: now,
+            updatedAt: now
+          })
+          .select('id')
+          .single()
+
+        if (insertError) {
+          console.error('[CompanySearch] ❌ Erro ao inserir:', insertError)
+          throw insertError
+        }
+
+        companyId = newCompany.id
+      }
+
+      console.log('[CompanySearch] ✅ Empresa salva:', companyId)
+
+      // 4️⃣ Salvar notícias (se houver)
+      if (digitalPresence.news.length > 0) {
+        console.log('[CompanySearch] 📰 Salvando notícias:', digitalPresence.news.length)
+        
+        // TODO: Implementar salvamento de notícias em tabela separada
+        // Por enquanto, apenas log
+      }
+
+      const latency = Date.now() - startTime
+      console.log(`[CompanySearch] ✅ Busca completa em ${latency}ms`)
+
+      return NextResponse.json({
+        ok: true,
+        data: {
+          company: {
+            id: companyId,
+            cnpj,
+            name: receitaData.razao,
+            tradeName: receitaData.fantasia || receitaData.razao,
+            capital: receitaData.capitalSocial,
+            porte: receitaData.porte,
+            situacao: receitaData.situacao
+          },
+          receitaData,
+          digitalPresence,
+          latency
+        }
+      })
+
+    } catch (dbError: any) {
+      console.error('[CompanySearch] ❌ Erro no banco:', dbError.message)
       return NextResponse.json({
         ok: false,
         error: {
           code: 'DATABASE_ERROR',
-          message: `Erro ao salvar empresa: ${companyError.message || 'Erro desconhecido'}`
+          message: 'Erro ao salvar dados no banco'
         }
       }, { status: 500 })
     }
 
-    // ========================================
-    // ANÁLISE BÁSICA (RÁPIDA - <2s)
-    // Enriquecimento pesado será feito ASSÍNCRONO sob demanda
-    // ========================================
-    
-    // Inserir análise BÁSICA (apenas ReceitaWS + Google CSE)
-    const analysisInsert = {
-      companyId: company.id,
-      projectId,
-      score: 50, // Score inicial, será atualizado quando usuário clicar "Analisar"
-      insights: JSON.stringify({
-        website: analysisData.website,
-        news: analysisData.news,
-        scoreRegras: 50,
-        scoreIA: 0,
-        justificativa: 'Dados básicos da Receita Federal + Google CSE. Clique em "Analisar Empresa" para enriquecimento completo.',
-        enrichmentStatus: 'pending', // 'pending' | 'processing' | 'completed' | 'failed'
-        enrichmentQueue: {
-          apollo: false,
-          httpHeaders: false,
-          maturity: false,
-          socialMedia: false,
-          jusbrasil: false,
-          marketplaces: false
-        }
-      }),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }
-
-    const { data: analysis, error: analysisError } = await supabaseAdmin
-      .from('Analysis')
-      .insert(analysisInsert)
-      .select()
-      .single()
-
-    if (analysisError) {
-      console.error('[CompanySearch] Erro ao inserir análise:', analysisError)
-      // Não falhar aqui, empresa já foi criada
-    }
-
-    const latency = Date.now() - startTime
-    console.log(`[CompanySearch] Sucesso em ${latency}ms:`, company.id)
-
-    return NextResponse.json({
-      ok: true,
-      data: {
-        company: {
-          id: company.id,
-          cnpj: company.cnpj,
-          name: company.name,
-          tradeName: company.tradeName,
-          capital: company.capital,
-          size: company.size
-        },
-        analysis: analysis ? {
-          id: analysis.id,
-          score: analysis.score,
-          insights: analysis.insights
-        } : null,
-        enrichment: {
-          website: analysisData.website,
-          news: analysisData.news,
-          status: 'basic', // 'basic' = só ReceitaWS + Google, 'full' = Apollo + Headers + Maturity
-          message: 'Empresa salva com sucesso. Clique em "Analisar Empresa" para enriquecimento completo.',
-          latency
-        }
-      }
-    })
-
   } catch (error: any) {
     const latency = Date.now() - startTime
-    console.error(`[CompanySearch] Erro geral em ${latency}ms:`, error.message)
+    console.error(`[CompanySearch] ❌ Erro geral em ${latency}ms:`, error.message)
 
     return NextResponse.json({
       ok: false,
@@ -392,23 +353,4 @@ export async function POST(req: Request) {
       }
     }, { status: 500 })
   }
-}
-
-export async function GET(req: Request) {
-  const url = new URL(req.url)
-  const cnpj = url.searchParams.get('cnpj')
-  const website = url.searchParams.get('website')
-
-  if (!cnpj && !website) {
-    return NextResponse.json({
-      ok: false,
-      error: {
-        code: 'MISSING_PARAMETERS',
-        message: 'Forneça um parâmetro "cnpj" ou "website"'
-      }
-    }, { status: 400 })
-  }
-
-  // Redirecionar para POST
-  return POST(req)
 }
