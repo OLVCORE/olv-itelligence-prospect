@@ -12,7 +12,7 @@ export async function getDefaultProjectId(): Promise<string> {
       console.log('[ProjectFallback] Usando DEFAULT_PROJECT_ID do .env:', fromEnv)
       
       // Validar se o projeto existe no banco
-      const { data: validation, error: validationError } = await supabaseAdmin
+      const { data: validation, error: validationError } = await supabaseAdmin()
         .from('Project')
         .select('id')
         .eq('id', fromEnv)
@@ -29,7 +29,7 @@ export async function getDefaultProjectId(): Promise<string> {
     console.log('[ProjectFallback] Buscando/criando projeto padrão...')
 
     // 2. Tenta pegar um projeto existente (o mais antigo)
-    const { data: existing, error: selectError } = await supabaseAdmin
+    const { data: existing, error: selectError } = await supabaseAdmin()
       .from('Project')
       .select('id')
       .order('createdAt', { ascending: true })
@@ -50,14 +50,14 @@ export async function getDefaultProjectId(): Promise<string> {
     console.log('[ProjectFallback] Buscando/criando organização padrão...')
     let organizationId = 'default-org-id'
     
-    const { data: existingOrg } = await supabaseAdmin
+    const { data: existingOrg } = await supabaseAdmin()
       .from('Organization')
       .select('id')
       .eq('id', 'default-org-id')
       .maybeSingle()
     
     if (!existingOrg) {
-      const { data: newOrg, error: orgError } = await supabaseAdmin
+      const { data: newOrg, error: orgError } = await supabaseAdmin()
         .from('Organization')
         .insert({
           id: 'default-org-id',
@@ -81,7 +81,7 @@ export async function getDefaultProjectId(): Promise<string> {
     const nowIso = new Date().toISOString()
     
     // Usar upsert para evitar duplicatas em caso de concorrência
-    const { data: created, error: createError } = await supabaseAdmin
+    const { data: created, error: createError } = await supabaseAdmin()
       .from('Project')
       .upsert({
         id: 'default-project-id',
