@@ -80,82 +80,74 @@ export async function POST(req: Request) {
         city: (typeof company.location === 'string' ? JSON.parse(company.location || '{}') : company.location)?.cidade || receita.municipio,
         state: (typeof company.location === 'string' ? JSON.parse(company.location || '{}') : company.location)?.estado || receita.uf,
       },
-        // RAW DATA COMPLETO
-        receita: {
-          identificacao: {
-            razaoSocial: receita.nome || company.name,
-            nomeFantasia: receita.fantasia || company.tradeName,
-            cnpj: receita.cnpj || company.cnpj,
-            tipo: receita.tipo || 'MATRIZ',
-            porte: receita.porte || company.size,
-            naturezaJuridica: receita.natureza_juridica,
-            dataAbertura: receita.abertura,
-            situacao: receita.situacao || company.status,
-            dataSituacao: receita.data_situacao,
-          },
-          capital: {
-            valor: company.capital || parseBRLToNumber(receita.capital_social),
-            valorOriginal: receita.capital_social
-          },
-          endereco: {
-            logradouro: receita.logradouro,
-            numero: receita.numero,
-            complemento: receita.complemento,
-            bairro: receita.bairro,
-            municipio: receita.municipio,
-            uf: receita.uf,
-            cep: receita.cep,
-          },
-          contato: {
-            telefone: receita.telefone,
-            email: receita.email,
-          },
-          cnae: {
-            principal: receita.atividade_principal?.[0] || null,
-            secundarias: receita.atividades_secundarias || [],
-          },
-          qsa: receita.qsa || [],
-          simples: {
-            optante: receita.simples?.optante || false,
-            dataOpcao: receita.simples?.data_opcao,
-          },
-          mei: {
-            optante: receita.simei?.optante || false,
-          }
+      // RAW DATA COMPLETO
+      receita: {
+        identificacao: {
+          razaoSocial: receita.nome || company.name,
+          nomeFantasia: receita.fantasia || company.tradeName,
+          cnpj: receita.cnpj || company.cnpj,
+          tipo: receita.tipo || 'MATRIZ',
+          porte: receita.porte || company.size,
+          naturezaJuridica: receita.natureza_juridica,
+          dataAbertura: receita.abertura,
+          situacao: receita.situacao || company.status,
+          dataSituacao: receita.data_situacao,
         },
-        // PRESENÇA DIGITAL
-        presencaDigital: {
-          website: digitalPresence?.website ? {
-            url: digitalPresence.website,
-            titulo: company.name,
-            descricao: `Website oficial da ${company.name}`,
-            status: 'ativo',
-            validado: true
-          } : null,
-          noticias: digitalPresence?.noticias || [],
-          redesSociais: {
-            linkedin: digitalPresence?.linkedin || null,
-            instagram: digitalPresence?.instagram || null,
-            facebook: digitalPresence?.facebook || null,
-            youtube: digitalPresence?.youtube || null,
-            twitter: digitalPresence?.twitter || null,
-          },
-          outrosLinks: digitalPresence?.outrosLinks || []
+        capital: {
+          valor: company.capital || parseBRLToNumber(receita.capital_social),
+          valorOriginal: receita.capital_social
         },
-        // MATURIDADE DIGITAL
-        maturidadeDigital: maturity ? {
-          score: maturity.overallScore || 0,
-          infraestrutura: maturity.infrastructureScore || 0,
-          sistemas: maturity.systemsScore || 0,
-          processos: maturity.processesScore || 0,
-          seguranca: maturity.securityScore || 0,
-          inovacao: maturity.innovationScore || 0,
-        } : null,
-        // METADATA
-        timestamp: new Date().toISOString()
+        endereco: {
+          logradouro: receita.logradouro,
+          numero: receita.numero,
+          complemento: receita.complemento,
+          bairro: receita.bairro,
+          municipio: receita.municipio,
+          uf: receita.uf,
+          cep: receita.cep,
+        },
+        contato: {
+          telefone: receita.telefone,
+          email: receita.email,
+        },
+        cnae: {
+          principal: receita.atividade_principal?.[0] || null,
+          secundarias: receita.atividades_secundarias || [],
+        },
+        qsa: receita.qsa || [],
+        simples: {
+          optante: receita.simples?.optante || false,
+          dataOpcao: receita.simples?.data_opcao,
+        },
+        mei: {
+          optante: receita.simei?.optante || false,
+        }
       },
+      // PRESENÇA DIGITAL
+      presencaDigital: {
+        website: digitalPresence?.website || null,
+        noticias: digitalPresence?.noticias || [],
+        redesSociais: {
+          linkedin: digitalPresence?.linkedin || null,
+          instagram: digitalPresence?.instagram || null,
+          facebook: digitalPresence?.facebook || null,
+          youtube: digitalPresence?.youtube || null,
+          twitter: digitalPresence?.twitter || null,
+        },
+        outrosLinks: digitalPresence?.outrosLinks || []
+      },
+      // MATURIDADE DIGITAL
+      maturidadeDigital: maturity ? {
+        score: maturity.overallScore || 0,
+        infraestrutura: maturity.infrastructureScore || 0,
+        sistemas: maturity.systemsScore || 0,
+        processos: maturity.processesScore || 0,
+        seguranca: maturity.securityScore || 0,
+        inovacao: maturity.innovationScore || 0,
+      } : null,
+      // METADATA
+      timestamp: new Date().toISOString(),
       // Propriedades que PreviewModal espera
-      presencaDigital: digitalPresence || {},
       enrichment: {},
       ai: {}
     }
