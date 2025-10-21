@@ -593,6 +593,41 @@ export default function DashboardPage() {
           </Button>
 
           <Button
+            onClick={async () => {
+              if (!confirm('Deseja corrigir os valores exorbitantes de capital social?')) return
+              
+              try {
+                setLoading(true)
+                const response = await fetch('/api/admin/fix-capital-values', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' }
+                })
+                
+                if (!response.ok) {
+                  throw new Error('Erro ao corrigir valores')
+                }
+                
+                const result = await response.json()
+                alert(`Correção concluída! ${result.fixed} empresas corrigidas`)
+                
+                // Recarregar empresas
+                fetchCompanies()
+              } catch (error: any) {
+                console.error('Erro ao corrigir valores:', error)
+                alert('Erro ao corrigir valores: ' + error.message)
+              } finally {
+                setLoading(false)
+              }
+            }}
+            variant="default"
+            className="bg-red-600 hover:bg-red-700 text-white"
+            disabled={loading}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Corrigir Valores
+          </Button>
+
+          <Button
             onClick={() => setShowDigitalProfilingModal(true)}
             variant="default"
             className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all"
