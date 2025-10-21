@@ -64,22 +64,22 @@ export async function POST(req: Request) {
       .eq('companyId', companyId)
       .maybeSingle()
 
-    // Montar resposta no formato do PreviewModal
+    // Montar resposta no formato que PreviewModal espera
     const response = {
-      ok: true,
-      data: {
-        company: {
-          id: company.id,
-          name: company.name,
-          cnpj: company.cnpj,
-          tradeName: company.tradeName || company.name,
-          domain: company.domain,
-          status: company.status,
-          capital: company.capital,
-          size: company.size,
-          city: (typeof company.location === 'string' ? JSON.parse(company.location || '{}') : company.location)?.cidade || receita.municipio,
-          state: (typeof company.location === 'string' ? JSON.parse(company.location || '{}') : company.location)?.estado || receita.uf,
-        },
+      mode: 'existing',
+      status: 'completed',
+      company: {
+        id: company.id,
+        name: company.name,
+        cnpj: company.cnpj,
+        tradeName: company.tradeName || company.name,
+        domain: company.domain,
+        status: company.status,
+        capital: company.capital,
+        size: company.size,
+        city: (typeof company.location === 'string' ? JSON.parse(company.location || '{}') : company.location)?.cidade || receita.municipio,
+        state: (typeof company.location === 'string' ? JSON.parse(company.location || '{}') : company.location)?.estado || receita.uf,
+      },
         // RAW DATA COMPLETO
         receita: {
           identificacao: {
@@ -153,7 +153,11 @@ export async function POST(req: Request) {
         } : null,
         // METADATA
         timestamp: new Date().toISOString()
-      }
+      },
+      // Propriedades que PreviewModal espera
+      presencaDigital: digitalPresence || {},
+      enrichment: {},
+      ai: {}
     }
 
     console.log('[CompanyPreview] ✅ Dados montados com sucesso')

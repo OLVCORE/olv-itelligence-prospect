@@ -185,7 +185,7 @@ export default function DashboardPage() {
       // Detectar se é CNPJ ou website
       const isCnpj = /^\d{14}$|^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/.test(searchTerm.trim())
       
-      const response = await fetch('/api/companies/preview', {
+      const response = await fetch('/api/companies/existing-preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -222,7 +222,7 @@ export default function DashboardPage() {
       const query = individualSearchData.cnpj.trim() || individualSearchData.website.trim()
       const mode = individualSearchData.cnpj.trim() ? 'cnpj' : 'website'
       
-      const response = await fetch('/api/companies/preview', {
+      const response = await fetch('/api/companies/existing-preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -920,7 +920,7 @@ export default function DashboardPage() {
                 onSearchIndividual={async (query, mode) => {
                   setLoading(true)
                   try {
-                    const response = await fetch('/api/companies/preview', {
+                    const response = await fetch('/api/companies/existing-preview', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ query, mode })
