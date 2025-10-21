@@ -28,6 +28,7 @@ export async function POST() {
     }
     
     let fixedCount = 0
+    const corrections = []
     
     // 2. Corrigir valores
     for (const company of companies) {
@@ -54,6 +55,12 @@ export async function POST() {
         console.error(`❌ Erro ao corrigir ${company.name}:`, updateError)
       } else {
         console.log(`✅ ${company.name}: R$ ${company.capital?.toLocaleString('pt-BR')} → R$ ${newCapital.toLocaleString('pt-BR')}`)
+        corrections.push({
+          id: company.id,
+          name: company.name,
+          oldCapital: company.capital,
+          newCapital: newCapital
+        })
         fixedCount++
       }
     }
@@ -63,16 +70,7 @@ export async function POST() {
     return NextResponse.json({ 
       message: `Correção concluída! ${fixedCount} empresas corrigidas`,
       fixed: fixedCount,
-      companies: companies.map(c => ({
-        id: c.id,
-        name: c.name,
-        oldCapital: c.capital,
-        newCapital: c.capital && c.capital > 1000000000 ? 
-          (c.capital > 1000000000000 ? c.capital / 1000000 :
-           c.capital > 100000000000 ? c.capital / 100000 :
-           c.capital > 10000000000 ? c.capital / 10000 :
-           c.capital / 1000) : c.capital
-      }))
+      corrections: corrections
     })
     
   } catch (error: any) {
