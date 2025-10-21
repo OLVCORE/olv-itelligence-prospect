@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { normalizeCnpj, isValidCnpj, normalizeDomain } from '@/lib/utils/cnpj'
+import { receitaWS } from '@/lib/services/receitaws'
+import { fetchGoogleCSE } from '@/lib/services/google-cse'
 
 export const runtime = 'nodejs'
-export const maxDuration = 10 // Preview with ReceitaWS + Google CSE: 10s
+export const maxDuration = 15 // Preview with ReceitaWS + Google CSE: 15s
 
 // Schema de validação
 const previewSchema = z.object({
@@ -12,134 +14,6 @@ const previewSchema = z.object({
     errorMap: () => ({ message: "Mode deve ser 'cnpj' ou 'website'" })
   })
 })
-
-// Circuit breaker simples
-class CircuitBreaker {
-  private failures = 0
-  private lastFailure = 0
-  private readonly threshold = 3
-  private readonly timeout = 30000 // 30s
-
-  isOpen(): boolean {
-    if (this.failures >= this.threshold) {
-      const now = Date.now()
-      if (now - this.lastFailure < this.timeout) {
-        return true
-      }
-      this.failures = 0
-    }
-    return false
-  }
-
-  recordSuccess(): void {
-    this.failures = 0
-  }
-
-  recordFailure(): void {
-    this.failures++
-    this.lastFailure = Date.now()
-  }
-}
-
-const receitaBreaker = new CircuitBreaker()
-const googleBreaker = new CircuitBreaker()
-
-// Função para buscar preview da ReceitaWS
-async function fetchReceitaPreview(cnpj: string): Promise<any> {
-  const enabled = process.env.ENABLE_RECEITA !== 'false'
-  if (!enabled) {
-    throw new Error('Provider ReceitaWS desabilitado')
-  }
-
-  if (receitaBreaker.isOpen()) {
-    throw new Error('Provider ReceitaWS temporariamente indisponível')
-  }
-
-  const token = process.env.RECEITAWS_API_TOKEN
-  if (!token) {
-    throw new Error('RECEITAWS_API_TOKEN não configurado')
-  }
-
-  const url = `https://receitaws.com.br/v1/cnpj/${cnpj}`
-  
-  try {
-    console.log(`[CompanyPreview] Buscando ReceitaWS: ${cnpj}`)
-    
-    const response = await fetch(url, {
-      headers: { 'Authorization': `Bearer ${token}` },
-      signal: AbortSignal.timeout(5000)
-    })
-
-    if (!response.ok) {
-      throw new Error(`ReceitaWS HTTP ${response.status}`)
-    }
-
-    const data = await response.json()
-    
-    if (data.status === 'ERROR') {
-      throw new Error(data.message || 'CNPJ não encontrado na ReceitaWS')
-    }
-
-    receitaBreaker.recordSuccess()
-    
-    console.log('[CompanyPreview] ✅ Dados ReceitaWS recebidos:', JSON.stringify(data, null, 2))
-    
-    // Retornar TODOS os dados da ReceitaWS sem modificar
-    return data
-  } catch (error: any) {
-    console.error('[CompanyPreview] ReceitaWS falhou:', error.message)
-    receitaBreaker.recordFailure()
-    throw error
-  }
-}
-
-// Função para buscar preview de website
-async function fetchWebsitePreview(domain: string): Promise<any> {
-  const enabled = process.env.ENABLE_GOOGLE_CSE !== 'false'
-  if (!enabled) {
-    throw new Error('Provider Google CSE desabilitado')
-  }
-
-  if (googleBreaker.isOpen()) {
-    throw new Error('Provider Google CSE temporariamente indisponível')
-  }
-
-  const apiKey = process.env.GOOGLE_API_KEY
-  const cseId = process.env.GOOGLE_CSE_ID
-
-  if (!apiKey || !cseId) {
-    throw new Error('GOOGLE_API_KEY ou GOOGLE_CSE_ID não configurados')
-  }
-
-  try {
-    console.log(`[CompanyPreview] Buscando website: ${domain}`)
-    
-    const query = `site:${domain}`
-    const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cseId}&q=${encodeURIComponent(query)}&num=3`
-    
-    const response = await fetch(url, {
-      signal: AbortSignal.timeout(5000)
-    })
-
-    if (!response.ok) {
-      throw new Error(`Google CSE HTTP ${response.status}`)
-    }
-
-    const data = await response.json()
-    googleBreaker.recordSuccess()
-    
-    return {
-      website: `https://${domain}`,
-      title: data.items?.[0]?.title || domain,
-      description: data.items?.[0]?.snippet || 'Website encontrado',
-      results: data.items?.length || 0
-    }
-  } catch (error: any) {
-    console.error('[CompanyPreview] Google CSE falhou:', error.message)
-    googleBreaker.recordFailure()
-    throw error
-  }
-}
 
 export async function POST(req: Request) {
   const startTime = Date.now()
@@ -162,14 +36,14 @@ export async function POST(req: Request) {
     }
 
     const { query, mode } = validation.data
-    let previewData: any = null
+    let receitaData: any = null
+    let googleData: any = null
 
+    // BUSCAR RECEITA FEDERAL
     if (mode === 'cnpj') {
-      // Preview por CNPJ
       const normalizedCnpj = normalizeCnpj(query)
       
       if (!isValidCnpj(normalizedCnpj)) {
-        console.log('[CompanyPreview] CNPJ inválido:', normalizedCnpj)
         return NextResponse.json({
           ok: false,
           error: {
@@ -180,9 +54,11 @@ export async function POST(req: Request) {
       }
 
       try {
-        previewData = await fetchReceitaPreview(normalizedCnpj)
+        console.log('[CompanyPreview] 📋 Buscando ReceitaWS...')
+        receitaData = await receitaWS.buscarPorCNPJ(normalizedCnpj)
+        console.log('[CompanyPreview] ✅ ReceitaWS retornou:', receitaData?.nome)
       } catch (receitaError: any) {
-        console.error('[CompanyPreview] ReceitaWS falhou:', receitaError.message)
+        console.error('[CompanyPreview] ❌ ReceitaWS falhou:', receitaError.message)
         return NextResponse.json({
           ok: false,
           error: {
@@ -191,39 +67,104 @@ export async function POST(req: Request) {
           }
         }, { status: 502 })
       }
-    } else if (mode === 'website') {
-      // Preview por website
-      const domain = normalizeDomain(query)
-      
+    }
+
+    // BUSCAR GOOGLE CSE (se temos dados da receita)
+    if (receitaData) {
       try {
-        previewData = await fetchWebsitePreview(domain)
+        console.log('[CompanyPreview] 🌐 Buscando presença digital...')
+        googleData = await fetchGoogleCSE(receitaData.nome, receitaData.cnpj)
+        console.log('[CompanyPreview] ✅ Presença digital:', {
+          website: googleData?.website?.url || 'não encontrado',
+          news: googleData?.news?.length || 0
+        })
       } catch (googleError: any) {
-        console.error('[CompanyPreview] Google CSE falhou:', googleError.message)
-        return NextResponse.json({
-          ok: false,
-          error: {
-            code: 'PROVIDER_ERROR',
-            message: `Erro ao buscar dados do website: ${googleError.message}`
-          }
-        }, { status: 502 })
+        console.error('[CompanyPreview] ⚠️ Google CSE falhou:', googleError.message)
+        // Não é crítico - continuar sem presença digital
       }
     }
 
     const latency = Date.now() - startTime
-    console.log(`[CompanyPreview] Sucesso em ${latency}ms`)
+    console.log(`[CompanyPreview] ✅ Preview completo em ${latency}ms`)
     
-    return NextResponse.json({
+    // MONTAR RESPOSTA NO FORMATO QUE O PREVIEWMODAL ESPERA
+    const response = {
       ok: true,
       data: {
-        preview: previewData,
+        // Dados da empresa (formato simplificado)
+        company: {
+          id: `comp_preview_${Date.now()}`,
+          cnpj: receitaData?.cnpj,
+          name: receitaData?.nome,
+          tradeName: receitaData?.fantasia,
+          domain: googleData?.website?.url,
+          status: receitaData?.situacao,
+          capital: parseCapitalSocial(receitaData?.capital_social),
+          size: convertPorte(receitaData?.porte)
+        },
+        // Dados completos da ReceitaWS (raw)
+        receita: receitaData,
+        // Seção 1: Identificação
+        nome: receitaData?.nome,
+        fantasia: receitaData?.fantasia,
+        cnpj: receitaData?.cnpj,
+        tipo: receitaData?.tipo,
+        porte: receitaData?.porte,
+        situacao: receitaData?.situacao,
+        abertura: receitaData?.abertura,
+        naturezaJuridica: receitaData?.natureza_juridica,
+        // Seção 1: Capital
+        capitalSocial: receitaData?.capital_social,
+        // Seção 1: Endereço
+        logradouro: receitaData?.logradouro,
+        numero: receitaData?.numero,
+        complemento: receitaData?.complemento,
+        bairro: receitaData?.bairro,
+        cep: receitaData?.cep,
+        municipio: receitaData?.municipio,
+        uf: receitaData?.uf,
+        // Seção 1: Contato
+        telefone: receitaData?.telefone,
+        email: receitaData?.email,
+        // Seção 1: CNAE
+        cnae: receitaData?.atividade_principal?.[0]?.code,
+        cnaeDescricao: receitaData?.atividade_principal?.[0]?.text,
+        atividadesSecundarias: receitaData?.atividades_secundarias || [],
+        // Seção 1: QSA (Quadro Societário)
+        qsa: receitaData?.qsa || [],
+        // Seção 1: Regime
+        simplesNacional: receitaData?.simples?.optante || false,
+        mei: receitaData?.simei?.optante || false,
+        // Seção 2: Presença Digital
+        presencaDigital: {
+          website: googleData?.website || null,
+          noticias: googleData?.news || [],
+          redesSociais: {
+            linkedin: null, // TODO: Detectar do googleData
+            facebook: null,
+            instagram: null,
+            twitter: null,
+            youtube: null
+          },
+          marketplaces: [], // TODO: Detectar do googleData
+          outrosLinks: googleData?.news?.map((n: any) => ({
+            tipo: 'Notícia',
+            url: n.link,
+            titulo: n.title,
+            descricao: n.snippet
+          })) || []
+        },
+        // Metadata
         mode,
         latency
       }
-    })
+    }
+
+    return NextResponse.json(response)
 
   } catch (error: any) {
     const latency = Date.now() - startTime
-    console.error(`[CompanyPreview] Erro geral em ${latency}ms:`, error.message)
+    console.error(`[CompanyPreview] ❌ Erro geral em ${latency}ms:`, error.message)
 
     return NextResponse.json({
       ok: false,
@@ -233,4 +174,39 @@ export async function POST(req: Request) {
       }
     }, { status: 500 })
   }
+}
+
+// Helpers
+function parseCapitalSocial(capital: string | undefined): number {
+  if (!capital) return 0
+  
+  // Remover caracteres não numéricos exceto ponto e vírgula
+  const cleaned = capital.replace(/[^\d.,]/g, '')
+  
+  // Se tem vírgula, é formato BR: 52.000.000,00
+  if (cleaned.includes(',')) {
+    const parts = cleaned.split(',')
+    const integerPart = parts[0].replace(/\./g, '')
+    const decimalPart = parts[1] || '00'
+    return parseFloat(integerPart + '.' + decimalPart)
+  }
+  
+  // Se tem ponto mas não vírgula, pode ser: 52000000.00
+  return parseFloat(cleaned)
+}
+
+function convertPorte(porte: string | undefined): string {
+  if (!porte) return 'MÉDIO'
+  
+  const porteMap: Record<string, string> = {
+    '00': 'MICRO',
+    '01': 'PEQUENO',
+    '03': 'MÉDIO',
+    '05': 'GRANDE',
+    'ME': 'MICRO',
+    'EPP': 'PEQUENO',
+    'DEMAIS': 'MÉDIO'
+  }
+
+  return porteMap[porte] || 'MÉDIO'
 }
