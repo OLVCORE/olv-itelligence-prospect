@@ -38,9 +38,16 @@ export async function POST(req: Request) {
       }, { status: 404 })
     }
 
-    // Buscar dados raw_data (ReceitaWS)
-    const rawData = company.rawData || {}
-    const receita = rawData.receita || {}
+    // Buscar dados financial (ReceitaWS)
+    let receita = {}
+    try {
+      if (company.financial) {
+        const financialData = JSON.parse(company.financial)
+        receita = financialData.receita || financialData || {}
+      }
+    } catch (e) {
+      console.warn('[CompanyPreview] Erro ao fazer parse do financial:', e)
+    }
 
     // Buscar presença digital
     const { data: digitalPresence } = await sb

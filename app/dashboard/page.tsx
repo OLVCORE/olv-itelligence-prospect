@@ -702,22 +702,27 @@ export default function DashboardPage() {
                       
                       const data = await response.json()
                       
-                      if (data.success || data.reportUrl) {
-                        console.log('[Dashboard] ✅ Relatório gerado com sucesso')
-                        // Download do relatório
-                        if (data.reportUrl) {
-                          window.open(data.reportUrl, '_blank')
-                        } else if (data.pdfBase64) {
-                          const link = document.createElement('a')
-                          link.href = `data:application/pdf;base64,${data.pdfBase64}`
-                          link.download = `relatorio-${company.name}-${new Date().toISOString().split('T')[0]}.pdf`
-                          link.click()
-                        }
-                        alert('Relatório gerado com sucesso!')
-                      } else {
-                        console.error('[Dashboard] Erro ao gerar relatório:', data.error)
-                        alert('Erro ao gerar relatório: ' + (data.error || 'Erro desconhecido'))
-                      }
+                    if (data.success && data.report) {
+                      console.log('[Dashboard] ✅ Relatório gerado com sucesso')
+                      
+                      // Criar e baixar arquivo de texto com o relatório
+                      const reportContent = data.report.content
+                      const blob = new Blob([reportContent], { type: 'text/plain;charset=utf-8' })
+                      const url = URL.createObjectURL(blob)
+                      
+                      const link = document.createElement('a')
+                      link.href = url
+                      link.download = `relatorio-${company.name}-${new Date().toISOString().split('T')[0]}.txt`
+                      document.body.appendChild(link)
+                      link.click()
+                      document.body.removeChild(link)
+                      URL.revokeObjectURL(url)
+                      
+                      alert('Relatório gerado e baixado com sucesso!')
+                    } else {
+                      console.error('[Dashboard] Erro ao gerar relatório:', data.error)
+                      alert('Erro ao gerar relatório: ' + (data.error || 'Erro desconhecido'))
+                    }
                     } catch (error: any) {
                       console.error('[Dashboard] Erro ao gerar relatório:', error)
                       alert('Erro ao gerar relatório: ' + error.message)

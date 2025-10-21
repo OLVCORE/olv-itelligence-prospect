@@ -9,7 +9,8 @@ export const maxDuration = 60 // AI report generation: 60s
 async function getCompanyData(companyId: string) {
   console.log('[Reports] Buscando empresa com ID:', companyId)
   
-  const { data: company, error: companyError } = await supabaseAdmin
+  const sb = supabaseAdmin()
+  const { data: company, error: companyError } = await sb
     .from('Company')
     .select('*')
     .eq('id', companyId)
@@ -23,7 +24,7 @@ async function getCompanyData(companyId: string) {
   console.log('[Reports] ✅ Empresa encontrada:', company.name)
 
   // Buscar análise mais recente
-  const { data: analysis, error: analysisError } = await supabaseAdmin
+  const { data: analysis, error: analysisError } = await sb
     .from('Analysis')
     .select('*')
     .eq('companyId', companyId)
@@ -39,7 +40,8 @@ async function getCompanyData(companyId: string) {
 
 // Função para buscar tech stack real
 async function getTechStackData(companyId: string) {
-  const { data: techStack, error } = await supabaseAdmin
+  const sb = supabaseAdmin()
+  const { data: techStack, error } = await sb
     .from('CompanyTechStack')
     .select('*')
     .eq('companyId', companyId)
@@ -55,7 +57,8 @@ async function getTechStackData(companyId: string) {
 
 // Função para buscar decisores reais
 async function getDecisionMakersData(companyId: string) {
-  const { data: decisionMakers, error } = await supabaseAdmin
+  const sb = supabaseAdmin()
+  const { data: decisionMakers, error } = await sb
     .from('Person')
     .select('*')
     .eq('companyId', companyId)
