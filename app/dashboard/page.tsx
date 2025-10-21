@@ -1217,10 +1217,47 @@ export default function DashboardPage() {
         data={previewData}
         loading={false}
         onConfirmSave={async () => {
-          console.log('[Dashboard] 💾 Preview confirmado')
-          setShowPreviewModal(false)
-          setPreviewData(null)
-          await loadCompanies()
+          console.log('[Dashboard] 💾 Salvando empresa...')
+          
+          try {
+            // Extrair CNPJ ou website do preview
+            const cnpj = previewData?.data?.preview?.cnpj || previewData?.data?.company?.cnpj
+            const website = previewData?.data?.preview?.website || previewData?.data?.company?.domain
+            
+            if (!cnpj && !website) {
+              alert('Erro: CNPJ ou website não encontrado nos dados do preview')
+              return
+            }
+
+            // Chamar API de busca para salvar
+            const response = await fetch('/api/companies/search', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ cnpj, website })
+            })
+
+            const result = await response.json()
+
+            if (!result.ok) {
+              alert('Erro ao salvar: ' + (result.error?.message || 'Erro desconhecido'))
+              return
+            }
+
+            console.log('[Dashboard] ✅ Empresa salva:', result.data.company.name)
+            
+            // Atualizar currentCompany com dados salvos
+            setCurrentCompany(result.data.company)
+            
+            // Fechar modal
+            setShowPreviewModal(false)
+            setPreviewData(null)
+            
+            // Recarregar lista
+            await loadCompanies()
+          } catch (error: any) {
+            console.error('[Dashboard] ❌ Erro ao salvar:', error.message)
+            alert('Erro ao salvar: ' + error.message)
+          }
         }}
       />
 
