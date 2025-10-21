@@ -5,10 +5,6 @@ import { parseBRLToNumber } from '@/lib/utils/format'
 export const runtime = 'nodejs'
 export const maxDuration = 10
 
-/**
- * API para buscar dados completos de empresa já cadastrada
- * Retorna estrutura igual ao /api/companies/preview para PreviewModal
- */
 export async function POST(req: Request) {
   try {
     const { companyId } = await req.json()
@@ -23,7 +19,6 @@ export async function POST(req: Request) {
     console.log('[CompanyPreview] 🔍 Buscando empresa:', companyId)
 
     const sb = supabaseAdmin()
-    console.log('[CompanyPreview] ✅ Supabase client criado')
 
     // Buscar empresa completa
     const { data: company, error: companyError } = await sb
@@ -80,7 +75,6 @@ export async function POST(req: Request) {
         city: (typeof company.location === 'string' ? JSON.parse(company.location || '{}') : company.location)?.cidade || receita.municipio,
         state: (typeof company.location === 'string' ? JSON.parse(company.location || '{}') : company.location)?.estado || receita.uf,
       },
-      // RAW DATA COMPLETO
       receita: {
         identificacao: {
           razaoSocial: receita.nome || company.name,
@@ -123,7 +117,6 @@ export async function POST(req: Request) {
           optante: receita.simei?.optante || false,
         }
       },
-      // PRESENÇA DIGITAL
       presencaDigital: {
         website: digitalPresence?.website || null,
         noticias: digitalPresence?.noticias || [],
@@ -136,7 +129,6 @@ export async function POST(req: Request) {
         },
         outrosLinks: digitalPresence?.outrosLinks || []
       },
-      // MATURIDADE DIGITAL
       maturidadeDigital: maturity ? {
         score: maturity.overallScore || 0,
         infraestrutura: maturity.infrastructureScore || 0,
@@ -145,9 +137,7 @@ export async function POST(req: Request) {
         seguranca: maturity.securityScore || 0,
         inovacao: maturity.innovationScore || 0,
       } : null,
-      // METADATA
       timestamp: new Date().toISOString(),
-      // Propriedades que PreviewModal espera
       enrichment: {},
       ai: {}
     }
