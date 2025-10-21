@@ -13,15 +13,23 @@ if (!serviceKey) {
   throw new Error('SUPABASE_SERVICE_ROLE_KEY não configurada')
 }
 
-// Client para uso server-side (admin) - apenas em API routes
-export const supabaseAdmin = createClient(
-  supabaseUrl,
-  serviceKey,
-  {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
+// Singleton pattern para evitar múltiplas instâncias
+let adminClient: any = null
+
+// Função que retorna o client admin (singleton)
+export const supabaseAdmin = () => {
+  if (!adminClient) {
+    adminClient = createClient(
+      supabaseUrl,
+      serviceKey,
+      {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+        },
+      }
+    )
   }
-)
+  return adminClient
+}
 
