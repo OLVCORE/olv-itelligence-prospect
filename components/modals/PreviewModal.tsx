@@ -19,7 +19,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { formatCurrency, formatCNPJ, formatDate, formatPhone, formatCEP, formatPercent } from "@/lib/utils/format"
+import { formatCurrency, formatCNPJ, formatDate, formatPhone, formatCEP, formatPercent, parseBRLToNumber } from "@/lib/utils/format"
 import { EvidenceButton } from "@/components/ui/evidence-button"
 import { Loader2, Printer, Download, Save, Building2, MapPin, Phone, Mail, FileText, TrendingUp, AlertTriangle, Users, Briefcase, DollarSign, RefreshCw, Target, Sparkles, CheckSquare, XCircle, ArrowRight, Shield, BarChart3 } from "lucide-react"
 
