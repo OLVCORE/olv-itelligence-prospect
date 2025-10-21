@@ -6,6 +6,9 @@ import {
   calculatePriority
 } from "@/lib/enrichment"
 
+export const runtime = 'nodejs'
+export const maxDuration = 15 // Scoring calculations with DB queries: 15s
+
 export async function POST(request: NextRequest) {
   // Demo: sem autenticação por enquanto
 
@@ -60,16 +63,16 @@ export async function POST(request: NextRequest) {
     }
   })
 
-  // Log audit
-  await prisma.auditLog.create({
-    data: {
-      userId: (session.user as any).id,
-      action: 'SCORING',
-      resource: 'Company',
-      resourceId: companyId,
-      changes: { maturityScore, propensity, priority }
-    }
-  })
+  // Log audit (TODO: Re-enable when auth is active)
+  // await prisma.auditLog.create({
+  //   data: {
+  //     userId: 'system', // Demo mode
+  //     action: 'SCORING',
+  //     resource: 'Company',
+  //     resourceId: companyId,
+  //     changes: { maturityScore, propensity, priority }
+  //   }
+  // })
 
   return NextResponse.json({
     success: true,

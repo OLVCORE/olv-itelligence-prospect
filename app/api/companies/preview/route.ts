@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { normalizeCnpj, isValidCnpj, normalizeDomain } from '@/lib/utils/cnpj'
 
+export const runtime = 'nodejs'
+export const maxDuration = 10 // Preview with ReceitaWS + Google CSE: 10s
+
 // Schema de validação
 const previewSchema = z.object({
   query: z.string().min(1, "Query é obrigatória"),

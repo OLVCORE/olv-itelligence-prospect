@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { guard } from './guard';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { serperSearch } from '@/lib/integrations/serper';
 import { apolloCompanyEnrich, apolloPeopleSearch } from '@/lib/integrations/apollo';
@@ -8,7 +9,8 @@ import { buildDetectedStackFromEvidence } from '@/lib/stack/resolver';
 import { computeMaturity } from '@/lib/maturity/tech-maturity';
 import { suggestFit } from '@/lib/maturity/vendor-fit';
 
-export const runtime='nodejs';
+export const runtime = 'nodejs';
+export const maxDuration = 60; // ONE-SHOT orchestrator: Serper + Apollo + Hunter + Phantom + Maturity (30-60s)
 
 /**
  * POST /api/stack/ingest - ONE-SHOT ORCHESTRATOR
@@ -24,6 +26,7 @@ export const runtime='nodejs';
  *  7) Build detectedStack + Maturity + Fit → CompanyTechMaturity
  */
 export async function POST(req: NextRequest){
+  const g=guard(req,'/api/stack/ingest'); if(g) return g;
   const body = await req.json();
   const { projectId, companyId, vendor, domain, companyName, linkedinUrl, phantomAgentId, verifyEmails } = body || {};
   
