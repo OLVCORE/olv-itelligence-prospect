@@ -187,6 +187,41 @@ export function parseNumber(value: string): number | null {
 }
 
 /**
+ * Parse BRL para número (NUNCA multiplica por 1000)
+ * @param input - Capital social da ReceitaWS (string, number ou null)
+ * @returns Número parseado ou null
+ */
+export function parseBRLToNumber(input?: string | number | null): number | null {
+  if (input === null || input === undefined) return null
+  if (typeof input === 'number') return input
+  
+  let s = String(input).trim()
+  s = s.replace(/^R\$\s?/, '')
+  
+  // Detectar formato BR: 1.000.000,00
+  if (/\,\d{2}$/.test(s)) {
+    s = s.replace(/\./g, '').replace(',', '.')
+  }
+  
+  const n = Number(s)
+  return Number.isNaN(n) ? null : n // NUNCA multiplique por 1000
+}
+
+/**
+ * Apenas dígitos
+ */
+export function onlyDigits(s: string): string {
+  return (s || '').replace(/\D/g, '')
+}
+
+/**
+ * Normalizar CNPJ (14 dígitos)
+ */
+export function normalizeCnpj(s: string): string {
+  return onlyDigits(s).padStart(14, '0')
+}
+
+/**
  * Formatar CNPJ
  * @param cnpj - CNPJ com ou sem formatação
  * @returns String formatada (ex: "00.000.000/0000-00")

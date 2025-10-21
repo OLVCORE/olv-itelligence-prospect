@@ -43,6 +43,7 @@ import { BulkUploadModal } from "@/components/modals/BulkUploadModal"
 import { DigitalProfilingModal } from "@/components/modals/DigitalProfilingModal"
 import { CompanyIntelligenceModal } from "@/components/modals/CompanyIntelligenceModal"
 import { Sidebar } from "@/components/layout/Sidebar"
+import { UnifiedPipeline } from "@/components/pipeline/UnifiedPipeline"
 import { useMultiSelect } from "@/hooks/useMultiSelect"
 import { formatCurrency, formatCNPJ, formatDate } from "@/lib/utils/format"
 import {
@@ -725,7 +726,7 @@ export default function DashboardPage() {
                       alert(`✅ Enriquecimento completo!\n\nMaturidade Overall: ${result.data?.maturityScores?.overall || 'N/A'}\nTempo: ${result.data?.latency || 0}ms`)
                       
                       // Recarregar empresas para mostrar dados atualizados
-                      await fetchCompanies()
+                      await loadCompanies()
                     } else {
                       alert(`❌ Erro: ${result.error?.message || 'Falha ao enriquecer empresa'}`)
                     }
@@ -861,6 +862,17 @@ export default function DashboardPage() {
         {/* Renderizar módulo ativo OU dashboard */}
         {activeModule === 'dashboard' && (
           <>
+            {/* Pipeline Unificado (aparece após busca) */}
+            {currentCompany && (
+              <div className="mb-6">
+                <UnifiedPipeline
+                  companyId={currentCompany.id}
+                  cnpj={currentCompany.cnpj}
+                  initialData={previewData?.data}
+                />
+              </div>
+            )}
+
             {/* Tabs para Individual vs Massa */}
             <Tabs value={searchMode} onValueChange={(value) => setSearchMode(value as 'individual' | 'massa')} className="mb-6 dark:bg-slate-800 dark:border-slate-700">
               <TabsList className="grid w-full grid-cols-2 dark:bg-slate-800">
