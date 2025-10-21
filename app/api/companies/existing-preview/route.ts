@@ -23,6 +23,7 @@ export async function POST(req: Request) {
     console.log('[CompanyPreview] 🔍 Buscando empresa:', companyId)
 
     const sb = supabaseAdmin()
+    console.log('[CompanyPreview] ✅ Supabase client criado')
 
     // Buscar empresa completa
     const { data: company, error: companyError } = await sb

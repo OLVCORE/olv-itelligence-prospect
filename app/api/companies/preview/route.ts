@@ -242,21 +242,7 @@ export async function POST(req: Request) {
   }
 }
 
-// Helpers
-function parseBRLToNumber(input?: string | number | null): number {
-  if (!input) return 0
-  if (typeof input === 'number') return input
-  
-  let s = String(input).trim().replace(/^R\$\s?/, '')
-  
-  // Detectar formato BR: 52.000.000,00 ou 52000000.00
-  if (/\,\d{2}$/.test(s)) {
-    s = s.replace(/\./g, '').replace(',', '.')
-  }
-  
-  const n = Number(s)
-  return Number.isNaN(n) ? 0 : n
-}
+// Helpers removidos - usando import do lib/utils/format
 
 function convertPorte(porte: string): string {
   const map: Record<string, string> = {

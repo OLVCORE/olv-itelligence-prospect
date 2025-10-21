@@ -1417,7 +1417,7 @@ export function PreviewModal({
             )}
 
             {/* Ações (não aparece no print) */}
-            <div className="flex justify-between items-center gap-3 pt-6 border-t-2 print:hidden sticky bottom-0 bg-white dark:bg-slate-900 pb-4">
+            <div className="flex justify-between items-center gap-3 pt-6 border-t-2 bg-white dark:bg-slate-900 pb-4">
               <p className="text-xs text-slate-500">
                 Este é um pré-relatório. Clique em "Confirmar & Salvar" para persistir no sistema.
               </p>
