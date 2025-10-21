@@ -1430,6 +1430,213 @@ export function PreviewModal({
                   <Download className="h-4 w-4 mr-2" />
                   Excel
                 </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => {
+                    // Gerar PDF para impressão
+                    const printWindow = window.open('', '_blank')
+                    if (printWindow) {
+                      printWindow.document.write(`
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                          <title>Relatório - ${mergedData?.company?.name || 'Empresa'}</title>
+                          <style>
+                            body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+                            .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
+                            .section { margin-bottom: 25px; }
+                            .section h2 { color: #333; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
+                            .section h3 { color: #666; margin-top: 20px; }
+                            .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 15px; }
+                            .info-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dotted #ccc; }
+                            .info-label { font-weight: bold; }
+                            .info-value { text-align: right; }
+                            .cnae-list { margin-left: 20px; }
+                            .qsa-list { margin-left: 20px; }
+                            .presenca-item { margin-bottom: 10px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+                            @media print { body { margin: 0; } }
+                          </style>
+                        </head>
+                        <body>
+                          <div class="header">
+                            <h1>RELATÓRIO EXECUTIVO</h1>
+                            <h2>${mergedData?.company?.name || 'Empresa'}</h2>
+                            <p>CNPJ: ${formatCNPJ(mergedData?.company?.cnpj)}</p>
+                            <p>Gerado em: ${new Date().toLocaleDateString('pt-BR')}</p>
+                          </div>
+                          
+                          <div class="section">
+                            <h2>1. IDENTIFICAÇÃO</h2>
+                            <div class="info-grid">
+                              <div>
+                                <div class="info-item">
+                                  <span class="info-label">Razão Social:</span>
+                                  <span class="info-value">${getData('receita.identificacao.razaoSocial')}</span>
+                                </div>
+                                <div class="info-item">
+                                  <span class="info-label">Nome Fantasia:</span>
+                                  <span class="info-value">${getData('receita.identificacao.nomeFantasia')}</span>
+                                </div>
+                                <div class="info-item">
+                                  <span class="info-label">CNPJ:</span>
+                                  <span class="info-value">${formatCNPJ(getData('receita.identificacao.cnpj'))}</span>
+                                </div>
+                                <div class="info-item">
+                                  <span class="info-label">Porte:</span>
+                                  <span class="info-value">${getData('receita.identificacao.porte')}</span>
+                                </div>
+                              </div>
+                              <div>
+                                <div class="info-item">
+                                  <span class="info-label">Situação:</span>
+                                  <span class="info-value">${getData('receita.identificacao.situacao')}</span>
+                                </div>
+                                <div class="info-item">
+                                  <span class="info-label">Data Abertura:</span>
+                                  <span class="info-value">${getData('receita.identificacao.dataAbertura')}</span>
+                                </div>
+                                <div class="info-item">
+                                  <span class="info-label">Natureza Jurídica:</span>
+                                  <span class="info-value">${getData('receita.identificacao.naturezaJuridica')}</span>
+                                </div>
+                                <div class="info-item">
+                                  <span class="info-label">Capital Social:</span>
+                                  <span class="info-value">${formatCurrency(getData('receita.capital.valor'))}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div class="section">
+                            <h2>2. ENDEREÇO</h2>
+                            <div class="info-grid">
+                              <div>
+                                <div class="info-item">
+                                  <span class="info-label">Logradouro:</span>
+                                  <span class="info-value">${getData('receita.endereco.logradouro')}</span>
+                                </div>
+                                <div class="info-item">
+                                  <span class="info-label">Número:</span>
+                                  <span class="info-value">${getData('receita.endereco.numero')}</span>
+                                </div>
+                                <div class="info-item">
+                                  <span class="info-label">Complemento:</span>
+                                  <span class="info-value">${getData('receita.endereco.complemento')}</span>
+                                </div>
+                              </div>
+                              <div>
+                                <div class="info-item">
+                                  <span class="info-label">Bairro:</span>
+                                  <span class="info-value">${getData('receita.endereco.bairro')}</span>
+                                </div>
+                                <div class="info-item">
+                                  <span class="info-label">Município:</span>
+                                  <span class="info-value">${getData('receita.endereco.municipio')}</span>
+                                </div>
+                                <div class="info-item">
+                                  <span class="info-label">UF:</span>
+                                  <span class="info-value">${getData('receita.endereco.uf')}</span>
+                                </div>
+                                <div class="info-item">
+                                  <span class="info-label">CEP:</span>
+                                  <span class="info-value">${formatCEP(getData('receita.endereco.cep'))}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div class="section">
+                            <h2>3. CONTATO</h2>
+                            <div class="info-grid">
+                              <div>
+                                <div class="info-item">
+                                  <span class="info-label">Telefone:</span>
+                                  <span class="info-value">${formatPhone(getData('receita.contato.telefone'))}</span>
+                                </div>
+                              </div>
+                              <div>
+                                <div class="info-item">
+                                  <span class="info-label">Email:</span>
+                                  <span class="info-value">${getData('receita.contato.email')}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div class="section">
+                            <h2>4. CNAE</h2>
+                            <h3>Atividade Principal:</h3>
+                            <p>${getData('receita.cnae.principal.text')} (${getData('receita.cnae.principal.code')})</p>
+                            
+                            <h3>Atividades Secundárias:</h3>
+                            <div class="cnae-list">
+                              ${(getData('receita.cnae.secundarias') || []).map((cnae: any) => 
+                                `<p>${cnae.text} (${cnae.code})</p>`
+                              ).join('')}
+                            </div>
+                          </div>
+                          
+                          <div class="section">
+                            <h2>5. QUADRO DE SÓCIOS E ADMINISTRADORES</h2>
+                            <div class="qsa-list">
+                              ${(getData('receita.qsa') || []).map((qsa: any) => 
+                                `<div class="info-item">
+                                  <span class="info-label">${qsa.nome}</span>
+                                  <span class="info-value">${qsa.qual}</span>
+                                </div>`
+                              ).join('')}
+                            </div>
+                          </div>
+                          
+                          <div class="section">
+                            <h2>6. REGIME TRIBUTÁRIO</h2>
+                            <div class="info-grid">
+                              <div>
+                                <div class="info-item">
+                                  <span class="info-label">Simples Nacional:</span>
+                                  <span class="info-value">${getData('receita.simples.optante') ? 'Sim' : 'Não'}</span>
+                                </div>
+                              </div>
+                              <div>
+                                <div class="info-item">
+                                  <span class="info-label">MEI:</span>
+                                  <span class="info-value">${getData('receita.mei.optante') ? 'Sim' : 'Não'}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div class="section">
+                            <h2>7. PRESENÇA DIGITAL</h2>
+                            ${getData('presencaDigital.website') ? `
+                              <div class="presenca-item">
+                                <h3>Website:</h3>
+                                <p><strong>URL:</strong> ${getData('presencaDigital.website.url')}</p>
+                                <p><strong>Título:</strong> ${getData('presencaDigital.website.titulo')}</p>
+                                <p><strong>Descrição:</strong> ${getData('presencaDigital.website.descricao')}</p>
+                              </div>
+                            ` : ''}
+                            
+                            <h3>Redes Sociais:</h3>
+                            ${Object.entries(getData('presencaDigital.redesSociais') || {}).map(([key, value]: [string, any]) => 
+                              value ? `<div class="presenca-item">
+                                <p><strong>${key.toUpperCase()}:</strong> ${value.link || value}</p>
+                              </div>` : ''
+                            ).join('')}
+                          </div>
+                        </body>
+                        </html>
+                      `)
+                      printWindow.document.close()
+                      printWindow.print()
+                    }
+                  }}
+                >
+                  <Printer className="h-4 w-4 mr-2" />
+                  Imprimir PDF
+                </Button>
+                
                 <Button size="sm" onClick={handleSave} disabled={saving}>
                   {saving ? (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />

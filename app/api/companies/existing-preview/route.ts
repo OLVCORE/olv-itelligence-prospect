@@ -76,8 +76,8 @@ export async function POST(req: Request) {
           status: company.status,
           capital: company.capital,
           size: company.size,
-          city: company.location?.cidade || receita.municipio,
-          state: company.location?.estado || receita.uf,
+          city: (typeof company.location === 'string' ? JSON.parse(company.location || '{}') : company.location)?.cidade || receita.municipio,
+          state: (typeof company.location === 'string' ? JSON.parse(company.location || '{}') : company.location)?.estado || receita.uf,
         },
         // RAW DATA COMPLETO
         receita: {
