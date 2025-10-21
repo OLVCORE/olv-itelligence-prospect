@@ -44,6 +44,7 @@ import { DigitalProfilingModal } from "@/components/modals/DigitalProfilingModal
 import { CompanyIntelligenceModal } from "@/components/modals/CompanyIntelligenceModal"
 import { Sidebar } from "@/components/layout/Sidebar"
 import { UnifiedPipeline } from "@/components/pipeline/UnifiedPipeline"
+import { SearchHub } from "@/components/SearchHub"
 import { useMultiSelect } from "@/hooks/useMultiSelect"
 import { formatCurrency, formatCNPJ, formatDate } from "@/lib/utils/format"
 import {
@@ -862,6 +863,49 @@ export default function DashboardPage() {
         {/* Renderizar módulo ativo OU dashboard */}
         {activeModule === 'dashboard' && (
           <>
+            {/* SearchHub Unificado */}
+            <div className="mb-6">
+              <SearchHub
+                onSearchIndividual={async (query, mode) => {
+                  setLoading(true)
+                  try {
+                    const response = await fetch('/api/companies/preview', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ query, mode })
+                    })
+                    if (!response.ok) throw new Error('Erro na busca')
+                    const data = await response.json()
+                    setPreviewData(data)
+                    setShowPreviewModal(true)
+                  } catch (error: any) {
+                    alert('Erro: ' + error.message)
+                  } finally {
+                    setLoading(false)
+                  }
+                }}
+                onSearchBulk={async (file) => {
+                  setLoading(true)
+                  try {
+                    const formData = new FormData()
+                    formData.append('file', file)
+                    const response = await fetch('/api/companies/import', {
+                      method: 'POST',
+                      body: formData
+                    })
+                    const data = await response.json()
+                    alert(`✅ Importadas: ${data.succeeded || 0} empresas\n❌ Falhas: ${data.failed || 0}`)
+                    await loadCompanies()
+                  } catch (error: any) {
+                    alert('Erro: ' + error.message)
+                  } finally {
+                    setLoading(false)
+                  }
+                }}
+                loading={loading}
+              />
+            </div>
+
             {/* Pipeline Unificado (aparece após busca) */}
             {currentCompany && (
               <div className="mb-6">
@@ -873,7 +917,8 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* Tabs para Individual vs Massa */}
+            {/* Tabs removidas - agora usa SearchHub único acima */}
+            <div className="hidden">
             <Tabs value={searchMode} onValueChange={(value) => setSearchMode(value as 'individual' | 'massa')} className="mb-6 dark:bg-slate-800 dark:border-slate-700">
               <TabsList className="grid w-full grid-cols-2 dark:bg-slate-800">
                 <TabsTrigger value="individual" className="flex items-center gap-2 dark:data-[state=active]:bg-slate-700">
@@ -894,6 +939,7 @@ export default function DashboardPage() {
                 {renderMassaSearchInstructions()}
               </TabsContent>
             </Tabs>
+            </div>
           </>
         )}
 
