@@ -9,7 +9,8 @@ async function fetchJSON(path:string){
 }
 
 export default async function OperationsPage(){
-  const [alerts, metrics, runs] = await Promise.all([
+  const [mutes, alerts, metrics, runs] = await Promise.all([
+    fetchJSON('/api/alerts/mute'),
     fetchJSON('/api/alerts/events'),
     fetchJSON('/api/ops/metrics'),
     fetchJSON('/api/ops/runs'),
@@ -112,6 +113,44 @@ export default async function OperationsPage(){
               {(!alerts?.events?.length) && <tr><td colSpan={6} className="py-3 opacity-60">Sem alertas até o momento.</td></tr>}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* Mutes Ativos */}
+      <div className="rounded-2xl shadow p-4 bg-white dark:bg-gray-800">
+        <div className="mb-3 text-lg font-semibold">🔕 Mutes Ativos</div>
+        <div className="text-sm mb-3 opacity-70">
+          Regras/empresas silenciadas temporariamente (controlado via API segura).
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left opacity-70">
+                <th className="py-2">Regra</th>
+                <th>Empresa</th>
+                <th>Vendor</th>
+                <th>Até</th>
+                <th>Nota</th>
+                <th>ID</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(mutes?.mutes||[]).map((m:any)=>(
+                <tr key={m.id} className="border-t">
+                  <td className="py-2">{m.ruleName || '—'}</td>
+                  <td className="text-xs">{m.companyId ? m.companyId.substring(0,12)+'...' : '—'}</td>
+                  <td>{m.vendor || '—'}</td>
+                  <td className="text-xs">{new Date(m.until).toLocaleString()}</td>
+                  <td className="max-w-[360px] truncate text-xs" title={m.note || ''}>{m.note || '—'}</td>
+                  <td className="opacity-60 text-xs">{m.id.substring(0,8)}...</td>
+                </tr>
+              ))}
+              {(!mutes?.mutes?.length) && <tr><td colSpan={6} className="py-3 opacity-60">Nenhum mute ativo.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+        <div className="text-xs mt-3 opacity-60">
+          Para criar/remover mutes, use as APIs seguras com <code>x-olv-admin-key</code>.
         </div>
       </div>
 </div>

@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { isMuted } from '@/lib/alerts/mutes';
 import { sendEmail } from '@/lib/notifications/mailer';
 import { sendSlack } from '@/lib/notifications/slack';
 
@@ -125,6 +126,9 @@ export async function runAlertsSweep(){
           const dup = await alreadyFired(sb, rule.name, signature, rule.cooldownSec);
           if (dup) continue;
           const msg = `IngestRun ${r.id} terminou com status ${r.status}. Erro: ${r.error||'-'}`;
+          const muted = await isMuted({ ruleName: rule.name, companyId: r.companyId, vendor: r.vendor });
+          if (muted) { /* silenciado */ continue; }
+
           const out = await fire(sb, rule, { message: msg, companyId: r.companyId, vendor: r.vendor, runId: r.id, meta:{ signature } });
           fired.push(out);
         }
@@ -152,6 +156,9 @@ export async function runAlertsSweep(){
             const signature = { kind:'maturity_drop', companyId: cid, prev, cur };
             const dup = await alreadyFired(sb, rule.name, signature, rule.cooldownSec);
             if (dup) continue;
+          const muted = await isMuted({ ruleName: rule.name, companyId: cid, vendor: arr[0]?.vendor });
+          if (muted) { /* silenciado */ continue; }
+
             const msg = `Queda de maturidade: ${prev} → ${cur} (Δ ${delta})`;
             const out = await fire(sb, rule, { message: msg, companyId: cid, vendor: arr[0]?.vendor, meta:{ signature } });
             fired.push(out);
@@ -178,6 +185,9 @@ export async function runAlertsSweep(){
             const dup = await alreadyFired(sb, rule.name, signature, rule.cooldownSec);
             if (!dup) {
               const msg = `p95 de duração dos runs = ${p95}s (> ${thr}s)`;
+            const muted = await isMuted({ ruleName: rule.name });
+            if (muted) { /* silenciado */ continue; }
+
               const out = await fire(sb, rule, { message: msg, meta:{ signature } });
               fired.push(out);
             }
@@ -194,6 +204,9 @@ export async function runAlertsSweep(){
           const dup = await alreadyFired(sb, rule.name, signature, rule.cooldownSec);
           if (!dup) {
             const msg = `Nenhuma execução de ingest nos últimos ${gapH}h`;
+            const muted = await isMuted({ ruleName: rule.name });
+            if (muted) { /* silenciado */ continue; }
+
             const out = await fire(sb, rule, { message: msg, meta:{ signature } });
             fired.push(out);
           }
@@ -209,6 +222,9 @@ export async function runAlertsSweep(){
           const dup = await alreadyFired(sb, rule.name, signature, rule.cooldownSec);
           if (dup) continue;
           const msg = `Lock de ingest preso para companyId ${lk.companyId} há > ${minutes}min`;
+          const muted = await isMuted({ ruleName: rule.name, companyId: lk.companyId });
+          if (muted) { /* silenciado */ continue; }
+
           const out = await fire(sb, rule, { message: msg, companyId: lk.companyId, meta:{ signature } });
           fired.push(out);
         }
@@ -229,6 +245,9 @@ export async function runAlertsSweep(){
           const dup = await alreadyFired(sb, rule.name, signature, rule.cooldownSec);
           if (!dup) {
             const msg = `${quotaRuns.length} indícios de quota/rate-limit/402 na última hora`;
+            const muted = await isMuted({ ruleName: rule.name });
+            if (muted) { /* silenciado */ continue; }
+
             const out = await fire(sb, rule, { message: msg, meta:{ signature } });
             fired.push(out);
           }
