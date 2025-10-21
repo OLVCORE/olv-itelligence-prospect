@@ -1,247 +1,195 @@
 "use client"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState, useEffect } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
-import { 
-  BookOpen,
-  Info,
-  Play,
-  CheckCircle2,
-  Clock,
-  Users,
-  Mail,
-  Phone,
-  FileText,
-  Target,
-  TrendingUp
-} from "lucide-react"
-import { 
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
-
-interface PlaybookStep {
-  step: number
-  action: string
-  owner: string
-  timeline: string
-  template: string | null
-  kpi: string
-}
-
-interface Playbook {
-  id: string
-  name: string
-  stage: string
-  duration: string
-  steps: PlaybookStep[]
-  successRate: number
-  aiInsights: string
-}
+import { getSupabaseBrowser } from "@/lib/supabase/client"
+import { BookOpen, FileText, Download, Loader2, Play } from "lucide-react"
 
 interface PlaybooksModuleProps {
   companyId?: string
-  companyName?: string
 }
 
-export function PlaybooksModule({ companyId, companyName }: PlaybooksModuleProps) {
-  // TODO: Buscar playbooks reais quando engine estiver pronta (Sprint 2)
-  const data: Playbook[] = [] // Vazio até biblioteca de playbooks estar pronta
-  const getStageColor = (stage: string) => {
-    switch (stage) {
-      case "Prospecção": return "bg-blue-500/20 text-blue-400 border-blue-500/30"
-      case "Qualificação": return "bg-purple-500/20 text-purple-400 border-purple-500/30"
-      case "Negociação": return "bg-orange-500/20 text-orange-400 border-orange-500/30"
-      default: return "bg-slate-500/20 text-slate-400 border-slate-500/30"
+export function PlaybooksModule({ companyId }: PlaybooksModuleProps) {
+  const [loading, setLoading] = useState(false)
+  const [generating, setGenerating] = useState(false)
+  const [playbook, setPlaybook] = useState<any>(null)
+  const supabase = getSupabaseBrowser()
+
+  useEffect(() => {
+    if (companyId) {
+      loadPlaybook()
+    }
+  }, [companyId])
+
+  async function loadPlaybook() {
+    if (!companyId) return
+
+    setLoading(true)
+    try {
+      // Buscar playbook salvo
+      const { data, error } = await supabase
+        .from('Playbook')
+        .select('*')
+        .eq('companyId', companyId)
+        .maybeSingle()
+
+      if (data) {
+        setPlaybook(data)
+        console.log('[Playbooks] ✅ Playbook carregado')
+      }
+    } catch (error: any) {
+      console.error('[Playbooks] ❌ Erro:', error.message)
+    } finally {
+      setLoading(false)
     }
   }
 
+  async function generatePlaybook() {
+    if (!companyId) return
+
+    setGenerating(true)
+    try {
+      console.log('[Playbooks] 🚀 Gerando playbook para:', companyId)
+
+      const response = await fetch('/api/playbook/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ companyId })
+      })
+
+      const result = await response.json()
+
+      if (!result.success) {
+        throw new Error(result.error || 'Erro ao gerar playbook')
+      }
+
+      console.log('[Playbooks] ✅ Playbook gerado')
+      await loadPlaybook()
+    } catch (error: any) {
+      console.error('[Playbooks] ❌ Erro:', error.message)
+      alert('Erro ao gerar playbook: ' + error.message)
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  async function downloadPDF() {
+    if (!companyId) return
+
+    try {
+      const response = await fetch('/api/reports/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          templateId: 'playbook-v1',
+          companyId
+        })
+      })
+
+      const result = await response.json()
+
+      if (result.success && result.pdfBase64) {
+        const link = document.createElement('a')
+        link.href = `data:application/pdf;base64,${result.pdfBase64}`
+        link.download = `playbook-${companyId}.pdf`
+        link.click()
+      }
+    } catch (error: any) {
+      console.error('[Playbooks] ❌ Erro ao gerar PDF:', error.message)
+    }
+  }
+
+  if (!companyId) {
+    return (
+      <Card>
+        <CardContent className="p-8 text-center">
+          <BookOpen className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+          <p className="text-gray-600 dark:text-gray-400">
+            Selecione uma empresa para gerar playbooks personalizados
+          </p>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
-    <div className="space-y-6">
-      {/* Header com Explicação */}
-      <Card className="bg-gradient-to-br from-indigo-900/30 to-slate-800/30 border-slate-700/50">
+    <div className="space-y-4">
+      <Card>
         <CardHeader>
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <CardTitle className="text-2xl text-white flex items-center gap-2">
-                Playbooks de Abordagem e Engajamento
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Info className="h-5 w-5 text-indigo-400" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-md">
-                      <p className="font-semibold mb-2">O que são Playbooks?</p>
-                      <p className="text-sm">
-                        Sequências pré-definidas e testadas de ações comerciais para cada etapa 
-                        do funil: prospecção, qualificação e fechamento. Incluem templates, 
-                        timelines e KPIs de sucesso.
-                      </p>
-                      <p className="text-sm mt-2 font-semibold">Para que serve?</p>
-                      <ul className="text-sm list-disc pl-4 mt-1">
-                        <li>Padronizar abordagem comercial</li>
-                        <li>Aumentar taxa de conversão</li>
-                        <li>Acelerar ciclo de vendas</li>
-                        <li>Treinar novos vendedores rapidamente</li>
-                      </ul>
-                      <p className="text-sm mt-2 font-semibold">Correlação com outros módulos:</p>
-                      <ul className="text-sm list-disc pl-4 mt-1">
-                        <li><strong>Decisores:</strong> Define quem contactar em cada etapa</li>
-                        <li><strong>Fit TOTVS:</strong> Personaliza playbook por fit</li>
-                        <li><strong>Relatórios:</strong> Documentação de abordagem</li>
-                      </ul>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </CardTitle>
-              <CardDescription className="text-slate-300 mt-2">
-                <strong>Sequências de vendas</strong> testadas e validadas com <strong>templates prontos</strong>, 
-                <strong> timelines definidos</strong> e <strong>KPIs de sucesso</strong>. Baseadas em análise 
-                de milhares de vendas bem-sucedidas.
-              </CardDescription>
-            </div>
+          <div className="flex items-center justify-between">
+            <CardTitle>Playbooks de Vendas</CardTitle>
             <div className="flex gap-2">
-              <Badge variant="outline" className="border-emerald-500 text-emerald-400 bg-emerald-500/10">
-                <TrendingUp className="h-3 w-3 mr-1" />
-                Taxa média: 65%
-              </Badge>
-              <Badge variant="outline" className="border-blue-500 text-blue-400 bg-blue-500/10">
-                <BookOpen className="h-3 w-3 mr-1" />
-                {data.length} Playbooks
-              </Badge>
+              <Button
+                onClick={generatePlaybook}
+                disabled={generating}
+                className="bg-purple-600 hover:bg-purple-700"
+              >
+                {generating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Gerando...
+                  </>
+                ) : (
+                  <>
+                    <Play className="h-4 w-4 mr-2" />
+                    Gerar Playbook
+                  </>
+                )}
+              </Button>
+              {playbook && (
+                <Button onClick={downloadPDF} variant="outline">
+                  <Download className="h-4 w-4 mr-2" />
+                  PDF
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
-      </Card>
-
-      {/* Lista de Playbooks */}
-      {data.map((playbook) => (
-        <Card key={playbook.id} className="bg-slate-800/50 border-slate-700/50">
-          <CardHeader>
-            <div className="flex justify-between items-start">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <CardTitle className="text-xl text-white">{playbook.name}</CardTitle>
-                  <Badge className={`${getStageColor(playbook.stage)} border`}>
-                    {playbook.stage}
-                  </Badge>
-                </div>
-                <div className="flex items-center gap-4 text-sm text-slate-400">
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
-                    {playbook.duration}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Target className="h-4 w-4" />
-                    {playbook.steps.length} etapas
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <TrendingUp className="h-4 w-4" />
-                    Taxa de sucesso: {playbook.successRate}%
-                  </span>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-3xl font-bold text-emerald-500">{playbook.successRate}%</div>
-                <p className="text-xs text-slate-500">Conversão</p>
-                <Progress value={playbook.successRate} className="mt-2 w-32" />
-              </div>
+        <CardContent>
+          {loading ? (
+            <div className="text-center py-8">
+              <Loader2 className="h-8 w-8 mx-auto mb-4 animate-spin" />
+              <p className="text-sm text-gray-600">Carregando playbook...</p>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Steps do Playbook */}
-            <div className="space-y-3">
-              {playbook.steps.map((step) => (
-                <div key={step.step} className="flex items-start gap-3 bg-slate-700/30 border border-slate-600/50 rounded-lg p-3">
-                  <div className="w-8 h-8 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold text-sm flex-shrink-0">
-                    {step.step}
+          ) : !playbook ? (
+            <div className="text-center py-8">
+              <FileText className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+              <p className="text-gray-600 mb-4">Nenhum playbook gerado ainda</p>
+              <p className="text-sm text-gray-500 mb-4">
+                Gere um playbook personalizado baseado nos dados da empresa
+              </p>
+              <Button onClick={generatePlaybook} variant="outline">
+                Gerar Agora
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="p-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg">
+                <h3 className="font-bold text-lg mb-2">{playbook.title || 'Playbook de Vendas'}</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{playbook.description}</p>
+              </div>
+
+              {playbook.steps && playbook.steps.map((step: any, idx: number) => (
+                <div key={idx} className="flex items-start gap-3 p-3 border rounded">
+                  <div className="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold">
+                    {idx + 1}
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-semibold text-white mb-1">{step.action}</p>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-slate-400">
-                      <div>
-                        <span className="text-slate-500">Responsável:</span> {step.owner}
-                      </div>
-                      <div>
-                        <span className="text-slate-500">Timeline:</span> {step.timeline}
-                      </div>
-                      <div>
-                        <span className="text-slate-500">KPI:</span> {step.kpi}
-                      </div>
-                      {step.template && (
-                        <div>
-                          <Button size="sm" variant="ghost" className="h-6 text-xs">
-                            <FileText className="h-3 w-3 mr-1" />
-                            Ver Template
-                          </Button>
-                        </div>
-                      )}
+                    <h4 className="font-semibold mb-1">{step.action}</h4>
+                    <p className="text-sm text-gray-600">{step.description}</p>
+                    <div className="flex gap-2 mt-2">
+                      <Badge variant="outline">{step.owner}</Badge>
+                      <Badge variant="outline">{step.timeline}</Badge>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
-
-            {/* Insights de IA */}
-            <div className="bg-indigo-900/20 border border-indigo-700/30 rounded-lg p-3">
-              <p className="text-xs font-semibold text-indigo-400 mb-2 flex items-center gap-1">
-                <Info className="h-3 w-3" />
-                Insights e Dicas de Sucesso
-              </p>
-              <p className="text-xs text-slate-300">{playbook.aiInsights}</p>
-            </div>
-
-            {/* Ações */}
-            <div className="flex gap-2">
-              <Button className="bg-gradient-to-r from-indigo-600 to-blue-600">
-                <Play className="h-4 w-4 mr-2" />
-                Iniciar Playbook
-              </Button>
-              <Button variant="outline" className="border-slate-600 text-slate-200">
-                <FileText className="h-4 w-4 mr-2" />
-                Ver Templates
-              </Button>
-              <Button variant="outline" className="border-slate-600 text-slate-200">
-                Personalizar
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-
-      {/* Dicas de Uso */}
-      <Card className="bg-slate-800/30 border-slate-700/50">
-        <CardHeader>
-          <CardTitle className="text-lg text-white">Como usar os Playbooks?</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-slate-300">
-            <div>
-              <p className="font-semibold mb-2">1. Selecione o Playbook</p>
-              <p className="text-xs text-slate-400">
-                Escolha baseado na etapa do funil e perfil do prospect
-              </p>
-            </div>
-            <div>
-              <p className="font-semibold mb-2">2. Personalize</p>
-              <p className="text-xs text-slate-400">
-                Adapte templates com dados do prospect (nome, cargo, empresa)
-              </p>
-            </div>
-            <div>
-              <p className="font-semibold mb-2">3. Execute e Monitore</p>
-              <p className="text-xs text-slate-400">
-                Siga timeline, monitore KPIs e ajuste conforme necessário
-              </p>
-            </div>
-          </div>
+          )}
         </CardContent>
       </Card>
     </div>
   )
 }
-
