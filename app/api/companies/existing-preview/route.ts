@@ -76,46 +76,34 @@ export async function POST(req: Request) {
         state: (typeof company.location === 'string' ? JSON.parse(company.location || '{}') : company.location)?.estado || receita.uf,
       },
       receita: {
-        identificacao: {
-          razaoSocial: receita.nome || company.name,
-          nomeFantasia: receita.fantasia || company.tradeName,
-          cnpj: receita.cnpj || company.cnpj,
-          tipo: receita.tipo || 'MATRIZ',
-          porte: receita.porte || company.size,
-          naturezaJuridica: receita.natureza_juridica,
-          dataAbertura: receita.abertura,
-          situacao: receita.situacao || company.status,
-          dataSituacao: receita.data_situacao,
-        },
-        capital: {
-          valor: company.capital || parseBRLToNumber(receita.capital_social),
-          valorOriginal: receita.capital_social
-        },
-        endereco: {
-          logradouro: receita.logradouro,
-          numero: receita.numero,
-          complemento: receita.complemento,
-          bairro: receita.bairro,
-          municipio: receita.municipio,
-          uf: receita.uf,
-          cep: receita.cep,
-        },
-        contato: {
-          telefone: receita.telefone,
-          email: receita.email,
-        },
-        cnae: {
-          principal: receita.atividade_principal?.[0] || null,
-          secundarias: receita.atividades_secundarias || [],
-        },
+        nome: receita.nome || company.name,
+        fantasia: receita.fantasia || company.tradeName,
+        cnpj: receita.cnpj || company.cnpj,
+        tipo: receita.tipo || 'MATRIZ',
+        porte: receita.porte || company.size,
+        natureza_juridica: receita.natureza_juridica,
+        abertura: receita.abertura,
+        situacao: receita.situacao || company.status,
+        data_situacao: receita.data_situacao,
+        motivo_situacao: receita.motivo_situacao,
+        capital_social: receita.capital_social,
+        logradouro: receita.logradouro,
+        numero: receita.numero,
+        complemento: receita.complemento,
+        bairro: receita.bairro,
+        municipio: receita.municipio,
+        uf: receita.uf,
+        cep: receita.cep,
+        telefone: receita.telefone,
+        email: receita.email,
+        atividade_principal: receita.atividade_principal || [],
+        atividades_secundarias: receita.atividades_secundarias || [],
         qsa: receita.qsa || [],
-        simples: {
-          optante: receita.simples?.optante || false,
-          dataOpcao: receita.simples?.data_opcao,
-        },
-        mei: {
-          optante: receita.simei?.optante || false,
-        }
+        simples: receita.simples || { optante: false },
+        simei: receita.simei || { optante: false },
+        efr: receita.efr,
+        situacao_especial: receita.situacao_especial,
+        data_situacao_especial: receita.data_situacao_especial,
       },
       presencaDigital: {
         website: digitalPresence?.website || null,
@@ -154,3 +142,4 @@ export async function POST(req: Request) {
     }, { status: 500 })
   }
 }
+
