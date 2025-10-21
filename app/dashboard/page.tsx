@@ -45,6 +45,7 @@ import { CompanyIntelligenceModal } from "@/components/modals/CompanyIntelligenc
 import { Sidebar } from "@/components/layout/Sidebar"
 import { UnifiedPipeline } from "@/components/pipeline/UnifiedPipeline"
 import { SearchHub } from "@/components/SearchHub"
+import { CompanySelector } from "@/components/CompanySelector"
 import { useMultiSelect } from "@/hooks/useMultiSelect"
 import { formatCurrency, formatCNPJ, formatDate } from "@/lib/utils/format"
 import {
@@ -860,6 +861,19 @@ export default function DashboardPage() {
           </p>
         </div>
 
+        {/* Empresa Selecionada (Contexto Global) */}
+        {currentCompany && (
+          <div className="mb-6">
+            <CompanySelector
+              company={currentCompany}
+              onClear={() => {
+                setCurrentCompany(null)
+                setPreviewData(null)
+              }}
+            />
+          </div>
+        )}
+
         {/* Renderizar módulo ativo OU dashboard */}
         {activeModule === 'dashboard' && (
           <>
@@ -878,6 +892,11 @@ export default function DashboardPage() {
                     const data = await response.json()
                     setPreviewData(data)
                     setShowPreviewModal(true)
+                    
+                    // Se a busca retornou dados, criar objeto currentCompany
+                    if (data.ok && data.data?.company) {
+                      setCurrentCompany(data.data.company)
+                    }
                   } catch (error: any) {
                     alert('Erro: ' + error.message)
                   } finally {
