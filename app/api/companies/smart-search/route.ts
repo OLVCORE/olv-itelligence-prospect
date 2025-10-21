@@ -71,12 +71,24 @@ export async function POST(req: Request) {
     
     const projectId = await getDefaultProjectId();
 
-    const capitalNum = Number(
-      (receitaData.capital_social || '0')
-        .toString()
-        .replace(/[^\d,.-]/g, '')
-        .replace(',', '.')
-    ) || 0;
+    // Parse correto do capital social (NUNCA multiplicar por 1000)
+    const capitalStr = receitaData.capital_social || '0'
+    let capitalNum = 0
+    
+    if (typeof capitalStr === 'string') {
+      // Detectar formato BR: 52.000.000,00 ou 52000000.00
+      if (/\,\d{2}$/.test(capitalStr)) {
+        // Formato BR: 52.000.000,00 → 52000000.00
+        capitalNum = Number(capitalStr.replace(/\./g, '').replace(',', '.'))
+      } else {
+        // Formato simples: 52000000.00
+        capitalNum = Number(capitalStr)
+      }
+    } else if (typeof capitalStr === 'number') {
+      capitalNum = capitalStr
+    }
+    
+    if (isNaN(capitalNum)) capitalNum = 0
 
     const companyId = `comp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     

@@ -653,62 +653,94 @@ export default function DashboardPage() {
             </div>
 
             <div className="space-y-2">
-              <Button
-                onClick={async () => {
-                  setLoading(true)
-                  setCurrentCompany(company)
-                  try {
-                    console.log('[Dashboard] Gerando relatório para:', company.name)
-                    const response = await fetch('/api/reports/generate', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                        templateId: 'executive-report-v1',
-                        companyId: company.id,
-                        sections: ['overview', 'financial', 'techStack', 'decisionMakers', 'maturity', 'vendorFit']
+              <div className="flex gap-2">
+                <Button
+                  onClick={async () => {
+                    try {
+                      console.log('[Dashboard] Buscando preview para:', company.name)
+                      const response = await fetch('/api/companies/existing-preview', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ companyId: company.id })
                       })
-                    })
-                    
-                    const data = await response.json()
-                    
-                    if (data.success || data.reportUrl) {
-                      console.log('[Dashboard] ✅ Relatório gerado com sucesso')
-                      // Download do relatório
-                      if (data.reportUrl) {
-                        window.open(data.reportUrl, '_blank')
-                      } else if (data.pdfBase64) {
-                        const link = document.createElement('a')
-                        link.href = `data:application/pdf;base64,${data.pdfBase64}`
-                        link.download = `relatorio-${company.name}-${new Date().toISOString().split('T')[0]}.pdf`
-                        link.click()
+                      
+                      if (!response.ok) {
+                        const error = await response.json()
+                        throw new Error(error.error?.message || 'Erro ao buscar preview')
                       }
-                      alert('Relatório gerado com sucesso!')
-                    } else {
-                      console.error('[Dashboard] Erro ao gerar relatório:', data.error)
-                      alert('Erro ao gerar relatório: ' + (data.error || 'Erro desconhecido'))
+                      
+                      const data = await response.json()
+                      setPreviewData(data)
+                      setShowPreviewModal(true)
+                      console.log('[Dashboard] ✅ Preview carregado com sucesso')
+                    } catch (error: any) {
+                      console.error('[Dashboard] Erro ao buscar preview:', error)
+                      alert('Erro ao buscar preview: ' + error.message)
                     }
-                  } catch (error: any) {
-                    console.error('[Dashboard] Erro ao gerar relatório:', error)
-                    alert('Erro ao gerar relatório: ' + error.message)
-                  } finally {
-                    setLoading(false)
-                  }
-                }}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Gerando...
-                  </>
-                ) : (
-                  <>
-                    <FileText className="h-4 w-4 mr-2" />
-                    Gerar Relatório
-                  </>
-                )}
-              </Button>
+                  }}
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  Preview
+                </Button>
+                
+                <Button
+                  onClick={async () => {
+                    setLoading(true)
+                    setCurrentCompany(company)
+                    try {
+                      console.log('[Dashboard] Gerando relatório para:', company.name)
+                      const response = await fetch('/api/reports/generate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          templateId: 'executive-report-v1',
+                          companyId: company.id,
+                          sections: ['overview', 'financial', 'techStack', 'decisionMakers', 'maturity', 'vendorFit']
+                        })
+                      })
+                      
+                      const data = await response.json()
+                      
+                      if (data.success || data.reportUrl) {
+                        console.log('[Dashboard] ✅ Relatório gerado com sucesso')
+                        // Download do relatório
+                        if (data.reportUrl) {
+                          window.open(data.reportUrl, '_blank')
+                        } else if (data.pdfBase64) {
+                          const link = document.createElement('a')
+                          link.href = `data:application/pdf;base64,${data.pdfBase64}`
+                          link.download = `relatorio-${company.name}-${new Date().toISOString().split('T')[0]}.pdf`
+                          link.click()
+                        }
+                        alert('Relatório gerado com sucesso!')
+                      } else {
+                        console.error('[Dashboard] Erro ao gerar relatório:', data.error)
+                        alert('Erro ao gerar relatório: ' + (data.error || 'Erro desconhecido'))
+                      }
+                    } catch (error: any) {
+                      console.error('[Dashboard] Erro ao gerar relatório:', error)
+                      alert('Erro ao gerar relatório: ' + error.message)
+                    } finally {
+                      setLoading(false)
+                    }
+                  }}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Gerando...
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="h-4 w-4 mr-2" />
+                      Relatório
+                    </>
+                  )}
+                </Button>
+              </div>
 
               <Button
                 onClick={async () => {
