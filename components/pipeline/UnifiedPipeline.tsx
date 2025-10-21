@@ -117,7 +117,12 @@ export function UnifiedPipeline({ companyId, cnpj, initialData }: UnifiedPipelin
   }
 
   async function executeStep(stepId: string) {
-    if (!companyId) return
+    if (!companyId) {
+      alert('Erro: Nenhuma empresa selecionada. Busque uma empresa primeiro.')
+      return
+    }
+
+    console.log(`[Pipeline] 🚀 Executando etapa: ${stepId} para empresa: ${companyId}`)
 
     setSteps(prev => prev.map(s => 
       s.id === stepId ? { ...s, status: 'running' as const } : s
@@ -140,9 +145,22 @@ export function UnifiedPipeline({ companyId, cnpj, initialData }: UnifiedPipelin
         case 'fit':
           endpoint = '/api/intelligence/fit-totvs'
           break
+        case 'digital':
+          endpoint = '/api/enrichment/digital'
+          break
+        case 'playbook':
+          endpoint = '/api/reports/generate'
+          body = { templateId: 'executive-report-v1', companyId }
+          break
         default:
-          throw new Error('Etapa não implementada')
+          console.log(`[Pipeline] ⏭️ Etapa ${stepId} pulada (já concluída ou não implementada)`)
+          setSteps(prev => prev.map(s => 
+            s.id === stepId ? { ...s, status: 'completed' as const } : s
+          ))
+          return
       }
+
+      console.log(`[Pipeline] 📡 Chamando: ${endpoint}`)
 
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -152,7 +170,9 @@ export function UnifiedPipeline({ companyId, cnpj, initialData }: UnifiedPipelin
 
       const result = await response.json()
 
-      if (!result.ok) {
+      console.log(`[Pipeline] 📥 Resposta:`, result)
+
+      if (!result.ok && !result.success) {
         throw new Error(result.error?.message || 'Erro ao executar etapa')
       }
 
@@ -160,11 +180,15 @@ export function UnifiedPipeline({ companyId, cnpj, initialData }: UnifiedPipelin
         s.id === stepId ? { 
           ...s, 
           status: 'completed' as const, 
-          data: result.data,
+          data: result.data || result,
           expanded: true 
         } : s
       ))
+
+      console.log(`[Pipeline] ✅ Etapa ${stepId} concluída`)
     } catch (error: any) {
+      console.error(`[Pipeline] ❌ Erro na etapa ${stepId}:`, error.message)
+      
       setSteps(prev => prev.map(s => 
         s.id === stepId ? { 
           ...s, 
@@ -177,18 +201,28 @@ export function UnifiedPipeline({ companyId, cnpj, initialData }: UnifiedPipelin
   }
 
   async function executeAll() {
-    if (!companyId) return
+    if (!companyId) {
+      alert('Erro: Nenhuma empresa selecionada. Busque uma empresa primeiro.')
+      return
+    }
 
+    console.log('[Pipeline] 🚀 Executando pipeline completo para:', companyId)
     setIsProcessing(true)
 
-    // Executar em sequência
-    for (const step of steps) {
-      if (['techstack', 'decisores', 'maturidade', 'fit'].includes(step.id)) {
-        await executeStep(step.id)
+    // Executar em sequência (exceto as que já estão completas)
+    const stepsToExecute = ['digital', 'techstack', 'decisores', 'maturidade', 'fit', 'playbook']
+    
+    for (const stepId of stepsToExecute) {
+      const step = steps.find(s => s.id === stepId)
+      if (step && step.status !== 'completed') {
+        await executeStep(stepId)
+        // Delay entre etapas para não sobrecarregar
+        await new Promise(resolve => setTimeout(resolve, 500))
       }
     }
 
     setIsProcessing(false)
+    console.log('[Pipeline] ✅ Pipeline completo')
   }
 
   function getStatusIcon(status: string) {
