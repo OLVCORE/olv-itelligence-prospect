@@ -280,36 +280,36 @@ export function PreviewModal({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-900 rounded-lg p-4 print:bg-white print:border">
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Razão Social</p>
-                  <p className="font-semibold text-sm">{getData('nome') || getData('receita.identificacao.razaoSocial')}</p>
+                  <p className="font-semibold text-sm">{getData('receita.nome') || getData('nome') || getData('company.name')}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Nome Fantasia</p>
-                  <p className="font-semibold text-sm">{getData('fantasia') || getData('receita.identificacao.nomeFantasia') || '-'}</p>
+                  <p className="font-semibold text-sm">{getData('receita.fantasia') || getData('fantasia') || getData('company.tradeName') || '-'}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">CNPJ</p>
-                  <p className="font-mono font-semibold text-sm">{formatCNPJ(getData('cnpj', '') || getData('receita.identificacao.cnpj', ''))}</p>
+                  <p className="font-mono font-semibold text-sm">{formatCNPJ(getData('receita.cnpj') || getData('cnpj') || getData('company.cnpj'))}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Tipo</p>
-                  <Badge variant="outline">{getData('tipo') || getData('receita.identificacao.tipo')}</Badge>
+                  <Badge variant="outline">{getData('receita.tipo') || getData('tipo') || 'MATRIZ'}</Badge>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Porte</p>
-                  <Badge>{getData('porte') || getData('receita.identificacao.porte')}</Badge>
+                  <Badge>{getData('receita.porte') || getData('porte') || getData('company.size')}</Badge>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Natureza Jurídica</p>
-                  <p className="font-semibold text-sm">{getData('natureza_juridica') || getData('receita.identificacao.naturezaJuridica')}</p>
+                  <p className="font-semibold text-sm">{getData('receita.natureza_juridica') || getData('natureza_juridica')}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Data de Abertura</p>
-                  <p className="font-semibold text-sm">{formatDate(getData('abertura', null) || getData('receita.identificacao.dataAbertura', null))}</p>
+                  <p className="font-semibold text-sm">{formatDate(getData('receita.abertura') || getData('abertura'))}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Capital Social</p>
                   <p className="font-semibold text-sm">
-                    {formatCurrency(parseFloat(getData('capital_social', '0')) || getData('receita.capital.valor', 0))}
+                    {formatCurrency(parseBRLToNumber(getData('capital_social')) || getData('company.capital', 0))}
                   </p>
                 </div>
               </div>
@@ -325,26 +325,26 @@ export function PreviewModal({
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-1">Endereço Completo</p>
                   <p className="font-semibold text-sm">
-                    {getData('logradouro') || 'N/A'}, {getData('numero') || 'S/N'}
-                    {getData('complemento') && ` - ${getData('complemento')}`}
+                    {getData('receita.logradouro') || getData('logradouro') || 'N/A'}, {getData('receita.numero') || getData('numero') || 'S/N'}
+                    {(getData('receita.complemento') || getData('complemento')) && ` - ${getData('receita.complemento') || getData('complemento')}`}
                   </p>
                   <p className="text-sm text-slate-600 dark:text-slate-400">
-                    {getData('bairro') || 'N/A'} - {getData('municipio') || 'N/A'}/{getData('uf') || 'N/A'}
+                    {getData('receita.bairro') || getData('bairro') || 'N/A'} - {getData('receita.municipio') || getData('municipio') || 'N/A'}/{getData('receita.uf') || getData('uf') || 'N/A'}
                   </p>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">CEP: {formatCEP(getData('cep', ''))}</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">CEP: {formatCEP(getData('receita.cep') || getData('cep'))}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4 pt-2 border-t">
                   <div>
                     <p className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1">
                       <Phone className="h-3 w-3" /> Telefone
                     </p>
-                    <p className="font-semibold text-sm">{formatPhone(getData('telefone', ''))}</p>
+                    <p className="font-semibold text-sm">{formatPhone(getData('receita.telefone') || getData('telefone'))}</p>
                   </div>
                   <div>
                     <p className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1">
                       <Mail className="h-3 w-3" /> Email
                     </p>
-                    <p className="font-semibold text-sm">{getData('email') || 'Não informado'}</p>
+                    <p className="font-semibold text-sm">{getData('receita.email') || getData('email') || 'Não informado'}</p>
                   </div>
                 </div>
               </div>
@@ -359,17 +359,17 @@ export function PreviewModal({
               <div className="grid grid-cols-3 gap-3 bg-slate-50 dark:bg-slate-900 rounded-lg p-4 print:bg-white print:border">
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Status</p>
-                  <Badge variant={getData('situacao') === 'ATIVA' ? 'default' : 'secondary'} className="mt-1">
-                    {getData('situacao') || 'N/A'}
+                  <Badge variant={(getData('receita.situacao') || getData('situacao')) === 'ATIVA' ? 'default' : 'secondary'} className="mt-1">
+                    {getData('receita.situacao') || getData('situacao') || 'N/A'}
                   </Badge>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Data da Situação</p>
-                  <p className="font-semibold text-sm">{getData('data_situacao') || 'N/A'}</p>
+                  <p className="font-semibold text-sm">{formatDate(getData('receita.data_situacao') || getData('data_situacao')) || 'N/A'}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide">Motivo</p>
-                  <p className="font-semibold text-sm">{getData('motivo_situacao') || 'N/A'}</p>
+                  <p className="font-semibold text-sm">{getData('receita.motivo_situacao') || getData('motivo_situacao') || 'N/A'}</p>
                 </div>
               </div>
             </section>
@@ -399,10 +399,10 @@ export function PreviewModal({
                 {getData('atividades_secundarias', []).length > 0 && (
                   <div className="pt-3 border-t">
                     <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2">
-                      Atividades Secundárias ({getData('atividades_secundarias', []).length})
+                      Atividades Secundárias ({(getData('receita.atividades_secundarias') || getData('atividades_secundarias') || []).length})
                     </p>
                     <div className="space-y-1 max-h-48 overflow-y-auto">
-                      {getData('atividades_secundarias', []).map((ativ: any, idx: number) => (
+                      {(getData('receita.atividades_secundarias') || getData('atividades_secundarias') || []).map((ativ: any, idx: number) => (
                         <div key={idx} className="text-xs">
                           <span className="font-mono text-primary">{ativ.code}</span> - {ativ.text}
                         </div>
@@ -414,7 +414,7 @@ export function PreviewModal({
             </section>
 
             {/* 5. Quadro Societário (QSA) */}
-            {getData('qsa', []).length > 0 && (
+            {(getData('receita.qsa') || getData('qsa') || []).length > 0 && (
               <section className="break-inside-avoid">
                 <h2 className="text-lg font-bold mb-3 flex items-center gap-2 border-b pb-2">
                   <Users className="h-5 w-5 text-primary" />
@@ -422,7 +422,7 @@ export function PreviewModal({
                 </h2>
                 <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-4 print:bg-white print:border">
                   <div className="space-y-2">
-                    {getData('qsa', []).map((socio: any, idx: number) => (
+                    {(getData('receita.qsa') || getData('qsa') || []).map((socio: any, idx: number) => (
                       <div key={idx} className="flex justify-between items-start border-b pb-2 last:border-0">
                         <div>
                           <p className="font-semibold text-sm">{socio.nome || 'N/A'}</p>
@@ -453,8 +453,8 @@ export function PreviewModal({
               <div className="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-900 rounded-lg p-4 print:bg-white print:border">
                 <div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2">Simples Nacional</p>
-                  <Badge variant={getData('efr') ? 'default' : 'secondary'}>
-                    {getData('efr') || 'NÃO INFORMADO'}
+                  <Badge variant={(getData('receita.simples?.optante') || getData('efr')) ? 'default' : 'secondary'}>
+                    {(getData('receita.simples?.optante') ? 'SIMPLES NACIONAL' : getData('efr')) || 'NÃO INFORMADO'}
                   </Badge>
                 </div>
                 <div>
