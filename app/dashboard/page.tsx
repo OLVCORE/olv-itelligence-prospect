@@ -330,10 +330,10 @@ export default function DashboardPage() {
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <Instagram className="h-4 w-4 text-pink-500" />
-              <Label className="text-sm font-medium dark:text-gray-200">📱 Redes Sociais</Label>
+              <Label className="text-sm font-medium dark:text-gray-200">Redes Sociais</Label>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-4 w-4 p-0">
+                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0 flex items-center justify-center">
                     <SearchIcon className="h-3 w-3 text-gray-400" />
                   </Button>
                 </TooltipTrigger>
@@ -358,10 +358,10 @@ export default function DashboardPage() {
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <ShoppingBag className="h-4 w-4 text-blue-500" />
-              <Label className="text-sm font-medium dark:text-gray-200">🛒 Marketplaces B2B</Label>
+              <Label className="text-sm font-medium dark:text-gray-200">Marketplaces B2B</Label>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-4 w-4 p-0">
+                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0 flex items-center justify-center">
                     <SearchIcon className="h-3 w-3 text-gray-400" />
                   </Button>
                 </TooltipTrigger>
@@ -389,7 +389,7 @@ export default function DashboardPage() {
               <Label className="text-sm font-medium dark:text-gray-200">🛍️ Marketplaces B2C</Label>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-4 w-4 p-0">
+                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0 flex items-center justify-center">
                     <SearchIcon className="h-3 w-3 text-gray-400" />
                   </Button>
                 </TooltipTrigger>
@@ -414,10 +414,10 @@ export default function DashboardPage() {
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <Globe className="h-4 w-4 text-purple-500" />
-              <Label className="text-sm font-medium dark:text-gray-200">🌐 Portais Eletrônicos</Label>
+              <Label className="text-sm font-medium dark:text-gray-200">Portais Eletrônicos</Label>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-4 w-4 p-0">
+                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0 flex items-center justify-center">
                     <SearchIcon className="h-3 w-3 text-gray-400" />
                   </Button>
                 </TooltipTrigger>
@@ -442,10 +442,10 @@ export default function DashboardPage() {
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <Building2 className="h-4 w-4 text-indigo-500" />
-              <Label className="text-sm font-medium dark:text-gray-200">🏢 Portais do Setor</Label>
+              <Label className="text-sm font-medium dark:text-gray-200">Portais do Setor</Label>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-4 w-4 p-0">
+                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0 flex items-center justify-center">
                     <SearchIcon className="h-3 w-3 text-gray-400" />
                   </Button>
                 </TooltipTrigger>
@@ -501,7 +501,7 @@ export default function DashboardPage() {
               <Label className="text-sm font-medium dark:text-gray-200">⚖️ Jurídico</Label>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-4 w-4 p-0">
+                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0 flex items-center justify-center">
                     <SearchIcon className="h-3 w-3 text-gray-400" />
                   </Button>
                 </TooltipTrigger>
